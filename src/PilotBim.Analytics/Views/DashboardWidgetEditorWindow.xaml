@@ -1,0 +1,45 @@
+<Window x:Class="PilotBim.Analytics.Views.DashboardWidgetEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Виджет дашборда"
+        Height="420" Width="460"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F7F7F5"
+        Foreground="#1F2A24">
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0">
+      <TextBlock Text="Заголовок" Margin="0,0,0,4" />
+      <TextBox x:Name="TitleBox" Height="28" Margin="0,0,0,12" Padding="4,2" />
+
+      <TextBlock Text="Тип виджета" Margin="0,0,0,4" />
+      <ComboBox x:Name="KindBox" Height="28" Margin="0,0,0,12"
+                SelectionChanged="KindBox_SelectionChanged"
+                DisplayMemberPath="Title" />
+
+      <StackPanel x:Name="ChartPanel">
+        <TextBlock Text="Источник данных" Margin="0,0,0,4" />
+        <ComboBox x:Name="SourceBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
+
+        <TextBlock Text="Тип графика" Margin="0,0,0,4" />
+        <ComboBox x:Name="ChartKindBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
+
+        <TextBlock Text="Объём" Margin="0,0,0,4" />
+        <ComboBox x:Name="TopNBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
+
+        <TextBlock Text="Ширина" Margin="0,0,0,4" />
+        <ComboBox x:Name="SpanBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button Content="Отмена" Width="90" Height="30" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click"
+              Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0" />
+      <Button Content="OK" Width="90" Height="30" IsDefault="True" Click="Ok_Click"
+              Background="#1F2A24" Foreground="White" BorderBrush="#1F2A24" />
+    </StackPanel>
+  </Grid>
+</Window>

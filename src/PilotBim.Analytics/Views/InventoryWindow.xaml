@@ -1,0 +1,405 @@
+<Window x:Class="PilotBim.Analytics.Views.InventoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pilot-BIM Analytics — Каталог данных"
+        Height="760" Width="1180"
+        WindowStartupLocation="CenterScreen"
+        Background="#F7F7F5"
+        Foreground="#1F2A24">
+  <Window.Resources>
+    <Style x:Key="NavListBoxItem" TargetType="ListBoxItem">
+      <Setter Property="Foreground" Value="#1F2A24" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="12,9" />
+      <Setter Property="FontSize" Value="13" />
+      <Style.Triggers>
+        <Trigger Property="IsSelected" Value="True">
+          <Setter Property="Background" Value="#1F2A24" />
+          <Setter Property="Foreground" Value="White" />
+          <Setter Property="FontWeight" Value="SemiBold" />
+        </Trigger>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="Background" Value="#D8DDD9" />
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+    <Style x:Key="InventoryDataGrid" TargetType="DataGrid">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="#1F2A24" />
+      <Setter Property="RowBackground" Value="White" />
+      <Setter Property="AlternatingRowBackground" Value="#F3F5F4" />
+      <Setter Property="HorizontalGridLinesBrush" Value="#E0E4E2" />
+      <Setter Property="VerticalGridLinesBrush" Value="#E0E4E2" />
+      <Setter Property="BorderBrush" Value="#C8CECB" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="GridLinesVisibility" Value="Horizontal" />
+      <Setter Property="CellStyle">
+        <Setter.Value>
+          <Style TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#1F2A24" />
+            <Setter Property="BorderBrush" Value="#E0E4E2" />
+            <Setter Property="Padding" Value="4,2" />
+            <Style.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="#D4E4DA" />
+                <Setter Property="Foreground" Value="#1F2A24" />
+              </Trigger>
+            </Style.Triggers>
+          </Style>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="RowStyle">
+        <Setter.Value>
+          <Style TargetType="DataGridRow">
+            <Setter Property="Foreground" Value="#1F2A24" />
+            <Setter Property="Background" Value="White" />
+            <Style.Triggers>
+              <Trigger Property="AlternationIndex" Value="1">
+                <Setter Property="Background" Value="#F3F5F4" />
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="#D4E4DA" />
+                <Setter Property="Foreground" Value="#1F2A24" />
+              </Trigger>
+            </Style.Triggers>
+          </Style>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="InventoryDataGridColumnHeader" TargetType="DataGridColumnHeader">
+      <Setter Property="Background" Value="#ECECE8" />
+      <Setter Property="Foreground" Value="#1F2A24" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Padding" Value="8,6" />
+    </Style>
+    <Style x:Key="InventoryDataGridCell" TargetType="TextBlock">
+      <Setter Property="Padding" Value="6,4" />
+      <Setter Property="Foreground" Value="#1F2A24" />
+    </Style>
+  </Window.Resources>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="#1F2A24" Padding="12,10">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="PilotBim.Analytics" Foreground="White" FontSize="18" FontWeight="SemiBold" Margin="0,0,18,0" />
+          <RadioButton Content="Быстро" GroupName="ScanMode" IsChecked="{Binding IsFast}" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center" />
+          <RadioButton Content="Стандарт" GroupName="ScanMode" IsChecked="{Binding IsStandard}" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center" />
+          <RadioButton Content="Полный" GroupName="ScanMode" IsChecked="{Binding IsFull}" Foreground="White" Margin="0,0,18,0" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <Button Content="Сканировать" Width="110" Height="28" Margin="0,0,8,0" Click="Scan_Click" />
+          <Button Content="Отмена" Width="80" Height="28" Margin="0,0,8,0" Click="Cancel_Click" />
+          <Button Content="Скопировать отчёт" Width="140" Height="28" Margin="0,0,8,0" Click="CopyReport_Click" />
+          <Button Content="Сохранить отчёт" Width="130" Height="28" Click="SaveReport_Click" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <StatusBar DockPanel.Dock="Bottom" Background="#E8E8E4">
+      <TextBlock Text="{Binding ProgressText}" Foreground="#1F2A24" Margin="8,0" />
+    </StatusBar>
+
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="210" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <ListBox Grid.Column="0" ItemsSource="{Binding Navigation}"
+               SelectedValuePath="Key"
+               SelectedValue="{Binding SelectedNavKey}"
+               BorderThickness="0"
+               Background="#ECECE8"
+               ItemContainerStyle="{StaticResource NavListBoxItem}"
+               Margin="0"
+               SelectionChanged="Nav_SelectionChanged">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Title}" FontSize="13">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Foreground" Value="#1F2A24" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                      <Setter Property="Foreground" Value="White" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <Grid Grid.Column="1" Margin="12">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="{Binding SelectedNavTitle}" FontSize="20" FontWeight="SemiBold"
+                   Foreground="#1F2A24" Margin="0,0,0,10" />
+
+        <!-- Overview -->
+        <ScrollViewer x:Name="PanelOverview" Grid.Row="1" Visibility="Visible">
+          <StackPanel>
+            <TextBlock Text="{Binding OverviewSummary}" TextWrapping="Wrap" FontFamily="Consolas" FontSize="13" Foreground="#1F2A24" />
+            <TextBlock Text="Зоны" FontWeight="SemiBold" Foreground="#1F2A24" Margin="0,16,0,6" />
+            <DataGrid ItemsSource="{Binding Zones}" Style="{StaticResource InventoryDataGrid}"
+                      ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                      AutoGenerateColumns="True" IsReadOnly="True" Height="180" />
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Types -->
+        <Grid x:Name="PanelTypes" Grid.Row="1" Visibility="Collapsed">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="2*" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <DataGrid x:Name="TypesGrid" ItemsSource="{Binding Types}" Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="False" IsReadOnly="True"
+                    SelectionChanged="TypesGrid_SelectionChanged">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Type" Binding="{Binding Title}" Width="2*" />
+              <DataGridTextColumn Header="TypeId" Binding="{Binding TypeId}" Width="70" />
+              <DataGridTextColumn Header="Objects" Binding="{Binding ObjectCount}" Width="80" />
+              <DataGridTextColumn Header="Attributes" Binding="{Binding AttributeCount}" Width="80" />
+              <DataGridTextColumn Header="Sampled" Binding="{Binding SampledCount}" Width="70" />
+              <DataGridTextColumn Header="Fill %" Binding="{Binding FillPercent, StringFormat={}{0:0.0}}" Width="70" />
+              <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" />
+              <DataGridTextColumn Header="Warnings" Binding="{Binding Warnings}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <DataGrid Grid.Row="1" ItemsSource="{Binding SelectedType.Attributes}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="False" IsReadOnly="True" Margin="0,8,0,0">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Attribute" Binding="{Binding Title}" Width="*" />
+              <DataGridTextColumn Header="Id" Binding="{Binding AttributeId}" Width="120" />
+              <DataGridTextColumn Header="Type" Binding="{Binding ValueType}" Width="90" />
+              <DataGridTextColumn Header="Required" Binding="{Binding IsObligatory}" Width="70" />
+              <DataGridTextColumn Header="Filled" Binding="{Binding PopulatedCount}" Width="60" />
+              <DataGridTextColumn Header="Empty" Binding="{Binding EmptyCount}" Width="60" />
+              <DataGridTextColumn Header="Fill %" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" />
+              <DataGridTextColumn Header="Status" Binding="{Binding PopulationStatus}" Width="120" />
+              <DataGridTextColumn Header="Examples" Binding="{Binding ExamplesText}" Width="2*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+
+        <!-- Attributes -->
+        <Grid x:Name="PanelAttributes" Grid.Row="1" Visibility="Collapsed">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Type:" VerticalAlignment="Center" Foreground="#1F2A24" Margin="0,0,6,0" />
+            <TextBox Width="180" Text="{Binding AttributeTypeFilter, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,12,0"
+                     Background="White" Foreground="#1F2A24" />
+            <TextBlock Text="Attribute:" VerticalAlignment="Center" Foreground="#1F2A24" Margin="0,0,6,0" />
+            <TextBox Width="180" Text="{Binding AttributeNameFilter, UpdateSourceTrigger=PropertyChanged}"
+                     Background="White" Foreground="#1F2A24" />
+          </StackPanel>
+          <DataGrid Grid.Row="1" ItemsSource="{Binding Attributes}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="*" />
+              <DataGridTextColumn Header="Attribute" Binding="{Binding Title}" Width="*" />
+              <DataGridTextColumn Header="Value Type" Binding="{Binding ValueType}" Width="100" />
+              <DataGridTextColumn Header="Required" Binding="{Binding IsObligatory}" Width="70" />
+              <DataGridTextColumn Header="Filled" Binding="{Binding PopulatedCount}" Width="60" />
+              <DataGridTextColumn Header="Empty" Binding="{Binding EmptyCount}" Width="60" />
+              <DataGridTextColumn Header="Fill %" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" />
+              <DataGridTextColumn Header="Examples" Width="2*" Binding="{Binding ExamplesText}" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+
+        <DataGrid x:Name="PanelSystemFields" Grid.Row="1" Visibility="Collapsed"
+                  Style="{StaticResource InventoryDataGrid}"
+                  ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                  ItemsSource="{Binding SystemFields}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Field" Binding="{Binding Field}" Width="140" />
+            <DataGridTextColumn Header="SDK Source" Binding="{Binding SdkSource}" Width="2*" />
+            <DataGridTextColumn Header="Availability" Binding="{Binding Availability}" Width="120" />
+            <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="*" />
+            <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="2*" />
+          </DataGrid.Columns>
+        </DataGrid>
+
+        <DataGrid x:Name="PanelStates" Grid.Row="1" Visibility="Collapsed"
+                  Style="{StaticResource InventoryDataGrid}"
+                  ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                  ItemsSource="{Binding States}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="StateId" Binding="{Binding StateId}" Width="220" />
+            <DataGridTextColumn Header="Name" Binding="{Binding Title}" Width="*" />
+            <DataGridTextColumn Header="References" Binding="{Binding ReferencedObjects}" Width="90" />
+            <DataGridTextColumn Header="Types" Binding="{Binding ReferencedTypesText}" Width="2*" />
+            <DataGridTextColumn Header="Semantic" Binding="{Binding SemanticStatus}" Width="100" />
+          </DataGrid.Columns>
+        </DataGrid>
+
+        <DataGrid x:Name="PanelPersons" Grid.Row="1" Visibility="Collapsed"
+                  Style="{StaticResource InventoryDataGrid}"
+                  ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                  ItemsSource="{Binding Persons}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="PersonId" Binding="{Binding PersonId}" Width="80" />
+            <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="*" />
+            <DataGridTextColumn Header="Organisation" Binding="{Binding OrganisationName}" Width="*" />
+            <DataGridTextColumn Header="OrgId" Binding="{Binding OrganisationId}" Width="80" />
+          </DataGrid.Columns>
+        </DataGrid>
+
+        <DataGrid x:Name="PanelOrganisations" Grid.Row="1" Visibility="Collapsed"
+                  Style="{StaticResource InventoryDataGrid}"
+                  ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                  ItemsSource="{Binding Organisations}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="OrganisationId" Binding="{Binding OrganisationId}" Width="100" />
+            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
+            <DataGridTextColumn Header="Parent" Binding="{Binding ParentOrganisationId}" Width="90" />
+            <DataGridTextColumn Header="IsPosition" Binding="{Binding IsPosition}" Width="80" />
+            <DataGridTextColumn Header="Children" Binding="{Binding ChildrenCount}" Width="80" />
+          </DataGrid.Columns>
+        </DataGrid>
+
+        <Grid x:Name="PanelStructure" Grid.Row="1" Visibility="Collapsed">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <Button Content="Загрузить корень (lazy)" Width="180" HorizontalAlignment="Left" Click="LoadStructureRoot_Click" Margin="0,0,0,8" />
+          <TreeView x:Name="StructureTree" Grid.Row="1" ItemsSource="{Binding StructureRoots}"
+                    Background="White" Foreground="#1F2A24"
+                    TreeViewItem.Expanded="StructureTree_Expanded">
+            <TreeView.ItemTemplate>
+              <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                <TextBlock Foreground="#1F2A24">
+                  <Run Text="{Binding Name}" />
+                  <Run Text=" [" />
+                  <Run Text="{Binding TypeName}" />
+                  <Run Text="] " />
+                  <Run Text="{Binding Id}" />
+                </TextBlock>
+              </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+        </Grid>
+
+        <Grid x:Name="PanelDocuments" Grid.Row="1" Visibility="Collapsed">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <DataGrid ItemsSource="{Binding DocumentCapabilities}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="True" IsReadOnly="True" />
+          <DataGrid Grid.Row="1" ItemsSource="{Binding DocumentSamples}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="True" IsReadOnly="True" Margin="0,8,0,0" />
+        </Grid>
+
+        <Grid x:Name="PanelHistory" Grid.Row="1" Visibility="Collapsed">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <DataGrid ItemsSource="{Binding HistoryCapabilities}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="True" IsReadOnly="True" />
+          <DataGrid Grid.Row="1" ItemsSource="{Binding HistorySamples}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="True" IsReadOnly="True" Margin="0,8,0,0" />
+        </Grid>
+
+        <Grid x:Name="PanelBim" Grid.Row="1" Visibility="Collapsed">
+          <TabControl Background="White" Foreground="#1F2A24">
+            <TabItem Header="SDK capabilities">
+              <DataGrid ItemsSource="{Binding BimCapabilities}"
+                        Style="{StaticResource InventoryDataGrid}"
+                        ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                        AutoGenerateColumns="True" IsReadOnly="True" />
+            </TabItem>
+            <TabItem Header="Index — модели">
+              <DataGrid ItemsSource="{Binding BimModelAnalytics}"
+                        Style="{StaticResource InventoryDataGrid}"
+                        ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                        AutoGenerateColumns="True" IsReadOnly="True" />
+            </TabItem>
+            <TabItem Header="Index — части">
+              <DataGrid ItemsSource="{Binding BimPartAnalytics}"
+                        Style="{StaticResource InventoryDataGrid}"
+                        ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                        AutoGenerateColumns="True" IsReadOnly="True" />
+            </TabItem>
+            <TabItem Header="Index — IFC типы">
+              <DataGrid ItemsSource="{Binding BimElementTypeCounts}"
+                        Style="{StaticResource InventoryDataGrid}"
+                        ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                        AutoGenerateColumns="True" IsReadOnly="True" />
+            </TabItem>
+            <TabItem Header="Storage sample">
+              <Grid>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="*" />
+                  <RowDefinition Height="120" />
+                </Grid.RowDefinitions>
+                <DataGrid ItemsSource="{Binding BimElements}"
+                          Style="{StaticResource InventoryDataGrid}"
+                          ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                          AutoGenerateColumns="True" IsReadOnly="True"
+                          SelectionChanged="BimElements_SelectionChanged" />
+                <TextBox Grid.Row="1" Margin="0,8,0,0" IsReadOnly="True" TextWrapping="Wrap"
+                         Background="White" Foreground="#1F2A24" BorderBrush="#C8CECB"
+                         Text="{Binding SelectedBimPropertiesText, Mode=OneWay}" VerticalScrollBarVisibility="Auto" />
+              </Grid>
+            </TabItem>
+            <TabItem Header="Remark links">
+              <DataGrid ItemsSource="{Binding RemarkLinks}"
+                        Style="{StaticResource InventoryDataGrid}"
+                        ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                        AutoGenerateColumns="True" IsReadOnly="True" />
+            </TabItem>
+          </TabControl>
+        </Grid>
+
+        <Grid x:Name="PanelCapabilities" Grid.Row="1" Visibility="Collapsed">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <DataGrid ItemsSource="{Binding AnalyticsCapabilities}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="True" IsReadOnly="True" />
+          <DataGrid Grid.Row="1" ItemsSource="{Binding DataQualityCapabilities}"
+                    Style="{StaticResource InventoryDataGrid}"
+                    ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                    AutoGenerateColumns="True" IsReadOnly="True" Margin="0,8,0,0" />
+        </Grid>
+
+        <DataGrid x:Name="PanelDiagnostics" Grid.Row="1" Visibility="Collapsed"
+                  Style="{StaticResource InventoryDataGrid}"
+                  ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
+                  ItemsSource="{Binding Diagnostics}" AutoGenerateColumns="True" IsReadOnly="True" />
+      </Grid>
+    </Grid>
+  </DockPanel>
+</Window>

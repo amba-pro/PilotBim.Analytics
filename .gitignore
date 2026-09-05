@@ -1,0 +1,77 @@
+# Build outputs
+bin/
+obj/
+dist/
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+*.dll
+*.pdb
+*.exe
+*.cache
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.tlog
+*.idb
+*.opendb
+*.opensdf
+*.sdf
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / MSBuild
+.vs/
+*.userprefs
+*.DotSettings.user
+project.lock.json
+project.fragment.lock.json
+artifacts/
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code / Cursor local
+.vscode/
+.cursor/
+*.code-workspace
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+ehthumbs.db
+
+# Local / secrets / runtime data (plugin writes to LocalAppData; keep out of repo if copied here)
+*.env
+*.env.*
+secrets/
+appsettings.*.local.json
+
+# NuGet
+*.nuget.props
+*.nuget.targets

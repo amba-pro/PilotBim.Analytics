@@ -1,0 +1,8 @@
+<UserControl x:Class="PilotBim.Analytics.Views.ChartCanvasControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="White">
+  <Border BorderBrush="#C8CECB" BorderThickness="1" Background="White" CornerRadius="2">
+    <Canvas x:Name="DrawSurface" MinHeight="280" ClipToBounds="True" />
+  </Border>
+</UserControl>

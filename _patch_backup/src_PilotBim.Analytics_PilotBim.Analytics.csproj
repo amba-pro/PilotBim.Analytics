@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>PilotBim.Analytics</RootNamespace>
+    <AssemblyName>PilotBim.Analytics.ext2</AssemblyName>
+    <AssemblyTitle>PilotBim Analytics</AssemblyTitle>
+    <Product>PilotBim Analytics</Product>
+    <Description>Stage 1 + BIM index analytics via IModelSearchService (no viewer required).</Description>
+    <Company>PilotBim.Analytics</Company>
+    <Authors>PilotBim.Analytics</Authors>
+    <Version>0.5.1</Version>
+    <FileVersion>0.5.1</FileVersion>
+    <InformationalVersion>0.5.1-bim-index-fast</InformationalVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <UseWPF>true</UseWPF>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputType>Library</OutputType>
+    <PilotSdkPath Condition="'$(PilotSdkPath)' == ''">C:\Program Files\ASCON\Pilot-BIM</PilotSdkPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Ascon.Pilot.SDK">
+      <HintPath>$(PilotSdkPath)\Ascon.Pilot.SDK.dll</HintPath>
+      <Private>false</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+    <Reference Include="Ascon.Pilot.Bim.SDK">
+      <HintPath>$(PilotSdkPath)\extensions\bim\Ascon.Pilot.Bim.SDK.dll</HintPath>
+      <Private>false</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+    <Reference Include="Ascon.Pilot.Bim.Search.SDK">
+      <HintPath>$(PilotSdkPath)\extensions\bim\Ascon.Pilot.Bim.Search.SDK.dll</HintPath>
+      <Private>false</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+  </ItemGroup>
+</Project>
