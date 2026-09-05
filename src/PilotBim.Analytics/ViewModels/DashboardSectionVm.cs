@@ -201,43 +201,4 @@ namespace PilotBim.Analytics.ViewModels
                 handler(this, new PropertyChangedEventArgs(name));
         }
     }
-
-    // Kept for any leftover references during transition
-    internal sealed class DashboardSectionVm : INotifyPropertyChanged
-    {
-        private bool _isVisible;
-
-        public DashboardSectionVm(string id, string title)
-        {
-            Id = id;
-            Title = title;
-            Rows = new ObservableCollection<AnalyticsKpiRow>();
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public string Id { get; private set; }
-        public string Title { get; private set; }
-
-        public bool IsVisible
-        {
-            get { return _isVisible; }
-            set
-            {
-                if (_isVisible == value)
-                    return;
-                _isVisible = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ObservableCollection<AnalyticsKpiRow> Rows { get; private set; }
-
-        private void OnPropertyChanged([CallerMemberName] string name = null)
-        {
-            var handler = PropertyChanged;
-            if (handler != null)
-                handler(this, new PropertyChangedEventArgs(name));
-        }
-    }
 }

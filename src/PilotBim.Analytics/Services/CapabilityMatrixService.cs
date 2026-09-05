@@ -19,7 +19,6 @@ namespace PilotBim.Analytics.Services
                 || report.ZoneResults.Any(z => z.Zone == "Search" && z.Status == CapabilityStatus.Partial
                     && z.Message != null && z.Message.IndexOf("hierarchy", StringComparison.OrdinalIgnoreCase) >= 0);
             bool hasObjectCounts = hasSearch || hasHierarchyInventory;
-            bool hasStates = report.StatesDiscovered > 0;
             bool hasPersons = report.PersonsResolved > 0;
             bool hasOrgs = report.OrganisationsResolved > 0;
             bool hasHistory = report.HistoryCapabilities.Any(h => h.Capability.StartsWith("Object change") && h.Availability == CapabilityStatus.Available);
@@ -28,7 +27,6 @@ namespace PilotBim.Analytics.Services
             bool hasBimIndex = report.BimPartAnalytics != null && report.BimPartAnalytics.Any(p => p.ElementCount > 0);
             bool hasBimElements = hasBimIndex || report.BimCapabilities.Any(b => b.Name == "Elements" && (b.Availability == CapabilityStatus.Available || b.Availability == CapabilityStatus.Partial));
             bool hasCreated = report.SystemFields.Any(f => f.Field == "CreatedDate" && f.Availability == CapabilityStatus.Available);
-            bool hasModified = report.SystemFields.Any(f => f.Field == "ModifiedDate" && f.Availability == CapabilityStatus.Available);
             bool orgUnitAttrs = report.AllAttributes.Any(a => a.ValueType == "OrgUnit");
             bool orgPersonLinked = report.Organisations != null && report.Organisations.Any(o => o.PersonId.HasValue && o.PersonId.Value != 0);
             bool userStateAttrs = report.AllAttributes.Any(a => a.ValueType == "UserState");
@@ -52,7 +50,7 @@ namespace PilotBim.Analytics.Services
             list.Add(Metric("Замечания по модели", "bimObjectId → Model", bimObjectAttr ? CapabilityStatus.Partial : CapabilityStatus.NeedsRuntime, CapabilityStatus.NeedsRuntime, "Attribute presence confirmed in sample attributes=" + bimObjectAttr));
             list.Add(Metric("Замечаний / 1000 элементов", "Remark→Model + ElementCount", hasBimIndex ? CapabilityStatus.Partial : CapabilityStatus.NotVerified, hasBimIndex ? CapabilityStatus.NeedsRuntime : CapabilityStatus.Blocked, hasBimIndex ? "Element count from search index" : "Index analytics required"));
             list.Add(Metric("Количество BIM моделей", "TypeNames.CoordinationModel", hasBimModels ? CapabilityStatus.Available : CapabilityStatus.Partial, hasBimModels ? CapabilityStatus.Ready : CapabilityStatus.NeedsRuntime, null));
-            list.Add(Metric("Количество частей моделей", "TypeNames.ModelPart", report.BimModelPartsCount >= 0 ? CapabilityStatus.Available : CapabilityStatus.Partial, CapabilityStatus.Ready, null));
+            list.Add(Metric("Количество частей моделей", "TypeNames.ModelPart", CapabilityStatus.Available, CapabilityStatus.Ready, null));
             list.Add(Metric("Количество BIM элементов", "IModelSearchService index", hasBimIndex ? CapabilityStatus.Available : CapabilityStatus.Partial, hasBimIndex ? CapabilityStatus.Ready : CapabilityStatus.NeedsRuntime, "No viewer required"));
             list.Add(Metric("Распределение элементов по типам", "IModelSearchService Property.Type", hasBimIndex ? CapabilityStatus.Available : CapabilityStatus.Partial, hasBimIndex ? CapabilityStatus.Ready : CapabilityStatus.NeedsRuntime, "Known IFC types + (other)"));
             list.Add(Metric("Полнота атрибутирования BIM", "LoadElementProperties sample", hasBimElements ? CapabilityStatus.Partial : CapabilityStatus.NotVerified, CapabilityStatus.NeedsRuntime, null));
@@ -75,24 +73,13 @@ namespace PilotBim.Analytics.Services
             report.AnalyticsCapabilities = list;
             report.DataQualityCapabilities = dq;
 
-            if (list.Any(m => m.Status == CapabilityStatus.Blocked || m.Status == CapabilityStatus.BlockedBySdk) &&
-                list.Count(m => m.Status == CapabilityStatus.Ready) > 5)
-            {
+            if (list.Count(m => m.Status == CapabilityStatus.Ready) > 0)
                 report.AnalyticsReadiness = CapabilityStatus.Partial;
-            }
-            else if (list.Count(m => m.Status == CapabilityStatus.Ready) > 0)
-            {
-                report.AnalyticsReadiness = CapabilityStatus.Partial;
-            }
             else
-            {
                 report.AnalyticsReadiness = CapabilityStatus.Blocked;
-            }
 
             // Overall: inventory itself ready for runtime when types discovered.
-            if (hasTypes && !report.Cancelled)
-                report.FinalStatus = "PARTIAL_RUNTIME_INVENTORY";
-            else if (report.Cancelled)
+            if (hasTypes || report.Cancelled)
                 report.FinalStatus = "PARTIAL_RUNTIME_INVENTORY";
             else
                 report.FinalStatus = "BLOCKED_BY_SDK";

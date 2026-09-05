@@ -185,17 +185,7 @@ namespace PilotBim.Analytics.Discovery
 
         private static string MapReferenceKind(AttributeType type)
         {
-            switch (type)
-            {
-                case AttributeType.UserState:
-                    return "UserState";
-                case AttributeType.OrgUnit:
-                    return "OrgUnit";
-                case AttributeType.ElementBook:
-                    return "ElementBook";
-                default:
-                    return type.ToString();
-            }
+            return type.ToString();
         }
     }
 

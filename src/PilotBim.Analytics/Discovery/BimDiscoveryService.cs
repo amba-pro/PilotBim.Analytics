@@ -33,16 +33,6 @@ namespace PilotBim.Analytics.Discovery
             _searchManager = searchManager;
         }
 
-        public void Discover(ProjectInventoryReport report, System.Threading.CancellationToken token)
-        {
-            Discover(report, token, null, ScanMode.Standard, null);
-        }
-
-        public void Discover(ProjectInventoryReport report, System.Threading.CancellationToken token, HierarchyWalkResult walk)
-        {
-            Discover(report, token, walk, ScanMode.Standard, null);
-        }
-
         public void Discover(
             ProjectInventoryReport report,
             System.Threading.CancellationToken token,
@@ -137,11 +127,9 @@ namespace PilotBim.Analytics.Discovery
 
             if (modelType != null)
             {
-                long total = -1;
                 var gate = new System.Threading.ManualResetEventSlim(false);
                 scanner.SearchByType(modelType.Id, 50, (ids, t) =>
                 {
-                    total = t;
                     report.BimModelsCount = t >= 0 ? t : (ids != null ? ids.Count : 0);
                     gate.Set();
                 }, ex =>

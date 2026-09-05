@@ -307,28 +307,6 @@ namespace PilotBim.Analytics.Data
 
     internal static class ReferenceResolver
     {
-        public static bool TryGetPersonId(object value, out int personId)
-        {
-            personId = 0;
-            if (value == null)
-                return false;
-
-            if (value is int i)
-            {
-                personId = i;
-                return personId != 0;
-            }
-
-            if (value is long l && l <= int.MaxValue && l >= int.MinValue)
-            {
-                personId = (int)l;
-                return personId != 0;
-            }
-
-            // OrgUnit attributes often store int[] of organisation unit ids (positions).
-            return false;
-        }
-
         public static IEnumerable<int> EnumerateIntIds(object value)
         {
             if (value == null)

@@ -223,11 +223,7 @@ namespace PilotBim.Analytics.Services
                 report.PerformanceNotes.Add("Attribute profiling uses sampled objects only.");
 
                 if (string.IsNullOrEmpty(report.FinalStatus))
-                {
-                    report.FinalStatus = report.ObjectsFound > 0
-                        ? "PARTIAL_RUNTIME_INVENTORY"
-                        : "PARTIAL_RUNTIME_INVENTORY";
-                }
+                    report.FinalStatus = "PARTIAL_RUNTIME_INVENTORY";
 
                 Progress("Inventory complete.");
             }

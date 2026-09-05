@@ -19,17 +19,17 @@ namespace PilotBim.Analytics.Services
 
         public List<ChartBarRow> BuildTopTypes(ProjectAnalyticsSnapshot snapshot, int take)
         {
-            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.Types, take), MaxBarWidth);
+            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.Types, take));
         }
 
         public List<ChartBarRow> BuildTopCreators(ProjectAnalyticsSnapshot snapshot, int take)
         {
-            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.Creators, take), MaxBarWidth);
+            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.Creators, take));
         }
 
         public List<ChartBarRow> BuildCreatedTimeline(ProjectAnalyticsSnapshot snapshot)
         {
-            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.CreatedMonth, 0), MaxBarWidth);
+            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.CreatedMonth, 0));
         }
 
         public List<ChartBarRow> BuildTopIfcTypes(IEnumerable<BimElementTypeCountRow> rows, int take)
@@ -43,17 +43,17 @@ namespace PilotBim.Analytics.Services
                 .OrderByDescending(x => x.Item2)
                 .Take(take > 0 ? take : int.MaxValue);
 
-            return ToBars(aggregated, MaxBarWidth);
+            return ToBars(aggregated);
         }
 
         public List<ChartBarRow> BuildStateSemantic(ProjectAnalyticsSnapshot snapshot)
         {
-            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.StateSemantic, 0), MaxBarWidth);
+            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.StateSemantic, 0));
         }
 
         public List<ChartBarRow> BuildTopResponsible(ProjectAnalyticsSnapshot snapshot, int take)
         {
-            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.Responsible, take), MaxBarWidth);
+            return ToBars(ExtractRaw(snapshot, null, AnalyticsChartSource.Responsible, take));
         }
 
         public List<ChartSeriesPoint> BuildSeries(
@@ -64,7 +64,9 @@ namespace PilotBim.Analytics.Services
             int take)
         {
             var raw = ExtractRaw(snapshot, ifcRows, source, take);
-            return ToSeries(raw, kind);
+            // kind is selected by the caller for rendering; geometry fields are populated for all kinds.
+            _ = kind;
+            return ToSeries(raw);
         }
 
         private static IEnumerable<Tuple<string, double, string>> ExtractRaw(
@@ -136,11 +138,9 @@ namespace PilotBim.Analytics.Services
             return query;
         }
 
-        private static List<ChartBarRow> ToBars(
-            IEnumerable<Tuple<string, double, string>> items,
-            double maxBarWidth)
+        private static List<ChartBarRow> ToBars(IEnumerable<Tuple<string, double, string>> items)
         {
-            var series = ToSeries(items, AnalyticsChartKind.HorizontalBar);
+            var series = ToSeries(items);
             return series.Select(p => new ChartBarRow
             {
                 Label = p.Label,
@@ -151,9 +151,7 @@ namespace PilotBim.Analytics.Services
             }).ToList();
         }
 
-        private static List<ChartSeriesPoint> ToSeries(
-            IEnumerable<Tuple<string, double, string>> items,
-            AnalyticsChartKind kind)
+        private static List<ChartSeriesPoint> ToSeries(IEnumerable<Tuple<string, double, string>> items)
         {
             var list = items?.ToList() ?? new List<Tuple<string, double, string>>();
             if (list.Count == 0)
@@ -189,12 +187,6 @@ namespace PilotBim.Analytics.Services
                 };
                 pieCursor += sweep;
                 result.Add(point);
-            }
-
-            // Line charts often want chronological order already provided by caller
-            if (kind == AnalyticsChartKind.Line || kind == AnalyticsChartKind.VerticalBar)
-            {
-                // heights already set relative to max
             }
 
             return result;
