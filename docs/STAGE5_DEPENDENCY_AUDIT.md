@@ -31,8 +31,8 @@ Pilot MEF
        │    │    └─ field-new: ChartDataService, DashboardLayoutStore,
        │    │                  ScanSnapshotStore, ScanDiffService
        │    ├─ inventory.Run(...)
-       │    ├─ new ProjectAnalyticsService().Build(report)
-       │    └─ new AnalyticsCsvExporter().Export(snapshot)
+       │    ├─ inject IProjectAnalyticsService.Build(report)
+       │    └─ inject IAnalyticsCsvExporter.Export(snapshot)
        └─ new InventoryWindow(inventory)
             ├─ new InventoryWindowViewModel()
             ├─ new InventoryReportService()
@@ -62,8 +62,8 @@ Service-locator pattern exists **only** in `AnalyticsCommandService.TryGetServic
 | `AnalyticsCommandService` | `AnalyticsWindow` / `InventoryWindow` | `new` + singleton-ish fields | M | KEEP | WPF shell; composition root owns windows |
 | `AnalyticsWindow` | `InventoryService` | ctor concrete parameter | M | optional `IInventoryService` | Same as above; enables fake Run for UI tests |
 | `AnalyticsWindow` | `AnalyticsWindowViewModel` | `new` in ctor | M | KEEP for Stage 5 / defer inject | Avoids large VM rewrite (Stage 8 deferred) |
-| `AnalyticsWindow` | `ProjectAnalyticsService` | `new …().Build(report)` | M | **Maybe** `IProjectAnalyticsService` **or** move Build out of View | View owns analytics pipeline step |
-| `AnalyticsWindow` | `AnalyticsCsvExporter` | `new …().Export(...)` | M | **Maybe** `IAnalyticsCsvExporter` **or** move export out of View | View owns file I/O |
+| `AnalyticsWindow` | `ProjectAnalyticsService` | injected `IProjectAnalyticsService` | L | **DECOUPLED — Stage 5.3** | Concrete created in `AnalyticsCommandService` |
+| `AnalyticsWindow` | `AnalyticsCsvExporter` | injected `IAnalyticsCsvExporter` | L | **DECOUPLED — Stage 5.3** | Concrete created in `AnalyticsCommandService` |
 | `AnalyticsWindowViewModel` | `ChartDataService` | field `new` | L | KEEP concrete | Pure snapshot→chart; no substitution need |
 | `AnalyticsWindowViewModel` | `DashboardLayoutStore` | field `new` | L–M | KEEP; optional inject later | Disk under LocalAppData |
 | `AnalyticsWindowViewModel` | `ScanSnapshotStore` | field `new` | L–M | KEEP; optional inject later | Shared scan history on disk |
@@ -132,34 +132,65 @@ Interface only if at least one holds:
 
 ## Stage 5.2 — Interfaces introduced
 
-Status: **INTRODUCED — Stage 5.2** (seam only; consumer rewiring deferred to Stage 5.3)
+Status: **INTRODUCED — Stage 5.2**; consumer wiring completed in Stage 5.3
 
 | Interface | Implementation | Minimal contract | Production consumer today | Status |
 |-----------|----------------|------------------|---------------------------|--------|
-| `IProjectAnalyticsService` | `ProjectAnalyticsService` | `ProjectAnalyticsSnapshot Build(ProjectInventoryReport report)` | `AnalyticsWindow` still `new ProjectAnalyticsService()` | **INTRODUCED** |
-| `IAnalyticsCsvExporter` | `AnalyticsCsvExporter` | `string Export(ProjectAnalyticsSnapshot snapshot)` | `AnalyticsWindow` still `new AnalyticsCsvExporter()` | **INTRODUCED** |
+| `IProjectAnalyticsService` | `ProjectAnalyticsService` | `ProjectAnalyticsSnapshot Build(ProjectInventoryReport report)` | `AnalyticsWindow` via injected field | **DECOUPLED — Stage 5.3** |
+| `IAnalyticsCsvExporter` | `AnalyticsCsvExporter` | `string Export(ProjectAnalyticsSnapshot snapshot)` | `AnalyticsWindow` via injected field | **DECOUPLED — Stage 5.3** |
 | `IInventoryService` | — | — | — | **DEFERRED / NOT INTRODUCED** |
 
 ### Why these interfaces are justified
 
-- Real UI ↔ business boundary: View currently constructs and calls both types.
+- Real UI ↔ business boundary: View previously constructed and called both types.
 - Small contracts matching actual consumer usage (one method each).
-- Enables Stage 5.3 injection without changing Build/Export behavior.
 
 ### Why IInventoryService is NOT introduced
 
 `InventoryService` is a large façade/god-factory. An interface would not reduce internal coupling and would only hide the architecture problem. Defer until decomposition (later stage).
 
-### Orchestration
+## Stage 5.3 — AnalyticsWindow rewiring
 
-`AnalyticsWindow` rewiring / dependency injection → **Stage 5.3**. Stage 5.2 intentionally leaves `new Concrete()` call sites unchanged.
+Status: **DECOUPLED — Stage 5.3**
+
+### Before
+
+```
+AnalyticsWindow business logic
+  -> new ProjectAnalyticsService().Build(...)
+  -> new AnalyticsCsvExporter().Export(...)
+```
+
+### After
+
+```
+AnalyticsCommandService (composition root)
+  -> new ProjectAnalyticsService()
+  -> new AnalyticsCsvExporter()
+  -> new AnalyticsWindow(inventory, IProjectAnalyticsService, IAnalyticsCsvExporter)
+
+AnalyticsWindow event/business handlers
+  -> _projectAnalytics.Build(...)
+  -> _csvExporter.Export(...)
+```
+
+Concrete creation lives only in `AnalyticsCommandService.OpenAnalytics` (existing composition root).  
+MEF graph unchanged. No DI framework. Build/Export orchestration remains in the Window (not moved to ViewModel).
+
+### Remaining technical debt (post 5.3)
+
+- `AnalyticsWindow` still takes concrete `InventoryService`
+- Window still constructs `AnalyticsWindowViewModel` directly
+- Build/Export still orchestrated in View code-behind (MVVM cleanup later)
+- Inventory god-factory / scanner sprawl
+- InventoryWindow still `new`s report helpers
 
 ## Recommended minimal set (historical — Stage 5.1 proposal)
 
 | Candidate | Introduce? | Consumers | Implementation | Why concrete is worse | MEF impact |
 |-----------|------------|-----------|----------------|----------------------|------------|
-| `IProjectAnalyticsService` (`Build` only) | **Done — Stage 5.2** | `AnalyticsWindow` | `ProjectAnalyticsService` | View constructs and orchestrates transform | None |
-| `IAnalyticsCsvExporter` (`Export` only) | **Done — Stage 5.2** | `AnalyticsWindow` | `AnalyticsCsvExporter` | View owns export I/O | None |
+| `IProjectAnalyticsService` (`Build` only) | **Done — Stage 5.2+5.3** | `AnalyticsWindow` | `ProjectAnalyticsService` | View no longer constructs | None |
+| `IAnalyticsCsvExporter` (`Export` only) | **Done — Stage 5.2+5.3** | `AnalyticsWindow` | `AnalyticsCsvExporter` | View no longer constructs | None |
 | `IInventoryService` | **NOT INTRODUCED** | Windows + command | `InventoryService` | Façade/god-factory; interface hides problem | — |
 
 **Prefer not to add:** Chart/Diff/Stores/Discovery/logger interfaces; factories (`I*Factory`); MEF-export of entire Discovery layer.
@@ -168,14 +199,16 @@ Status: **INTRODUCED — Stage 5.2** (seam only; consumer rewiring deferred to S
 
 | Item | Why not Stage 5 |
 |------|-----------------|
-| `AnalyticsWindow` inject `IProjectAnalyticsService` / `IAnalyticsCsvExporter` | **Stage 5.3** — seam first, rewiring second |
 | `IInventoryService` | God-factory; interface does not reduce internal coupling |
+| InventoryService decomposition | Separate stage |
 | DI for all `InventoryService` children | Largest fan-out; needs orchestrator extract first, not 15 interfaces |
 | MEF-export Discovery services | Host only needs menus + command façade |
 | Project ports wrapping all `Ascon.Pilot.*` | SDK already interface-based; multi-host not planned |
 | `AnalyticsLogger` DI | No alternate sink |
 | Abstract factories / DI framework | Explicitly forbidden |
 | Split `AnalyticsWindowViewModel` / rewrite Window | Stage 6–8 deferred |
+| Deeper View orchestration / MVVM cleanup | Build/Export still in Window by design for 5.3 |
+| Localization | Deferred |
 | `GetAwaiter().GetResult()` async rewrite | Stage 4 deferred; not dependency inversion |
 | Reuse single `PilotObjectScanner` in LoadChildren | Mechanical cleanup / micro-opt; optional later, not interface work |
 | Inject Chart/Stores into VM | Optional testability; not required for UI/business decoupling goal |
@@ -189,7 +222,7 @@ Status: **INTRODUCED — Stage 5.2** (seam only; consumer rewiring deferred to S
 | Disk stores | `%LocalAppData%\PilotBim.Analytics\` via layout/snapshot/export paths | Shared across sessions |
 | Window singletons | `_catalogWindow` / `_analyticsWindow` on command service | One visible instance |
 
-## Stage 5.3 gate
+## Stage 5.4 gate
 
-Await confirmation before rewiring `AnalyticsWindow` to consume the new interfaces (injection / composition-root construction).
+Await confirmation before concrete-dependency cleanup elsewhere (InventoryWindow helpers, InventoryService children, etc.).
 

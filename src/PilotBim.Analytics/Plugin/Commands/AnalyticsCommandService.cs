@@ -8,6 +8,7 @@ using Ascon.Pilot.Bim.SDK.ModelStorage;
 using Ascon.Pilot.Bim.SDK.Search;
 using Ascon.Pilot.SDK;
 using PilotBim.Analytics.Diagnostics;
+using PilotBim.Analytics.Export;
 using PilotBim.Analytics.Services;
 using PilotBim.Analytics.Views;
 
@@ -74,7 +75,10 @@ namespace PilotBim.Analytics.Plugin.Commands
                     return;
                 }
 
-                _analyticsWindow = new AnalyticsWindow(inventory);
+                _analyticsWindow = new AnalyticsWindow(
+                    inventory,
+                    new ProjectAnalyticsService(),
+                    new AnalyticsCsvExporter());
                 _analyticsWindow.Closed += (s, e) => _analyticsWindow = null;
                 _analyticsWindow.Show();
             }

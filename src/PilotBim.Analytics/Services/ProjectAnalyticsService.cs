@@ -5,7 +5,7 @@ using PilotBim.Analytics.Models;
 
 namespace PilotBim.Analytics.Services
 {
-    internal interface IProjectAnalyticsService
+    public interface IProjectAnalyticsService
     {
         ProjectAnalyticsSnapshot Build(ProjectInventoryReport report);
     }

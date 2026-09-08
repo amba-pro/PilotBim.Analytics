@@ -8,7 +8,7 @@ using PilotBim.Analytics.Models;
 
 namespace PilotBim.Analytics.Export
 {
-    internal interface IAnalyticsCsvExporter
+    public interface IAnalyticsCsvExporter
     {
         string Export(ProjectAnalyticsSnapshot snapshot);
     }

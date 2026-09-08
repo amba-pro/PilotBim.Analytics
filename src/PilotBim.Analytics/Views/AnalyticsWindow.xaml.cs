@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using PilotBim.Analytics.Export;
 using PilotBim.Analytics.Models;
 using PilotBim.Analytics.Services;
 using PilotBim.Analytics.ViewModels;
@@ -12,13 +13,25 @@ namespace PilotBim.Analytics.Views
     public partial class AnalyticsWindow : Window
     {
         private readonly InventoryService _inventory;
+        private readonly IProjectAnalyticsService _projectAnalytics;
+        private readonly IAnalyticsCsvExporter _csvExporter;
         private readonly AnalyticsWindowViewModel _vm;
         private CancellationTokenSource _cts;
 
-        public AnalyticsWindow(InventoryService inventory)
+        public AnalyticsWindow(
+            InventoryService inventory,
+            IProjectAnalyticsService projectAnalyticsService,
+            IAnalyticsCsvExporter analyticsCsvExporter)
         {
+            if (projectAnalyticsService == null)
+                throw new ArgumentNullException(nameof(projectAnalyticsService));
+            if (analyticsCsvExporter == null)
+                throw new ArgumentNullException(nameof(analyticsCsvExporter));
+
             InitializeComponent();
             _inventory = inventory;
+            _projectAnalytics = projectAnalyticsService;
+            _csvExporter = analyticsCsvExporter;
             _vm = new AnalyticsWindowViewModel();
             DataContext = _vm;
             ShowPanel("Summary");
@@ -66,7 +79,7 @@ namespace PilotBim.Analytics.Views
 
             try
             {
-                var folder = new Export.AnalyticsCsvExporter().Export(_vm.Snapshot);
+                var folder = _csvExporter.Export(_vm.Snapshot);
                 _vm.ProgressText = "CSV экспорт: " + folder;
                 MessageBox.Show("Экспорт сохранён в:\n" + folder, "PilotBim.Analytics");
             }
@@ -125,7 +138,7 @@ namespace PilotBim.Analytics.Views
                     });
                 }, token);
 
-                var snapshot = new ProjectAnalyticsService().Build(report);
+                var snapshot = _projectAnalytics.Build(report);
                 _vm.Snapshot = snapshot;
                 _vm.ProgressText = report.Cancelled
                     ? "Отменено. Показаны частичные данные."
