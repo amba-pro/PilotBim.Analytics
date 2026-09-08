@@ -173,49 +173,85 @@ namespace PilotBim.Analytics.Discovery
                     return;
                 }
 
-                var remaining = new HashSet<Guid>(historyIds.Take(maxEvents));
-                var finished = false;
+                // Snapshot request ids separately from the pending set we mutate in callbacks.
+                // Passing the same HashSet into GetHistoryItems while Remove() runs in OnNext
+                // races with SDK enumeration of that collection.
+                var requestIds = SnapshotHistoryRequestIds(historyIds, maxEvents);
+                var pending = new HashSet<Guid>(requestIds);
+                var abandoned = 0;
                 var gate = new System.Threading.ManualResetEventSlim(false);
 
-                _repository.GetHistoryItems(remaining).Subscribe(new ActionObserver<Ascon.Pilot.SDK.Data.IHistoryItem>(
+                _repository.GetHistoryItems(requestIds).Subscribe(new ActionObserver<Ascon.Pilot.SDK.Data.IHistoryItem>(
                     item =>
                     {
-                        if (item == null || !remaining.Remove(item.Id))
+                        if (!ShouldAcceptHistoryCallback(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0) != 0))
                             return;
-                        target.Add(new HistorySampleEvent
+                        if (item == null)
+                            return;
+
+                        bool removed;
+                        lock (pending)
+                            removed = pending.Remove(item.Id);
+                        if (!removed)
+                            return;
+
+                        var sample = new HistorySampleEvent
                         {
                             HistoryItemId = item.Id,
                             ObjectId = item.ObjectId,
                             Created = item.Created,
                             CreatorId = item.CreatorId,
                             Reason = ReferenceResolver.SafeSampleString(item.Reason, 100)
-                        });
-                        if (remaining.Count == 0)
+                        };
+
+                        lock (target)
                         {
-                            finished = true;
-                            gate.Set();
+                            if (!ShouldAcceptHistoryCallback(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0) != 0))
+                                return;
+                            target.Add(sample);
                         }
+
+                        bool done;
+                        lock (pending)
+                            done = pending.Count == 0;
+                        if (done)
+                            gate.Set();
                     },
                     ex =>
                     {
                         AnalyticsLogger.Error("history-load", ex);
-                        finished = true;
                         gate.Set();
                     },
-                    () =>
-                    {
-                        finished = true;
-                        gate.Set();
-                    }));
+                    () => gate.Set()));
 
-                gate.Wait(TimeSpan.FromSeconds(8));
-                if (!finished)
+                if (!gate.Wait(TimeSpan.FromSeconds(8)))
+                {
+                    System.Threading.Interlocked.Exchange(ref abandoned, 1);
                     AnalyticsLogger.Warning("history-sample", "Timed out waiting for GetHistoryItems");
+                }
             }
             catch (Exception ex)
             {
                 AnalyticsLogger.Error("history-sample", ex);
             }
+        }
+
+        /// <summary>
+        /// Immutable id list for GetHistoryItems — must not be the set mutated by callbacks.
+        /// </summary>
+        internal static List<Guid> SnapshotHistoryRequestIds(IEnumerable<Guid> ids, int maxEvents)
+        {
+            if (ids == null || maxEvents <= 0)
+                return new List<Guid>();
+            return ids.Take(maxEvents).ToList();
+        }
+
+        /// <summary>
+        /// After wait timeout the caller abandons the subscription; late callbacks must not mutate target.
+        /// </summary>
+        internal static bool ShouldAcceptHistoryCallback(bool abandoned)
+        {
+            return !abandoned;
         }
 
         private static HistoryCapabilityRecord Cap(string name, string availability, string source, string notes)
