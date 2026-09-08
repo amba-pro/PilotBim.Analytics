@@ -7,19 +7,19 @@ SDK note: Pilot `ISearchService.Search` / `SubscribeObjects` / `GetHistoryItems`
 
 | # | Location | Gate creator | SDK call | Callbacks / Set | Shared mutable state | Wait handled? | Dispose? | Abandon? | Late write risk | Stage 4 action |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | `BimDiscoveryService.CountBimTypes` models | local | `SearchByType` | success+error → Set | `report.BimModelsCount`, `hadError` | yes → status | **no** | **no** | yes (count after timeout) | migrate + abandon |
-| 2 | `BimDiscoveryService.CountBimTypes` parts | local | `SearchByType` | success+error → Set | `report.BimModelPartsCount` | yes → status | **no** | **no** | yes | migrate + abandon |
-| 3 | `BimDiscoveryService.ProbeElements` search | local | `SearchByType` | success+error → Set | `modelId` | **ignored** | **no** | **no** | yes | migrate + abandon |
-| 4 | `BimDiscoveryService` IsLoaded poll | n/a | `storage.IsLoaded` | n/a | n/a | Sleep×20 | n/a | n/a | n/a | **keep Sleep**; document (no readiness wait API) |
-| 5 | `BimPartCatalogBuilder.TryAddPartsFromSearch` | local | `SearchByType` | success+error → Set | `map` | yes + abandon | **no** | yes | mitigated | migrate to session |
-| 6 | `RemarkAnalyticsService.Analyze` | local | `SampleType` | success; error `_=>Set` **swallows** | `report.RemarkLinks`, counters | yes + abandon | **no** | yes | mitigated; **error lost** | migrate + log error |
-| 7 | `CreatorAggregationService.Aggregate` | local | `SampleType` | success+error → Set | `report` counts, `returned` | yes + abandon | **no** | yes | mitigated | migrate to session |
-| 8 | `HistoryDiscoveryService.SampleHistory` | local | `GetHistoryItems` | OnNext/OnError/OnCompleted | `target`, `pending` | yes + abandon | **no** | yes (custom) | mitigated | migrate to session |
-| 9 | `InventoryService.SampleAllTypes` | local | `SampleType` | success+error → Set | `typeRecord`, buffers | yes Partial | **no** | **no** | **high** | migrate + abandon |
-| 10 | `PilotObjectScanner.SubscribeObject` | using | `SubscribeObjects` | OnNext/Completed/Error | `loaded` | ignored bool | **yes** | **no** | yes (write after dispose race) | abandon + safe Set |
-| 11 | `PilotObjectScanner.SubscribeObjects(batch)` | using | `SubscribeObjects` | OnNext/Completed/Error | `remaining` | ignored bool | **yes** | **no** | yes | abandon + safe Set |
-| 12 | `BimIndexAnalyticsService` | n/a | `AddModelPartAsync` | sync `.GetResult()` | n/a | n/a | n/a | n/a | deadlock if UI sync-ctx | **DEFER** (worker-only today) |
-| 13 | `RemarkAnalyticsService` index open | n/a | `GetModelPartsSearchServiceAsync` + `AddModelPartAsync` | `.GetResult()` | n/a | n/a | n/a | n/a | same | **DEFER** |
+| 1 | `BimDiscoveryService.CountBimTypes` models | local | `SearchByType` | success+error → Signal | `report.BimModelsCount` | TimedOut/Failed → status | **yes** (session) | **yes** | mitigated | **DONE** CallbackWaitSession |
+| 2 | `BimDiscoveryService.CountBimTypes` parts | local | `SearchByType` | success+error → Signal | `report.BimModelPartsCount` | TimedOut/Failed → status | **yes** | **yes** | mitigated | **DONE** |
+| 3 | `BimDiscoveryService.ProbeElements` search | local | `SearchByType` | success+error → Signal | `modelId` | TimedOut logged | **yes** | **yes** | mitigated | **DONE** |
+| 4 | `BimDiscoveryService` IsLoaded poll | n/a | `storage.IsLoaded` | n/a | n/a | Sleep×20 | n/a | n/a | n/a | **KEPT** + comment (no readiness wait API) |
+| 5 | `BimPartCatalogBuilder.TryAddPartsFromSearch` | local | `SearchByType` | success+error → Signal | `map` | TimedOut/Failed | **yes** | **yes** | mitigated | **DONE** |
+| 6 | `RemarkAnalyticsService.Analyze` | local | `SampleType` | SignalCompleted / SignalFailed | `report.RemarkLinks`, counters | TimedOut/Failed logged | **yes** | **yes** | mitigated | **DONE** (error no longer swallowed) |
+| 7 | `CreatorAggregationService.Aggregate` | local | `SampleType` | SignalCompleted / SignalFailed | `report` counts | TimedOut/Failed | **yes** | **yes** | mitigated | **DONE** |
+| 8 | `HistoryDiscoveryService.SampleHistory` | local | `GetHistoryItems` | OnNext/OnError/OnCompleted | `target`, `pending` | TimedOut/Failed | **yes** | **yes** | mitigated | **DONE** |
+| 9 | `InventoryService.SampleAllTypes` | local | `SampleType` | SignalCompleted / SignalFailed | `typeRecord`, buffers | TimedOut → Partial | **yes** | **yes** | mitigated | **DONE** |
+| 10 | `PilotObjectScanner.SubscribeObject` | session | `SubscribeObjects` | OnNext/Completed/Error | `loaded` | Wait; abandon on exit | **yes** | **yes** | mitigated | **DONE** |
+| 11 | `PilotObjectScanner.SubscribeObjects(batch)` | session | `SubscribeObjects` | OnNext/Completed/Error | `remaining` | Wait; abandon on exit | **yes** | **yes** | mitigated | **DONE** |
+| 12 | `BimIndexAnalyticsService` | n/a | `AddModelPartAsync` | sync `.GetResult()` | n/a | n/a | n/a | n/a | deadlock if UI sync-ctx | **DEFERRED** (worker-only today) |
+| 13 | `RemarkAnalyticsService` index open | n/a | `GetModelPartsSearchServiceAsync` + `AddModelPartAsync` | `.GetResult()` | n/a | n/a | n/a | n/a | same | **DEFERRED** |
 
 ## Shared semantics (sites 1–9, SampleType/SearchByType pattern)
 
