@@ -30,12 +30,5 @@ namespace PilotBim.Analytics.Tests
             Assert.Empty(HistoryDiscoveryService.SnapshotHistoryRequestIds(null, 10));
             Assert.Empty(HistoryDiscoveryService.SnapshotHistoryRequestIds(new[] { Guid.NewGuid() }, 0));
         }
-
-        [Fact]
-        public void ShouldAcceptHistoryCallback_RejectsAbandonedLateCallbacks()
-        {
-            Assert.True(HistoryDiscoveryService.ShouldAcceptHistoryCallback(abandoned: false));
-            Assert.False(HistoryDiscoveryService.ShouldAcceptHistoryCallback(abandoned: true));
-        }
     }
 }

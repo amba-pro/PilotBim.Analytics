@@ -297,41 +297,51 @@ namespace PilotBim.Analytics.Services
                     continue;
                 }
 
-                var gate = new ManualResetEventSlim(false);
-                Exception sampleError = null;
-                sampler.SampleType(typeRecord.TypeId, report.SampleLimit, (objects, total) =>
+                using (var session = new CallbackWaitSession())
                 {
-                    try
+                    Exception sampleError = null;
+                    sampler.SampleType(typeRecord.TypeId, report.SampleLimit, (objects, total) =>
                     {
-                        ApplySampledObjects(report, typeRecord, objects, total, attrService, docService, estimate: total < 0);
-                    }
-                    catch (Exception ex)
+                        try
+                        {
+                            if (!session.ShouldAccept())
+                                return;
+                            ApplySampledObjects(report, typeRecord, objects, total, attrService, docService, estimate: total < 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            sampleError = ex;
+                            typeRecord.Status = CapabilityStatus.Error;
+                            typeRecord.Warnings = ex.Message;
+                        }
+                        finally
+                        {
+                            session.SignalCompleted();
+                        }
+                    }, ex =>
                     {
                         sampleError = ex;
-                        typeRecord.Status = CapabilityStatus.Error;
-                        typeRecord.Warnings = ex.Message;
-                    }
-                    finally
+                        session.SignalFailed(ex);
+                    });
+
+                    var wait = session.Wait(TimeSpan.FromSeconds(30));
+                    if (wait.Status == CallbackWaitStatus.TimedOut)
                     {
-                        gate.Set();
+                        typeRecord.Status = CapabilityStatus.Partial;
+                        typeRecord.Warnings = (typeRecord.Warnings + " sample timeout").Trim();
+                        report.Warnings.Add("Timeout sampling type " + typeRecord.Name);
                     }
-                }, ex =>
-                {
-                    sampleError = ex;
-                    gate.Set();
-                });
 
-                if (!gate.Wait(TimeSpan.FromSeconds(30)))
-                {
-                    typeRecord.Status = CapabilityStatus.Partial;
-                    typeRecord.Warnings = (typeRecord.Warnings + " sample timeout").Trim();
-                    report.Warnings.Add("Timeout sampling type " + typeRecord.Name);
-                }
-
-                if (sampleError != null)
-                {
-                    AnalyticsLogger.Warning("sample-type", typeRecord.Name + " " + sampleError.Message);
-                    report.Diagnostics.Add(AnalyticsLogger.CreateEntry("WARNING", "sample-type", typeRecord.Name + ": " + sampleError.Message));
+                    if (sampleError != null)
+                    {
+                        AnalyticsLogger.Warning("sample-type", typeRecord.Name + " " + sampleError.Message);
+                        report.Diagnostics.Add(AnalyticsLogger.CreateEntry("WARNING", "sample-type", typeRecord.Name + ": " + sampleError.Message));
+                    }
+                    else if (wait.Status == CallbackWaitStatus.Failed && wait.Error != null)
+                    {
+                        AnalyticsLogger.Warning("sample-type", typeRecord.Name + " " + wait.Error.Message);
+                        report.Diagnostics.Add(AnalyticsLogger.CreateEntry("WARNING", "sample-type", typeRecord.Name + ": " + wait.Error.Message));
+                    }
                 }
             }
 

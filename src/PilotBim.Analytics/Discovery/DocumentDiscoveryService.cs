@@ -178,56 +178,57 @@ namespace PilotBim.Analytics.Discovery
                 // races with SDK enumeration of that collection.
                 var requestIds = SnapshotHistoryRequestIds(historyIds, maxEvents);
                 var pending = new HashSet<Guid>(requestIds);
-                var abandoned = 0;
-                var gate = new System.Threading.ManualResetEventSlim(false);
 
-                _repository.GetHistoryItems(requestIds).Subscribe(new ActionObserver<Ascon.Pilot.SDK.Data.IHistoryItem>(
-                    item =>
-                    {
-                        if (!ShouldAcceptHistoryCallback(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0) != 0))
-                            return;
-                        if (item == null)
-                            return;
-
-                        bool removed;
-                        lock (pending)
-                            removed = pending.Remove(item.Id);
-                        if (!removed)
-                            return;
-
-                        var sample = new HistorySampleEvent
-                        {
-                            HistoryItemId = item.Id,
-                            ObjectId = item.ObjectId,
-                            Created = item.Created,
-                            CreatorId = item.CreatorId,
-                            Reason = ReferenceResolver.SafeSampleString(item.Reason, 100)
-                        };
-
-                        lock (target)
-                        {
-                            if (!ShouldAcceptHistoryCallback(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0) != 0))
-                                return;
-                            target.Add(sample);
-                        }
-
-                        bool done;
-                        lock (pending)
-                            done = pending.Count == 0;
-                        if (done)
-                            gate.Set();
-                    },
-                    ex =>
-                    {
-                        AnalyticsLogger.Error("history-load", ex);
-                        gate.Set();
-                    },
-                    () => gate.Set()));
-
-                if (!gate.Wait(TimeSpan.FromSeconds(8)))
+                using (var session = new CallbackWaitSession())
                 {
-                    System.Threading.Interlocked.Exchange(ref abandoned, 1);
-                    AnalyticsLogger.Warning("history-sample", "Timed out waiting for GetHistoryItems");
+                    _repository.GetHistoryItems(requestIds).Subscribe(new ActionObserver<Ascon.Pilot.SDK.Data.IHistoryItem>(
+                        item =>
+                        {
+                            if (!session.ShouldAccept())
+                                return;
+                            if (item == null)
+                                return;
+
+                            bool removed;
+                            lock (pending)
+                                removed = pending.Remove(item.Id);
+                            if (!removed)
+                                return;
+
+                            var sample = new HistorySampleEvent
+                            {
+                                HistoryItemId = item.Id,
+                                ObjectId = item.ObjectId,
+                                Created = item.Created,
+                                CreatorId = item.CreatorId,
+                                Reason = ReferenceResolver.SafeSampleString(item.Reason, 100)
+                            };
+
+                            lock (target)
+                            {
+                                if (!session.ShouldAccept())
+                                    return;
+                                target.Add(sample);
+                            }
+
+                            bool done;
+                            lock (pending)
+                                done = pending.Count == 0;
+                            if (done)
+                                session.SignalCompleted();
+                        },
+                        ex =>
+                        {
+                            AnalyticsLogger.Error("history-load", ex);
+                            session.SignalFailed(ex);
+                        },
+                        () => session.SignalCompleted()));
+
+                    var wait = session.Wait(TimeSpan.FromSeconds(8));
+                    if (wait.Status == CallbackWaitStatus.TimedOut)
+                        AnalyticsLogger.Warning("history-sample", "Timed out waiting for GetHistoryItems");
+                    else if (wait.Status == CallbackWaitStatus.Failed && wait.Error != null)
+                        AnalyticsLogger.Warning("history-sample", wait.Error.Message);
                 }
             }
             catch (Exception ex)
@@ -244,14 +245,6 @@ namespace PilotBim.Analytics.Discovery
             if (ids == null || maxEvents <= 0)
                 return new List<Guid>();
             return ids.Take(maxEvents).ToList();
-        }
-
-        /// <summary>
-        /// After wait timeout the caller abandons the subscription; late callbacks must not mutate target.
-        /// </summary>
-        internal static bool ShouldAcceptHistoryCallback(bool abandoned)
-        {
-            return !abandoned;
         }
 
         private static HistoryCapabilityRecord Cap(string name, string availability, string source, string notes)
