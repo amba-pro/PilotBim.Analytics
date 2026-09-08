@@ -391,7 +391,7 @@ namespace PilotBim.Analytics.Services
             if (objects == null)
                 objects = new List<IDataObject>();
 
-            typeRecord.ObjectCount = total >= 0 ? (int)Math.Min(total, int.MaxValue) : objects.Count;
+            typeRecord.ObjectCount = ResolveObjectCount(total, objects.Count);
             typeRecord.ObjectCountIsEstimate = estimate || total < 0;
             typeRecord.SampledCount = objects.Count;
 
@@ -506,6 +506,16 @@ namespace PilotBim.Analytics.Services
             AnalyticsLogger.Error(zone, ex);
             report.Errors.Add(zone + ": " + ex.Message);
             report.ZoneResults.Add(Zone(zone, CapabilityStatus.Error, ex.Message));
+        }
+
+        /// <summary>
+        /// TypeInventoryRecord.ObjectCount is long — keep full search Total without int narrowing.
+        /// </summary>
+        internal static long ResolveObjectCount(long total, int sampleCount)
+        {
+            if (total >= 0)
+                return total;
+            return sampleCount;
         }
 
         public void LoadChildren(Guid parentId, Action<IReadOnlyList<IDataObject>> onDone)
