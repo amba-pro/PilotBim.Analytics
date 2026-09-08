@@ -51,14 +51,19 @@ namespace PilotBim.Analytics.Discovery
 
                 var gate = new ManualResetEventSlim(false);
                 int returned = 0;
+                var abandoned = 0;
                 sampler.SampleType(type.TypeId, take, (objects, total) =>
                 {
                     try
                     {
+                        if (!AsyncCallbackGuard.ShouldAccept(Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                            return;
                         var list = objects ?? new List<IDataObject>();
                         returned = list.Count;
                         foreach (var obj in list)
                         {
+                            if (!AsyncCallbackGuard.ShouldAccept(Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                                return;
                             if (obj == null || obj.State != DataState.Loaded)
                                 continue;
                             Record(report, obj);
@@ -74,7 +79,8 @@ namespace PilotBim.Analytics.Discovery
                     gate.Set();
                 });
 
-                gate.Wait(TimeSpan.FromSeconds(30));
+                if (!gate.Wait(TimeSpan.FromSeconds(30)))
+                    AsyncCallbackGuard.Abandon(ref abandoned);
                 remaining = ReduceBudget(remaining, take, returned);
             }
 

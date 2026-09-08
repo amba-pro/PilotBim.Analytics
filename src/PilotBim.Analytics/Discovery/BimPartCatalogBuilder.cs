@@ -75,16 +75,21 @@ namespace PilotBim.Analytics.Discovery
                 return;
 
             var gate = new System.Threading.ManualResetEventSlim(false);
+            var abandoned = 0;
             _scanner.SearchByType(partType.Id, 5000, (ids, total) =>
             {
                 try
                 {
+                    if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                        return;
                     if (ids == null)
                         return;
                     foreach (var id in ids)
                     {
                         if (token.IsCancellationRequested)
                             break;
+                        if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                            return;
                         if (!map.ContainsKey(id))
                             map[id] = new BimPartRef { PartId = id };
                     }
@@ -99,7 +104,8 @@ namespace PilotBim.Analytics.Discovery
                 gate.Set();
             });
 
-            gate.Wait(TimeSpan.FromSeconds(30));
+            if (!gate.Wait(TimeSpan.FromSeconds(30)))
+                AsyncCallbackGuard.Abandon(ref abandoned);
         }
 
         private void ResolveNames(Dictionary<Guid, BimPartRef> map, CancellationToken token)

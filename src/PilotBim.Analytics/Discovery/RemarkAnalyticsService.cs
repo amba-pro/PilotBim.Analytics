@@ -71,14 +71,19 @@ namespace PilotBim.Analytics.Discovery
                     break;
 
                 var gate = new ManualResetEventSlim(false);
+                var abandoned = 0;
                 sampler.SampleType(type.TypeId, samplePerType, (objects, total) =>
                 {
                     try
                     {
+                        if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                            return;
                         foreach (var obj in objects ?? new List<IDataObject>())
                         {
                             if (token.IsCancellationRequested)
                                 break;
+                            if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                                return;
                             if (obj == null || obj.State != DataState.Loaded)
                                 continue;
 
@@ -99,7 +104,8 @@ namespace PilotBim.Analytics.Discovery
                     }
                 }, _ => gate.Set());
 
-                gate.Wait(TimeSpan.FromSeconds(20));
+                if (!gate.Wait(TimeSpan.FromSeconds(20)))
+                    AsyncCallbackGuard.Abandon(ref abandoned);
             }
 
             var indexed = report.BimPartAnalytics != null
