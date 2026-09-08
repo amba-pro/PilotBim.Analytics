@@ -18,7 +18,7 @@ Production code changes on this sub-stage: **none**
 ## Composition overview
 
 Pilot host MEF loads plugin exports. **Below `AnalyticsCommandService`, composition is manual `new`.**  
-There are **zero project-owned service interfaces** today.
+Project-owned service interfaces after Stage 5: **`IProjectAnalyticsService`**, **`IAnalyticsCsvExporter`** only.
 
 ```
 Pilot MEF
@@ -224,5 +224,65 @@ MEF graph unchanged. No DI framework. Build/Export orchestration remains in the 
 
 ## Stage 5.4 gate
 
-Await confirmation before concrete-dependency cleanup elsewhere (InventoryWindow helpers, InventoryService children, etc.).
+Closed by Stage 5 Final Assessment below. No further Stage 5 production refactor.
+
+## Stage 5 Final Assessment
+
+Date: 2026-09-08  
+HEAD: `5d8da52`  
+Re-audit: production Views / ViewModels / Services / Discovery / Data (no production code changed on 5.4)
+
+### Coupling re-check
+
+| Coupling point | Current state | Harmful? | Refactor now? | Reason |
+|----------------|---------------|----------|---------------|--------|
+| `AnalyticsWindow` → Build/Export | injected interfaces; concretes in command service | No | **No** | Goal of Stage 5 achieved |
+| `AnalyticsCommandService` → `new ProjectAnalyticsService` / `AnalyticsCsvExporter` | composition root | No | **No** | Legitimate boundary |
+| `AnalyticsCommandService` → `new InventoryService` | composition root | Low | **No** | Façade entry; interface would hide god-factory |
+| Windows → concrete `InventoryService` | ctor param | Low–Med | **No** | Needs decomposition first; Stage 6+ |
+| `AnalyticsWindow` → `new AnalyticsWindowViewModel` | View constructs VM | Low | **No** | VM split is Stage 8 |
+| VM → Chart / Diff / Stores field-`new` | pure + disk helpers | No | **No** | Interfaces add no test value today |
+| `InventoryWindow` → ReportService/Exporter `new` | View helpers | Low | **No** | Parallel to already-solved Analytics path; catalog is secondary surface |
+| `InventoryService` → ~15 discovery `new` | internal pipeline factory | Med (maintainability) | **No** | Decomposition = Stage 6+ scope |
+| Multiple `new PilotObjectScanner` | construction sprawl | Med (noise, not coupling) | **No** | Reuse instance later; not interface |
+| Static `AnalyticsLogger` | cross-cutting | Low | **No** | No alternate sink planned |
+| `.GetAwaiter().GetResult()` | BIM index open | Known | **No** | Async rewrite deferred Stage 4 |
+| MEF → command service locator for optional BIM | host optionals | Low | **No** | Correct for AllowDefault Pilot services |
+
+### Achieved
+
+- View business handlers no longer construct `ProjectAnalyticsService` / `AnalyticsCsvExporter`
+- Minimal seams: `IProjectAnalyticsService`, `IAnalyticsCsvExporter`
+- Composition root clarified: `AnalyticsCommandService`
+- MEF preserved; no DI framework; behavior preserved
+- Audit + final docs committed
+
+### Kept Concrete
+
+| Type | Why |
+|------|-----|
+| `ChartDataService`, `ScanDiffService` | Pure transforms; tested via characterization |
+| `DashboardLayoutStore`, `ScanSnapshotStore` | Simple disk I/O; no alternate impl |
+| `InventoryReportService` / `Exporter` | Catalog helpers; low risk |
+| Discovery / Data pipeline types | Owned only by `InventoryService`; no substitution |
+| `InventoryService` | Façade; interface without decompose is harmful theatre |
+| `AnalyticsLogger` | Static file sink is fine |
+
+### Deferred
+
+- InventoryService decomposition
+- `IInventoryService` decision (after decompose)
+- PilotObjectScanner sprawl/reuse
+- Static AnalyticsLogger abstraction
+- Async GetResult rewrite
+- ViewModel split
+- Localization
+- Deeper MVVM (move Build/Export out of Window)
+- InventoryWindow report helper injection (optional mirror of 5.3; not blocking)
+
+### Recommendation
+
+**STOP_STAGE_5**
+
+Further decoupling now would expand into Inventory decomposition, VM/window splits, or async rewrite — those are Stage 6+ and lack an immediate Stage-5 benefit beyond “architecture could be cleaner.”
 
