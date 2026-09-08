@@ -128,17 +128,21 @@ namespace PilotBim.Analytics.Discovery
             if (modelType != null)
             {
                 var gate = new System.Threading.ManualResetEventSlim(false);
+                var hadError = false;
                 scanner.SearchByType(modelType.Id, 50, (ids, t) =>
                 {
                     report.BimModelsCount = t >= 0 ? t : (ids != null ? ids.Count : 0);
                     gate.Set();
                 }, ex =>
                 {
+                    hadError = true;
                     AnalyticsLogger.Error("bim-models-count", ex);
                     gate.Set();
                 });
-                gate.Wait(TimeSpan.FromSeconds(10));
-                report.BimCapabilities.Add(Cap("Models count", CapabilityStatus.Available, "Search TypeId=" + modelType.Id, "count=" + report.BimModelsCount));
+                var completed = gate.Wait(TimeSpan.FromSeconds(10));
+                var status = ResolveCountCapabilityStatus(!completed, hadError);
+                report.BimCapabilities.Add(Cap("Models count", status, "Search TypeId=" + modelType.Id,
+                    "count=" + report.BimModelsCount + (!completed ? " (timeout)" : hadError ? " (error)" : string.Empty)));
             }
             else
             {
@@ -151,22 +155,39 @@ namespace PilotBim.Analytics.Discovery
             if (partType != null)
             {
                 var gate = new System.Threading.ManualResetEventSlim(false);
+                var hadError = false;
                 scanner.SearchByType(partType.Id, 50, (ids, t) =>
                 {
                     report.BimModelPartsCount = t >= 0 ? t : (ids != null ? ids.Count : 0);
                     gate.Set();
                 }, ex =>
                 {
+                    hadError = true;
                     AnalyticsLogger.Error("bim-parts-count", ex);
                     gate.Set();
                 });
-                gate.Wait(TimeSpan.FromSeconds(10));
-                report.BimCapabilities.Add(Cap("Model parts count", CapabilityStatus.Available, "Search TypeId=" + partType.Id, "count=" + report.BimModelPartsCount));
+                var completed = gate.Wait(TimeSpan.FromSeconds(10));
+                var status = ResolveCountCapabilityStatus(!completed, hadError);
+                report.BimCapabilities.Add(Cap("Model parts count", status, "Search TypeId=" + partType.Id,
+                    "count=" + report.BimModelPartsCount + (!completed ? " (timeout)" : hadError ? " (error)" : string.Empty)));
             }
             else
             {
                 report.BimCapabilities.Add(Cap("Model parts count", CapabilityStatus.NotVerified, "TypeNames.ModelPart", "Type not present in current database"));
             }
+        }
+
+        /// <summary>
+        /// Search count capability must not report Available when the wait timed out or errored.
+        /// Successful empty result (count=0) remains Available.
+        /// </summary>
+        internal static string ResolveCountCapabilityStatus(bool timedOut, bool hadError)
+        {
+            if (hadError)
+                return CapabilityStatus.Error;
+            if (timedOut)
+                return CapabilityStatus.Partial;
+            return CapabilityStatus.Available;
         }
 
         private void ProbeElements(ProjectInventoryReport report, System.Threading.CancellationToken token, HierarchyWalkResult walk)
