@@ -22,6 +22,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="PilotBim.Analytics.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Ascon.Pilot.SDK">
       <HintPath>$(PilotSdkPath)\Ascon.Pilot.SDK.dll</HintPath>
       <Private>false</Private>

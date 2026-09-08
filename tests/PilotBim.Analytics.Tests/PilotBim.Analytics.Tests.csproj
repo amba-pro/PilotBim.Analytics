@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>PilotBim.Analytics.Tests</RootNamespace>
+    <AssemblyName>PilotBim.Analytics.Tests</AssemblyName>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <PilotSdkPath Condition="'$(PilotSdkPath)' == ''">C:\Program Files\ASCON\Pilot-BIM</PilotSdkPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PilotBim.Analytics\PilotBim.Analytics.csproj" />
+  </ItemGroup>
+
+  <!-- Runtime resolve of Pilot SDK refs (Private=false on production project). -->
+  <ItemGroup>
+    <Reference Include="Ascon.Pilot.SDK">
+      <HintPath>$(PilotSdkPath)\Ascon.Pilot.SDK.dll</HintPath>
+      <Private>true</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+    <Reference Include="Ascon.Pilot.Bim.SDK">
+      <HintPath>$(PilotSdkPath)\extensions\bim\Ascon.Pilot.Bim.SDK.dll</HintPath>
+      <Private>true</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+    <Reference Include="Ascon.Pilot.Bim.Search.SDK">
+      <HintPath>$(PilotSdkPath)\extensions\bim\Ascon.Pilot.Bim.Search.SDK.dll</HintPath>
+      <Private>true</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+</Project>
