@@ -35,8 +35,11 @@ namespace PilotBim.Analytics.Discovery
 
             foreach (var obj in objects)
             {
-                if (obj == null || rows.Count >= max)
+                var action = NextSampleAction(obj == null, rows.Count, max);
+                if (action == SampleLoopAction.Stop)
                     break;
+                if (action == SampleLoopAction.Skip)
+                    continue;
                 if (obj.Type == null || !obj.Type.HasFiles)
                 {
                     if (obj.Files == null || obj.Files.Count == 0)
@@ -70,6 +73,25 @@ namespace PilotBim.Analytics.Discovery
             }
 
             return rows;
+        }
+
+        internal enum SampleLoopAction
+        {
+            Process,
+            Skip,
+            Stop
+        }
+
+        /// <summary>
+        /// Loop control for SampleDocuments. Null objects must be skipped, not terminate the scan.
+        /// </summary>
+        internal static SampleLoopAction NextSampleAction(bool objIsNull, int rowsCount, int max)
+        {
+            if (rowsCount >= max)
+                return SampleLoopAction.Stop;
+            if (objIsNull)
+                return SampleLoopAction.Skip;
+            return SampleLoopAction.Process;
         }
 
         private static DocumentCapabilityRecord Cap(string name, string availability, string source, string notes)
