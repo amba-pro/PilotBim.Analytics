@@ -145,7 +145,7 @@ namespace PilotBim.Analytics.Data
                 return cached;
 
             IDataObject loaded = null;
-            using (var gate = new System.Threading.ManualResetEventSlim(false))
+            using (var session = new CallbackWaitSession())
             {
                 try
                 {
@@ -153,19 +153,21 @@ namespace PilotBim.Analytics.Data
                         new[] { id },
                         obj =>
                         {
+                            if (!session.ShouldAccept())
+                                return;
                             if (obj == null || obj.Id != id)
                                 return;
                             if (obj.State == DataState.Loaded)
                                 loaded = obj;
-                            gate.Set();
+                            session.SignalCompleted();
                         },
-                        onCompleted: () => gate.Set(),
+                        onCompleted: () => session.SignalCompleted(),
                         onError: ex =>
                         {
                             AnalyticsLogger.Warning("subscribe-object", id + " " + (ex != null ? ex.Message : ""));
-                            gate.Set();
+                            session.SignalFailed(ex);
                         });
-                    gate.Wait(timeout);
+                    session.Wait(timeout);
                 }
                 catch (Exception ex)
                 {
@@ -198,7 +200,7 @@ namespace PilotBim.Analytics.Data
                 return;
 
             var remaining = new HashSet<Guid>(list);
-            using (var gate = new System.Threading.ManualResetEventSlim(false))
+            using (var session = new CallbackWaitSession())
             {
                 try
                 {
@@ -206,19 +208,21 @@ namespace PilotBim.Analytics.Data
                         list,
                         obj =>
                         {
+                            if (!session.ShouldAccept())
+                                return;
                             if (obj == null)
                                 return;
                             remaining.Remove(obj.Id);
                             if (remaining.Count == 0)
-                                gate.Set();
+                                session.SignalCompleted();
                         },
-                        onCompleted: () => gate.Set(),
+                        onCompleted: () => session.SignalCompleted(),
                         onError: ex =>
                         {
                             AnalyticsLogger.Warning("subscribe-batch", ex != null ? ex.Message : "");
-                            gate.Set();
+                            session.SignalFailed(ex);
                         });
-                    gate.Wait(timeout);
+                    session.Wait(timeout);
                 }
                 catch (Exception ex)
                 {
