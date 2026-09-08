@@ -127,22 +127,34 @@ namespace PilotBim.Analytics.Discovery
 
             if (modelType != null)
             {
-                var gate = new System.Threading.ManualResetEventSlim(false);
-                var hadError = false;
-                scanner.SearchByType(modelType.Id, 50, (ids, t) =>
+                using (var session = new CallbackWaitSession())
                 {
-                    report.BimModelsCount = t >= 0 ? t : (ids != null ? ids.Count : 0);
-                    gate.Set();
-                }, ex =>
-                {
-                    hadError = true;
-                    AnalyticsLogger.Error("bim-models-count", ex);
-                    gate.Set();
-                });
-                var completed = gate.Wait(TimeSpan.FromSeconds(10));
-                var status = ResolveCountCapabilityStatus(!completed, hadError);
-                report.BimCapabilities.Add(Cap("Models count", status, "Search TypeId=" + modelType.Id,
-                    "count=" + report.BimModelsCount + (!completed ? " (timeout)" : hadError ? " (error)" : string.Empty)));
+                    scanner.SearchByType(modelType.Id, 50, (ids, t) =>
+                    {
+                        try
+                        {
+                            if (!session.ShouldAccept())
+                                return;
+                            report.BimModelsCount = t >= 0 ? t : (ids != null ? ids.Count : 0);
+                        }
+                        finally
+                        {
+                            session.SignalCompleted();
+                        }
+                    }, ex =>
+                    {
+                        AnalyticsLogger.Error("bim-models-count", ex);
+                        session.SignalFailed(ex);
+                    });
+                    var wait = session.Wait(TimeSpan.FromSeconds(10));
+                    var status = ResolveCountCapabilityStatus(
+                        wait.Status == CallbackWaitStatus.TimedOut,
+                        wait.Status == CallbackWaitStatus.Failed);
+                    report.BimCapabilities.Add(Cap("Models count", status, "Search TypeId=" + modelType.Id,
+                        "count=" + report.BimModelsCount
+                        + (wait.Status == CallbackWaitStatus.TimedOut ? " (timeout)"
+                            : wait.Status == CallbackWaitStatus.Failed ? " (error)" : string.Empty)));
+                }
             }
             else
             {
@@ -154,22 +166,34 @@ namespace PilotBim.Analytics.Discovery
 
             if (partType != null)
             {
-                var gate = new System.Threading.ManualResetEventSlim(false);
-                var hadError = false;
-                scanner.SearchByType(partType.Id, 50, (ids, t) =>
+                using (var session = new CallbackWaitSession())
                 {
-                    report.BimModelPartsCount = t >= 0 ? t : (ids != null ? ids.Count : 0);
-                    gate.Set();
-                }, ex =>
-                {
-                    hadError = true;
-                    AnalyticsLogger.Error("bim-parts-count", ex);
-                    gate.Set();
-                });
-                var completed = gate.Wait(TimeSpan.FromSeconds(10));
-                var status = ResolveCountCapabilityStatus(!completed, hadError);
-                report.BimCapabilities.Add(Cap("Model parts count", status, "Search TypeId=" + partType.Id,
-                    "count=" + report.BimModelPartsCount + (!completed ? " (timeout)" : hadError ? " (error)" : string.Empty)));
+                    scanner.SearchByType(partType.Id, 50, (ids, t) =>
+                    {
+                        try
+                        {
+                            if (!session.ShouldAccept())
+                                return;
+                            report.BimModelPartsCount = t >= 0 ? t : (ids != null ? ids.Count : 0);
+                        }
+                        finally
+                        {
+                            session.SignalCompleted();
+                        }
+                    }, ex =>
+                    {
+                        AnalyticsLogger.Error("bim-parts-count", ex);
+                        session.SignalFailed(ex);
+                    });
+                    var wait = session.Wait(TimeSpan.FromSeconds(10));
+                    var status = ResolveCountCapabilityStatus(
+                        wait.Status == CallbackWaitStatus.TimedOut,
+                        wait.Status == CallbackWaitStatus.Failed);
+                    report.BimCapabilities.Add(Cap("Model parts count", status, "Search TypeId=" + partType.Id,
+                        "count=" + report.BimModelPartsCount
+                        + (wait.Status == CallbackWaitStatus.TimedOut ? " (timeout)"
+                            : wait.Status == CallbackWaitStatus.Failed ? " (error)" : string.Empty)));
+                }
             }
             else
             {
@@ -221,19 +245,31 @@ namespace PilotBim.Analytics.Discovery
                     return;
                 }
 
-                var gate = new System.Threading.ManualResetEventSlim(false);
-                var scanner = new PilotObjectScanner(_repository, _search);
-                scanner.SearchByType(modelType.Id, 1, (ids, total) =>
+                using (var session = new CallbackWaitSession())
                 {
-                    if (ids != null && ids.Count > 0)
-                        modelId = ids[0];
-                    gate.Set();
-                }, ex =>
-                {
-                    AnalyticsLogger.Error("bim-probe-search", ex);
-                    gate.Set();
-                });
-                gate.Wait(TimeSpan.FromSeconds(10));
+                    var scanner = new PilotObjectScanner(_repository, _search);
+                    scanner.SearchByType(modelType.Id, 1, (ids, total) =>
+                    {
+                        try
+                        {
+                            if (!session.ShouldAccept())
+                                return;
+                            if (ids != null && ids.Count > 0)
+                                modelId = ids[0];
+                        }
+                        finally
+                        {
+                            session.SignalCompleted();
+                        }
+                    }, ex =>
+                    {
+                        AnalyticsLogger.Error("bim-probe-search", ex);
+                        session.SignalFailed(ex);
+                    });
+                    var wait = session.Wait(TimeSpan.FromSeconds(10));
+                    if (wait.Status == CallbackWaitStatus.TimedOut)
+                        AnalyticsLogger.Warning("bim-probe-search", "timeout resolving model id");
+                }
             }
 
             if (!modelId.HasValue)
@@ -254,7 +290,8 @@ namespace PilotBim.Analytics.Discovery
                     return;
                 }
 
-                // Wait briefly if storage not loaded yet — do not force full load loops.
+                // Compatibility: IModelStorage has no readiness wait API — poll IsLoaded briefly.
+                // Do not force Load* loops; if still unloaded, skip probe (Partial).
                 var waitLoad = 0;
                 while (!storage.IsLoaded && waitLoad < 20 && !token.IsCancellationRequested)
                 {
