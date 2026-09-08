@@ -29,5 +29,15 @@ namespace PilotBim.Analytics.Tests
         {
             Assert.Equal(CapabilityStatus.Error, BimDiscoveryService.ResolveCountCapabilityStatus(timedOut: true, hadError: true));
         }
+
+        [Fact]
+        public void SelectGlobalId_PrefersCanonicalOverReadable()
+        {
+            Assert.Equal("canon", BimDiscoveryService.SelectGlobalId("canon", "alt", "readable"));
+            Assert.Equal("alt", BimDiscoveryService.SelectGlobalId(null, "alt", "readable"));
+            Assert.Equal("readable", BimDiscoveryService.SelectGlobalId(null, null, "readable"));
+            Assert.Null(BimDiscoveryService.SelectGlobalId(null, null, null));
+            Assert.Equal("canon", BimDiscoveryService.SelectGlobalId("canon", null, "readable"));
+        }
     }
 }

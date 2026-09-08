@@ -358,17 +358,22 @@ namespace PilotBim.Analytics.Discovery
                             flat.AddRange(set.Properties.Where(p => p != null));
                         }
                         row.PropertyCount = flat.Count;
+                        string globalId = null;
+                        string globalIdAlt = null;
+                        string globalIdReadable = null;
                         foreach (var p in flat)
                         {
-                            if (string.Equals(p.Name, PropertyNames.GlobalId, StringComparison.OrdinalIgnoreCase)
-                                || string.Equals(p.Name, "GlobalId", StringComparison.OrdinalIgnoreCase)
-                                || string.Equals(p.Name, PropertyNames.GlobalIdReadable, StringComparison.OrdinalIgnoreCase))
-                            {
-                                row.GlobalId = ReferenceResolver.SafeSampleString(p.Value, 64);
-                            }
+                            if (string.Equals(p.Name, PropertyNames.GlobalId, StringComparison.OrdinalIgnoreCase))
+                                globalId = ReferenceResolver.SafeSampleString(p.Value, 64);
+                            else if (string.Equals(p.Name, "GlobalId", StringComparison.OrdinalIgnoreCase))
+                                globalIdAlt = ReferenceResolver.SafeSampleString(p.Value, 64);
+                            else if (string.Equals(p.Name, PropertyNames.GlobalIdReadable, StringComparison.OrdinalIgnoreCase))
+                                globalIdReadable = ReferenceResolver.SafeSampleString(p.Value, 64);
+
                             if (row.PropertyPreview.Count < 5)
                                 row.PropertyPreview.Add((p.Name ?? "?") + "=" + ReferenceResolver.SafeSampleString(p.Value, 40));
                         }
+                        row.GlobalId = SelectGlobalId(globalId, globalIdAlt, globalIdReadable);
                     }
                     catch (Exception ex)
                     {
@@ -387,6 +392,20 @@ namespace PilotBim.Analytics.Discovery
                 report.Warnings.Add("BIM element probe failed: " + ex.Message);
                 report.BimCapabilities.Add(Cap("Elements sample", CapabilityStatus.Error, "IModelStorage", ex.Message));
             }
+        }
+
+        /// <summary>
+        /// Prefer canonical PropertyNames.GlobalId, then literal "GlobalId", then readable display form.
+        /// </summary>
+        internal static string SelectGlobalId(string globalId, string globalIdAlt, string globalIdReadable)
+        {
+            if (!string.IsNullOrWhiteSpace(globalId))
+                return globalId;
+            if (!string.IsNullOrWhiteSpace(globalIdAlt))
+                return globalIdAlt;
+            if (!string.IsNullOrWhiteSpace(globalIdReadable))
+                return globalIdReadable;
+            return null;
         }
 
         private static BimCapability Cap(string name, string availability, string source, string notes)
