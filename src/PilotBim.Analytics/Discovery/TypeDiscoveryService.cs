@@ -22,11 +22,10 @@ namespace PilotBim.Analytics.Discovery
             var list = new List<TypeInventoryRecord>();
             try
             {
-                foreach (var type in _repository.GetTypes().OrderBy(t => t.Title ?? t.Name))
+                foreach (var type in _repository.GetTypes()
+                    .Where(t => t != null)
+                    .OrderBy(t => TypeSortKey(t)))
                 {
-                    if (type == null)
-                        continue;
-
                     var record = new TypeInventoryRecord
                     {
                         TypeId = type.Id,
@@ -49,6 +48,16 @@ namespace PilotBim.Analytics.Discovery
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Sort key used after null types are filtered out.
+        /// </summary>
+        internal static string TypeSortKey(IType type)
+        {
+            if (type == null)
+                return string.Empty;
+            return type.Title ?? type.Name ?? string.Empty;
         }
     }
 
