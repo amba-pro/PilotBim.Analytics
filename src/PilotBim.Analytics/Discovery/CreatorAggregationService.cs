@@ -49,39 +49,41 @@ namespace PilotBim.Analytics.Discovery
                 if (take <= 0)
                     continue;
 
-                var gate = new ManualResetEventSlim(false);
-                int returned = 0;
-                var abandoned = 0;
-                sampler.SampleType(type.TypeId, take, (objects, total) =>
+                using (var session = new CallbackWaitSession())
                 {
-                    try
+                    int returned = 0;
+                    sampler.SampleType(type.TypeId, take, (objects, total) =>
                     {
-                        if (!AsyncCallbackGuard.ShouldAccept(Interlocked.CompareExchange(ref abandoned, 0, 0)))
-                            return;
-                        var list = objects ?? new List<IDataObject>();
-                        returned = list.Count;
-                        foreach (var obj in list)
+                        try
                         {
-                            if (!AsyncCallbackGuard.ShouldAccept(Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                            if (!session.ShouldAccept())
                                 return;
-                            if (obj == null || obj.State != DataState.Loaded)
-                                continue;
-                            Record(report, obj);
+                            var list = objects ?? new List<IDataObject>();
+                            returned = list.Count;
+                            foreach (var obj in list)
+                            {
+                                if (!session.ShouldAccept())
+                                    return;
+                                if (obj == null || obj.State != DataState.Loaded)
+                                    continue;
+                                Record(report, obj);
+                            }
                         }
-                    }
-                    finally
+                        finally
+                        {
+                            session.SignalCompleted();
+                        }
+                    }, ex =>
                     {
-                        gate.Set();
-                    }
-                }, ex =>
-                {
-                    AnalyticsLogger.Warning("creator-agg", type.Name + " " + ex.Message);
-                    gate.Set();
-                });
+                        AnalyticsLogger.Warning("creator-agg", type.Name + " " + (ex != null ? ex.Message : ""));
+                        session.SignalFailed(ex);
+                    });
 
-                if (!gate.Wait(TimeSpan.FromSeconds(30)))
-                    AsyncCallbackGuard.Abandon(ref abandoned);
-                remaining = ReduceBudget(remaining, take, returned);
+                    var wait = session.Wait(TimeSpan.FromSeconds(30));
+                    if (wait.Status == CallbackWaitStatus.TimedOut)
+                        AnalyticsLogger.Warning("creator-agg", type.Name + " sample timeout");
+                    remaining = ReduceBudget(remaining, take, returned);
+                }
             }
 
             report.CreatorCountsFromFullScan = report.CreatorFullScanObjects > 0;

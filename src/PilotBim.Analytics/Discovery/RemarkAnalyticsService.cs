@@ -70,42 +70,50 @@ namespace PilotBim.Analytics.Discovery
                 if (token.IsCancellationRequested)
                     break;
 
-                var gate = new ManualResetEventSlim(false);
-                var abandoned = 0;
-                sampler.SampleType(type.TypeId, samplePerType, (objects, total) =>
+                using (var session = new CallbackWaitSession())
                 {
-                    try
+                    sampler.SampleType(type.TypeId, samplePerType, (objects, total) =>
                     {
-                        if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
-                            return;
-                        foreach (var obj in objects ?? new List<IDataObject>())
+                        try
                         {
-                            if (token.IsCancellationRequested)
-                                break;
-                            if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                            if (!session.ShouldAccept())
                                 return;
-                            if (obj == null || obj.State != DataState.Loaded)
-                                continue;
-
-                            var row = BuildRow(obj, type, indexSearch);
-                            report.RemarkLinks.Add(row);
-                            report.RemarkAnalytics.SampledRemarks++;
-                            if (!string.IsNullOrWhiteSpace(row.BimObjectId))
+                            foreach (var obj in objects ?? new List<IDataObject>())
                             {
-                                report.RemarkAnalytics.WithBimObjectId++;
-                                if (row.ResolvedInIndex)
-                                    report.RemarkAnalytics.ResolvedInIndex++;
+                                if (token.IsCancellationRequested)
+                                    break;
+                                if (!session.ShouldAccept())
+                                    return;
+                                if (obj == null || obj.State != DataState.Loaded)
+                                    continue;
+
+                                var row = BuildRow(obj, type, indexSearch);
+                                report.RemarkLinks.Add(row);
+                                report.RemarkAnalytics.SampledRemarks++;
+                                if (!string.IsNullOrWhiteSpace(row.BimObjectId))
+                                {
+                                    report.RemarkAnalytics.WithBimObjectId++;
+                                    if (row.ResolvedInIndex)
+                                        report.RemarkAnalytics.ResolvedInIndex++;
+                                }
                             }
                         }
-                    }
-                    finally
+                        finally
+                        {
+                            session.SignalCompleted();
+                        }
+                    }, ex =>
                     {
-                        gate.Set();
-                    }
-                }, _ => gate.Set());
+                        AnalyticsLogger.Warning("remark-sample", type.Name + " " + (ex != null ? ex.Message : ""));
+                        session.SignalFailed(ex);
+                    });
 
-                if (!gate.Wait(TimeSpan.FromSeconds(20)))
-                    AsyncCallbackGuard.Abandon(ref abandoned);
+                    var wait = session.Wait(TimeSpan.FromSeconds(20));
+                    if (wait.Status == CallbackWaitStatus.TimedOut)
+                        AnalyticsLogger.Warning("remark-sample", type.Name + " sample timeout");
+                    else if (wait.Status == CallbackWaitStatus.Failed && wait.Error != null)
+                        AnalyticsLogger.Warning("remark-sample", type.Name + " " + wait.Error.Message);
+                }
             }
 
             var indexed = report.BimPartAnalytics != null

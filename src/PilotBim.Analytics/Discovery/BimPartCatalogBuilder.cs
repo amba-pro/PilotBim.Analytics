@@ -74,38 +74,40 @@ namespace PilotBim.Analytics.Discovery
             if (partType == null)
                 return;
 
-            var gate = new System.Threading.ManualResetEventSlim(false);
-            var abandoned = 0;
-            _scanner.SearchByType(partType.Id, 5000, (ids, total) =>
+            using (var session = new CallbackWaitSession())
             {
-                try
+                _scanner.SearchByType(partType.Id, 5000, (ids, total) =>
                 {
-                    if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
-                        return;
-                    if (ids == null)
-                        return;
-                    foreach (var id in ids)
+                    try
                     {
-                        if (token.IsCancellationRequested)
-                            break;
-                        if (!AsyncCallbackGuard.ShouldAccept(System.Threading.Interlocked.CompareExchange(ref abandoned, 0, 0)))
+                        if (!session.ShouldAccept())
                             return;
-                        if (!map.ContainsKey(id))
-                            map[id] = new BimPartRef { PartId = id };
+                        if (ids == null)
+                            return;
+                        foreach (var id in ids)
+                        {
+                            if (token.IsCancellationRequested)
+                                break;
+                            if (!session.ShouldAccept())
+                                return;
+                            if (!map.ContainsKey(id))
+                                map[id] = new BimPartRef { PartId = id };
+                        }
                     }
-                }
-                finally
+                    finally
+                    {
+                        session.SignalCompleted();
+                    }
+                }, ex =>
                 {
-                    gate.Set();
-                }
-            }, ex =>
-            {
-                AnalyticsLogger.Warning("bim-part-catalog", "search parts: " + ex.Message);
-                gate.Set();
-            });
+                    AnalyticsLogger.Warning("bim-part-catalog", "search parts: " + (ex != null ? ex.Message : ""));
+                    session.SignalFailed(ex);
+                });
 
-            if (!gate.Wait(TimeSpan.FromSeconds(30)))
-                AsyncCallbackGuard.Abandon(ref abandoned);
+                var wait = session.Wait(TimeSpan.FromSeconds(30));
+                if (wait.Status == CallbackWaitStatus.TimedOut)
+                    AnalyticsLogger.Warning("bim-part-catalog", "search parts timeout");
+            }
         }
 
         private void ResolveNames(Dictionary<Guid, BimPartRef> map, CancellationToken token)
