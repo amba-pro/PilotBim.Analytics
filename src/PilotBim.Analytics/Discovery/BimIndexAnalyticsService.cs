@@ -241,10 +241,8 @@ namespace PilotBim.Analytics.Discovery
                 row.IsTruncated = row.IsTruncated || truncated;
                 if (row.ElementCount == 0 && row.GlobalIdCount > 0)
                     row.ElementCount = row.GlobalIdCount;
-                row.WithoutGlobalIdCount = Math.Max(0, row.ElementCount - row.GlobalIdCount);
-                row.GlobalIdFillPercent = row.ElementCount > 0
-                    ? (double)row.GlobalIdCount / row.ElementCount * 100.0
-                    : 0;
+                row.WithoutGlobalIdCount = ComputeWithoutGlobalId(row.ElementCount, row.GlobalIdCount);
+                row.GlobalIdFillPercent = ComputeFillPercent(row.GlobalIdCount, row.ElementCount);
 
                 if (withTypeBreakdown && row.ElementCount > 0)
                     row.TypeBreakdown = BuildTypeBreakdown(searchService, part, modelId, modelName, maxHits, row.ElementCount, ifcTypes);
@@ -295,7 +293,7 @@ namespace PilotBim.Analytics.Discovery
                     IfcType = ifcType,
                     Count = count,
                     IsEstimate = truncated,
-                    SharePercent = (double)count / totalElements * 100.0
+                    SharePercent = ComputeSharePercent(count, totalElements)
                 });
             }
 
@@ -312,11 +310,49 @@ namespace PilotBim.Analytics.Discovery
                     PartName = part.PartName,
                     IfcType = "(other / untyped in index)",
                     Count = other,
-                    SharePercent = (double)other / totalElements * 100.0
+                    SharePercent = ComputeSharePercent(other, totalElements)
                 });
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Fill rate of GlobalId among elements. Independent capped queries can yield
+        /// GlobalIdCount &gt; ElementCount; fill% must still stay within 0..100.
+        /// </summary>
+        internal static double ComputeFillPercent(long numerator, long denominator)
+        {
+            if (denominator <= 0)
+                return 0;
+            var pct = (double)numerator / denominator * 100.0;
+            if (pct > 100.0)
+                return 100.0;
+            if (pct < 0)
+                return 0;
+            return pct;
+        }
+
+        internal static long ComputeWithoutGlobalId(long elementCount, long globalIdCount)
+        {
+            var gid = globalIdCount > elementCount ? elementCount : globalIdCount;
+            if (gid < 0)
+                gid = 0;
+            return elementCount > gid ? elementCount - gid : 0;
+        }
+
+        internal static double ComputeSharePercent(long count, long total)
+        {
+            return ComputeFillPercent(count, total);
+        }
+
+        /// <summary>
+        /// Hitting the Search maxHits page size means the true count may be higher (lower-bound).
+        /// Equality is intentional: Search never returns more than maxHits.
+        /// </summary>
+        internal static bool IsCountTruncated(int count, int maxHits)
+        {
+            return maxHits > 0 && count >= maxHits;
         }
 
         private static int Count(
@@ -351,7 +387,7 @@ namespace PilotBim.Analytics.Discovery
                     count++;
             }
 
-            truncated = count >= maxHits;
+            truncated = IsCountTruncated(count, maxHits);
             return count;
         }
 
