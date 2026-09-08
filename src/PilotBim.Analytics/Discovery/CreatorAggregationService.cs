@@ -119,7 +119,7 @@ namespace PilotBim.Analytics.Discovery
                     report.CreatorFullCounts[id] = 1;
             }
 
-            var monthKey = obj.Created.ToString("yyyy-MM");
+            var monthKey = AnalyticsFormats.MonthBucketKey(obj.Created);
             if (report.CreatedMonthFullCounts.ContainsKey(monthKey))
                 report.CreatedMonthFullCounts[monthKey]++;
             else

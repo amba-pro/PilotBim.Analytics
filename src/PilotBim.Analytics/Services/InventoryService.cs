@@ -443,7 +443,7 @@ namespace PilotBim.Analytics.Services
                     report.CreatorSampleCounts[id] = 1;
             }
 
-            var monthKey = obj.Created.ToString("yyyy-MM");
+            var monthKey = AnalyticsFormats.MonthBucketKey(obj.Created);
             if (report.CreatedMonthSampleCounts.ContainsKey(monthKey))
                 report.CreatedMonthSampleCounts[monthKey]++;
             else

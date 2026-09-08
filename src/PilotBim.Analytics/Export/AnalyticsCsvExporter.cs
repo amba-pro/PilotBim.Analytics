@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using PilotBim.Analytics.Diagnostics;
 using PilotBim.Analytics.Models;
 
 namespace PilotBim.Analytics.Export
@@ -20,7 +21,7 @@ namespace PilotBim.Analytics.Export
                 "Exports");
             Directory.CreateDirectory(dir);
 
-            var stamp = snapshot.GeneratedAt.ToString("yyyyMMdd-HHmmss");
+            var stamp = AnalyticsFormats.FileTimestamp(snapshot.GeneratedAt);
             var folder = Path.Combine(dir, "Analytics-" + stamp);
             Directory.CreateDirectory(folder);
 

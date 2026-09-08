@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using PilotBim.Analytics.Diagnostics;
 using PilotBim.Analytics.Models;
 
 namespace PilotBim.Analytics.Services
@@ -59,7 +60,7 @@ namespace PilotBim.Analytics.Services
                 sb.AppendLine("OBJECTS: " + t.ObjectCount + (t.ObjectCountIsEstimate ? " (estimate/partial)" : ""));
                 sb.AppendLine("SAMPLED: " + t.SampledCount);
                 sb.AppendLine("ATTRIBUTES: " + t.AttributeCount);
-                sb.AppendLine("FILL%: " + t.FillPercent.ToString("0.0"));
+                sb.AppendLine("FILL%: " + AnalyticsFormats.InvariantOneDecimal(t.FillPercent));
                 sb.AppendLine("STATUS: " + t.Status);
                 if (!string.IsNullOrEmpty(t.Warnings))
                     sb.AppendLine("WARNINGS: " + t.Warnings);
@@ -71,7 +72,7 @@ namespace PilotBim.Analytics.Services
                     sb.AppendLine("  REQUIRED: " + a.IsObligatory);
                     sb.AppendLine("  POPULATED: " + a.PopulatedCount);
                     sb.AppendLine("  EMPTY: " + a.EmptyCount);
-                    sb.AppendLine("  FILL: " + (a.FillRate * 100).ToString("0.0") + "%");
+                    sb.AppendLine("  FILL: " + AnalyticsFormats.InvariantOneDecimal(a.FillRate * 100) + "%");
                     sb.AppendLine("  STATUS: " + a.PopulationStatus);
                     if (a.SampleValues.Count > 0)
                         sb.AppendLine("  EXAMPLES: " + string.Join(" | ", a.SampleValues));
@@ -243,7 +244,7 @@ namespace PilotBim.Analytics.Export
                 "PilotBim.Analytics",
                 "Reports");
             Directory.CreateDirectory(dir);
-            var name = "PilotBim.Analytics.Inventory." + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".txt";
+            var name = "PilotBim.Analytics.Inventory." + AnalyticsFormats.FileTimestamp(DateTime.Now) + ".txt";
             var path = Path.Combine(dir, name);
             File.WriteAllText(path, text ?? string.Empty, new UTF8Encoding(true));
             return path;
