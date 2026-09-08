@@ -50,11 +50,14 @@ namespace PilotBim.Analytics.Discovery
                     continue;
 
                 var gate = new ManualResetEventSlim(false);
+                int returned = 0;
                 sampler.SampleType(type.TypeId, take, (objects, total) =>
                 {
                     try
                     {
-                        foreach (var obj in objects ?? new List<IDataObject>())
+                        var list = objects ?? new List<IDataObject>();
+                        returned = list.Count;
+                        foreach (var obj in list)
                         {
                             if (obj == null || obj.State != DataState.Loaded)
                                 continue;
@@ -72,7 +75,7 @@ namespace PilotBim.Analytics.Discovery
                 });
 
                 gate.Wait(TimeSpan.FromSeconds(30));
-                remaining -= take;
+                remaining = ReduceBudget(remaining, take, returned);
             }
 
             report.CreatorCountsFromFullScan = report.CreatorFullScanObjects > 0;
@@ -82,6 +85,20 @@ namespace PilotBim.Analytics.Discovery
                 Status = report.CreatorCountsFromFullScan ? CapabilityStatus.Pass : CapabilityStatus.Partial,
                 Message = "fullScanObjects=" + report.CreatorFullScanObjects + " budget=" + budget
             });
+        }
+
+        /// <summary>
+        /// Budget accounting for one sample round-trip.
+        /// Deducts objects actually returned, not the requested take size.
+        /// </summary>
+        internal static int ReduceBudget(int remaining, int requestedTake, int returnedCount)
+        {
+            _ = requestedTake; // retained for call-site clarity / future diagnostics
+            if (returnedCount < 0)
+                returnedCount = 0;
+            if (returnedCount >= remaining)
+                return 0;
+            return remaining - returnedCount;
         }
 
         private static void Record(ProjectInventoryReport report, IDataObject obj)
