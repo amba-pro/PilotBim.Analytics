@@ -5,7 +5,12 @@ using PilotBim.Analytics.Models;
 
 namespace PilotBim.Analytics.Services
 {
-    internal sealed class ProjectAnalyticsService
+    internal interface IProjectAnalyticsService
+    {
+        ProjectAnalyticsSnapshot Build(ProjectInventoryReport report);
+    }
+
+    internal sealed class ProjectAnalyticsService : IProjectAnalyticsService
     {
         public ProjectAnalyticsSnapshot Build(ProjectInventoryReport report)
         {

@@ -130,22 +130,46 @@ Interface only if at least one holds:
 
 **Not** sufficient alone: “class exists”, “feels cleaner”, “might need later”.
 
-## Recommended minimal set for Stage 5.2 (proposal only — not implemented)
+## Stage 5.2 — Interfaces introduced
+
+Status: **INTRODUCED — Stage 5.2** (seam only; consumer rewiring deferred to Stage 5.3)
+
+| Interface | Implementation | Minimal contract | Production consumer today | Status |
+|-----------|----------------|------------------|---------------------------|--------|
+| `IProjectAnalyticsService` | `ProjectAnalyticsService` | `ProjectAnalyticsSnapshot Build(ProjectInventoryReport report)` | `AnalyticsWindow` still `new ProjectAnalyticsService()` | **INTRODUCED** |
+| `IAnalyticsCsvExporter` | `AnalyticsCsvExporter` | `string Export(ProjectAnalyticsSnapshot snapshot)` | `AnalyticsWindow` still `new AnalyticsCsvExporter()` | **INTRODUCED** |
+| `IInventoryService` | — | — | — | **DEFERRED / NOT INTRODUCED** |
+
+### Why these interfaces are justified
+
+- Real UI ↔ business boundary: View currently constructs and calls both types.
+- Small contracts matching actual consumer usage (one method each).
+- Enables Stage 5.3 injection without changing Build/Export behavior.
+
+### Why IInventoryService is NOT introduced
+
+`InventoryService` is a large façade/god-factory. An interface would not reduce internal coupling and would only hide the architecture problem. Defer until decomposition (later stage).
+
+### Orchestration
+
+`AnalyticsWindow` rewiring / dependency injection → **Stage 5.3**. Stage 5.2 intentionally leaves `new Concrete()` call sites unchanged.
+
+## Recommended minimal set (historical — Stage 5.1 proposal)
 
 | Candidate | Introduce? | Consumers | Implementation | Why concrete is worse | MEF impact |
 |-----------|------------|-----------|----------------|----------------------|------------|
-| `IProjectAnalyticsService` (`Build` only) | **Yes (preferred)** | `AnalyticsWindow` (today) | `ProjectAnalyticsService` | View constructs and orchestrates transform | None (manual inject from command/window) |
-| `IAnalyticsCsvExporter` (`Export` only) | **Yes (preferred)** | `AnalyticsWindow` (today) | `AnalyticsCsvExporter` | View owns export I/O | None |
-| `IInventoryService` (`Run` ± children APIs used by windows) | **Maybe** | Windows + command | `InventoryService` | UI hard-typed to concrete scan façade | None unless later Export; keep concrete MEF-free |
+| `IProjectAnalyticsService` (`Build` only) | **Done — Stage 5.2** | `AnalyticsWindow` | `ProjectAnalyticsService` | View constructs and orchestrates transform | None |
+| `IAnalyticsCsvExporter` (`Export` only) | **Done — Stage 5.2** | `AnalyticsWindow` | `AnalyticsCsvExporter` | View owns export I/O | None |
+| `IInventoryService` | **NOT INTRODUCED** | Windows + command | `InventoryService` | Façade/god-factory; interface hides problem | — |
 
 **Prefer not to add:** Chart/Diff/Stores/Discovery/logger interfaces; factories (`I*Factory`); MEF-export of entire Discovery layer.
-
-**Alternative to interfaces (also valid for 5.3):** move `Build`/`Export` calls from View code-behind into a thin orchestration method on VM or command path, still constructing concretes at composition root — reduces View coupling without new types. Stage 5.2 should pick **one** approach after confirmation.
 
 ## Deferred
 
 | Item | Why not Stage 5 |
 |------|-----------------|
+| `AnalyticsWindow` inject `IProjectAnalyticsService` / `IAnalyticsCsvExporter` | **Stage 5.3** — seam first, rewiring second |
+| `IInventoryService` | God-factory; interface does not reduce internal coupling |
 | DI for all `InventoryService` children | Largest fan-out; needs orchestrator extract first, not 15 interfaces |
 | MEF-export Discovery services | Host only needs menus + command façade |
 | Project ports wrapping all `Ascon.Pilot.*` | SDK already interface-based; multi-host not planned |
@@ -165,6 +189,7 @@ Interface only if at least one holds:
 | Disk stores | `%LocalAppData%\PilotBim.Analytics\` via layout/snapshot/export paths | Shared across sessions |
 | Window singletons | `_catalogWindow` / `_analyticsWindow` on command service | One visible instance |
 
-## Stage 5.2 gate
+## Stage 5.3 gate
 
-Await explicit confirmation before introducing any interface or moving View constructions.
+Await confirmation before rewiring `AnalyticsWindow` to consume the new interfaces (injection / composition-root construction).
+
