@@ -279,3 +279,65 @@ Keep existing `ScanDiffService` / store characterization tests.
 - No changing `ShowPanel` keys  
 - No moving `Refresh_Click`  
 - No localization / DI framework  
+
+---
+
+## Stage 7.2 Result
+
+Date: 2026-09-09
+
+### Extracted component
+
+`AnalyticsScanComparePresenter` (`internal sealed`) under `ViewModels/`.
+
+### State moved
+
+| State | Before | After |
+|-------|--------|-------|
+| `ScanSnapshotStore` / `ScanDiffService` | VM field-new | Presenter |
+| `_currentScanBaseline`, `_scanDiffAll` | VM | Presenter |
+| `ScanDiff` / `ScanHistory` OCs | VM | Presenter (VM façade getters) |
+| `SelectedScanHistory`, `ScanDiffHint`, `ScanDiffChangesOnly` | VM | Presenter + VM façade |
+
+### Logic moved
+
+`RefreshOnSnapshot` (was `RefreshScanDiff`), history reload, compare/save/delete, changes-only publish, `IsMeaningfulChange`.
+
+### Root VM façade retained
+
+Same public names for XAML: `ScanDiff`, `ScanHistory`, `SelectedScanHistory`, `ScanDiffHint`, `ScanDiffChangesOnly`, `CompareWithSelectedHistory`, `SaveNamedScan`, `DeleteSelectedHistory`.
+
+### PropertyChanged propagation
+
+Presenter takes `Action<string> notifyPropertyChanged`; VM passes `name => OnPropertyChanged(name)` (option B).
+
+### XAML impact
+
+**NONE**
+
+### Window impact
+
+**NONE**
+
+### Tests
+
+102 → **107** PASS (`AnalyticsScanComparePresenterTests`)
+
+### Behavior
+
+**UNCHANGED**
+
+### Size
+
+| | Before | After |
+|--|--------|-------|
+| AnalyticsWindowViewModel | ~984 | ~794 |
+| AnalyticsScanComparePresenter | — | ~271 |
+
+### Remaining ViewModel responsibilities
+
+Nav, snapshot reload cascade, charts/builder, BIM filter, dashboard CRUD, progress/busy, scan-mode radios.
+
+### Recommended next step
+
+Dashboard presentation extract (Stage 7.3) — not started.

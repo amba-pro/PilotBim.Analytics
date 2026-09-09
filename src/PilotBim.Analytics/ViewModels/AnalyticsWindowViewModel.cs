@@ -29,16 +29,12 @@ namespace PilotBim.Analytics.ViewModels
         private AnalyticsChartKind _builderChartKind = AnalyticsChartKind.HorizontalBar;
         private string _chartBuilderHint;
         private IList<ChartSeriesPoint> _chartBuilderSeries = new List<ChartSeriesPoint>();
-        private readonly ScanSnapshotStore _scanStore = new ScanSnapshotStore();
-        private readonly ScanDiffService _scanDiff = new ScanDiffService();
-        private StoredScanBaseline _currentScanBaseline;
-        private ScanHistoryEntry _selectedScanHistory;
-        private string _scanDiffHint = "Выполните «Обновить», затем можно сохранять именованные снимки и сравнивать с ними.";
-        private bool _scanDiffChangesOnly;
-        private readonly List<ScanDiffRow> _scanDiffAll = new List<ScanDiffRow>();
+        private readonly AnalyticsScanComparePresenter _scanCompare;
 
         public AnalyticsWindowViewModel()
         {
+            _scanCompare = new AnalyticsScanComparePresenter(name => OnPropertyChanged(name));
+
             Navigation = new ObservableCollection<NavItem>
             {
                 new NavItem { Key = "Summary", Title = "Сводка" },
@@ -113,8 +109,6 @@ namespace PilotBim.Analytics.ViewModels
             DataQuality = new ObservableCollection<AttributeQualityRow>();
             ModelRemarks = new ObservableCollection<RemarkTypeRow>();
             RemarkLinks = new ObservableCollection<RemarkLinkRow>();
-            ScanDiff = new ObservableCollection<ScanDiffRow>();
-            ScanHistory = new ObservableCollection<ScanHistoryEntry>();
 
             BimModelFilters.Add(new BimModelFilterItem { ModelId = Guid.Empty, DisplayName = "Все модели", IsAll = true });
             SelectedBimModelFilter = BimModelFilters[0];
@@ -122,7 +116,7 @@ namespace PilotBim.Analytics.ViewModels
             DashboardLayoutItems = new ObservableCollection<DashboardLayoutItemVm>();
             DashboardWidgets = new ObservableCollection<DashboardWidgetVm>();
             InitDashboardLayout();
-            ReloadScanHistoryList();
+            _scanCompare.ReloadHistoryList();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -218,38 +212,24 @@ namespace PilotBim.Analytics.ViewModels
         public ObservableCollection<AttributeQualityRow> DataQuality { get; }
         public ObservableCollection<RemarkTypeRow> ModelRemarks { get; }
         public ObservableCollection<RemarkLinkRow> RemarkLinks { get; }
-        public ObservableCollection<ScanDiffRow> ScanDiff { get; }
-        public ObservableCollection<ScanHistoryEntry> ScanHistory { get; }
+        public ObservableCollection<ScanDiffRow> ScanDiff { get { return _scanCompare.ScanDiff; } }
+        public ObservableCollection<ScanHistoryEntry> ScanHistory { get { return _scanCompare.ScanHistory; } }
 
         public ScanHistoryEntry SelectedScanHistory
         {
-            get { return _selectedScanHistory; }
-            set
-            {
-                _selectedScanHistory = value;
-                OnPropertyChanged();
-            }
+            get { return _scanCompare.SelectedScanHistory; }
+            set { _scanCompare.SelectedScanHistory = value; }
         }
 
         public string ScanDiffHint
         {
-            get { return _scanDiffHint; }
-            private set
-            {
-                _scanDiffHint = value;
-                OnPropertyChanged();
-            }
+            get { return _scanCompare.ScanDiffHint; }
         }
 
         public bool ScanDiffChangesOnly
         {
-            get { return _scanDiffChangesOnly; }
-            set
-            {
-                _scanDiffChangesOnly = value;
-                OnPropertyChanged();
-                PublishScanDiffRows();
-            }
+            get { return _scanCompare.ScanDiffChangesOnly; }
+            set { _scanCompare.ScanDiffChangesOnly = value; }
         }
 
         public BimModelFilterItem SelectedBimModelFilter
@@ -395,7 +375,7 @@ namespace PilotBim.Analytics.ViewModels
             DataQuality.Clear();
             ModelRemarks.Clear();
             RemarkLinks.Clear();
-            ScanDiff.Clear();
+            _scanCompare.ClearDisplayedDiff();
             BimModelFilters.Clear();
             BimModelFilters.Add(new BimModelFilterItem { ModelId = Guid.Empty, DisplayName = "Все модели", IsAll = true });
 
@@ -442,156 +422,13 @@ namespace PilotBim.Analytics.ViewModels
                 ? string.Join(Environment.NewLine, _snapshot.Limitations)
                 : null;
 
-            RefreshScanDiff(_snapshot);
+            _scanCompare.RefreshOnSnapshot(_snapshot);
             RebuildDashboardWidgets();
-        }
-
-        private void RefreshScanDiff(ProjectAnalyticsSnapshot snapshot)
-        {
-            _scanDiffAll.Clear();
-            ScanDiff.Clear();
-            if (snapshot != null)
-                snapshot.ScanDiffRows = new List<ScanDiffRow>();
-            try
-            {
-                var current = _scanDiff.Capture(snapshot);
-                _currentScanBaseline = current;
-
-                var previousLast = _scanStore.TryLoadLast();
-                StoredScanBaseline previous = null;
-                string previousLabel = "предыдущий last-scan";
-
-                if (_selectedScanHistory != null && !string.IsNullOrWhiteSpace(_selectedScanHistory.Id))
-                {
-                    previous = _scanStore.TryLoadById(_selectedScanHistory.Id);
-                    if (previous != null)
-                        previousLabel = _selectedScanHistory.DisplayTitle;
-                }
-                if (previous == null)
-                {
-                    previous = previousLast;
-                    previousLabel = "предыдущий last-scan";
-                }
-
-                var rows = _scanDiff.Diff(previous, current);
-                SetScanDiffRows(rows, snapshot);
-
-                _scanStore.SaveLast(current);
-
-                if (previousLast != null
-                    && previousLast.GeneratedAt != current.GeneratedAt
-                    && !HistoryHasGeneratedAt(previousLast.GeneratedAt))
-                {
-                    _scanStore.ArchiveToHistory(
-                        previousLast,
-                        "Авто · " + previousLast.GeneratedAt.ToString("yyyy-MM-dd HH:mm"));
-                }
-
-                ReloadScanHistoryList();
-                ScanDiffHint = previous == null
-                    ? "База сохранена. Следующее «Обновить» покажет diff. Можно сохранить именованный снимок."
-                    : "Сравнение с: " + previousLabel;
-            }
-            catch (Exception ex)
-            {
-                SetScanDiffRows(new List<ScanDiffRow>
-                {
-                    new ScanDiffRow
-                    {
-                        Area = "Ошибка",
-                        Metric = "Сравнение сканов",
-                        Previous = "—",
-                        Current = "—",
-                        Delta = "n/a",
-                        Notes = ex.Message
-                    }
-                }, snapshot);
-                ScanDiffHint = "Ошибка сравнения: " + ex.Message;
-            }
-        }
-
-        private void SetScanDiffRows(List<ScanDiffRow> rows, ProjectAnalyticsSnapshot snapshot)
-        {
-            _scanDiffAll.Clear();
-            if (rows != null)
-                _scanDiffAll.AddRange(rows);
-
-            if (snapshot != null)
-            {
-                snapshot.ScanDiffRows = new List<ScanDiffRow>();
-                foreach (var row in _scanDiffAll)
-                    snapshot.ScanDiffRows.Add(row);
-            }
-
-            PublishScanDiffRows();
-        }
-
-        private void PublishScanDiffRows()
-        {
-            ScanDiff.Clear();
-            foreach (var row in _scanDiffAll)
-            {
-                if (_scanDiffChangesOnly && !IsMeaningfulChange(row))
-                    continue;
-                ScanDiff.Add(row);
-            }
-        }
-
-        private static bool IsMeaningfulChange(ScanDiffRow row)
-        {
-            if (row == null)
-                return false;
-            if (row.Area == "Скан" && row.Metric == "Время скана")
-                return true;
-            if (row.Area == "Ошибка")
-                return true;
-            var d = row.Delta;
-            if (string.IsNullOrWhiteSpace(d) || d == "0" || d == "n/a" || d == "+0")
-                return false;
-            return true;
-        }
-
-        private bool HistoryHasGeneratedAt(DateTime generatedAt)
-        {
-            return _scanStore.ListHistory()
-                .Any(e => e != null && e.GeneratedAt == generatedAt);
-        }
-
-        public void ReloadScanHistoryList()
-        {
-            var selectedId = _selectedScanHistory != null ? _selectedScanHistory.Id : null;
-            ScanHistory.Clear();
-            foreach (var e in _scanStore.ListHistory())
-                ScanHistory.Add(e);
-
-            if (selectedId != null)
-                SelectedScanHistory = ScanHistory.FirstOrDefault(e => e.Id == selectedId);
         }
 
         public void CompareWithSelectedHistory()
         {
-            if (_currentScanBaseline == null && _snapshot != null)
-                _currentScanBaseline = _scanDiff.Capture(_snapshot);
-
-            if (_currentScanBaseline == null)
-            {
-                ScanDiffHint = "Нет текущего скана — нажмите «Обновить».";
-                return;
-            }
-
-            if (_selectedScanHistory == null)
-            {
-                ScanDiffHint = "Выберите снимок в списке истории.";
-                return;
-            }
-
-            var previous = _scanStore.TryLoadById(_selectedScanHistory.Id);
-            var rows = _scanDiff.Diff(previous, _currentScanBaseline);
-            SetScanDiffRows(rows, _snapshot);
-
-            ScanDiffHint = previous == null
-                ? "Снимок не найден на диске."
-                : "Сравнение с: " + _selectedScanHistory.DisplayTitle;
+            _scanCompare.CompareWithSelectedHistory(_snapshot);
         }
 
         public string AddChartBuilderToDashboard()
@@ -620,39 +457,12 @@ namespace PilotBim.Analytics.ViewModels
 
         public bool SaveNamedScan(string name)
         {
-            if (_currentScanBaseline == null && _snapshot != null)
-                _currentScanBaseline = _scanDiff.Capture(_snapshot);
-
-            if (_currentScanBaseline == null)
-            {
-                ScanDiffHint = "Нет текущего скана — нажмите «Обновить».";
-                return false;
-            }
-
-            var id = _scanStore.SaveNamed(_currentScanBaseline, name);
-            ReloadScanHistoryList();
-            if (id != null)
-            {
-                SelectedScanHistory = ScanHistory.FirstOrDefault(e => e.Id == id);
-                ScanDiffHint = "Сохранён снимок: " + (SelectedScanHistory != null ? SelectedScanHistory.DisplayTitle : name);
-                return true;
-            }
-
-            ScanDiffHint = "Не удалось сохранить снимок.";
-            return false;
+            return _scanCompare.SaveNamedScan(name, _snapshot);
         }
 
         public void DeleteSelectedHistory()
         {
-            if (_selectedScanHistory == null)
-                return;
-            var id = _selectedScanHistory.Id;
-            if (_scanStore.DeleteHistory(id))
-            {
-                SelectedScanHistory = null;
-                ReloadScanHistoryList();
-                ScanDiffHint = "Снимок удалён из истории.";
-            }
+            _scanCompare.DeleteSelectedHistory();
         }
 
         private void InitDashboardLayout()
