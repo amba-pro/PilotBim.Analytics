@@ -366,7 +366,7 @@ Per-type `CallbackWaitSession`: on timeout/dispose, `Abandon` + `ShouldAccept()=
 
 ### Stage 6.4+
 
-Not started. Scanner reuse / further Inventory decomposition remain deferred.
+See **Stage 6 Final Assessment** below (recommendation: STOP_STAGE_6).
 
 ---
 
@@ -476,3 +476,70 @@ Buffer Clear/copy → **Stage 6.3**.
 - No AnalyticsLogger changes  
 - No AnalyticsWindow / ViewModel / XAML changes  
 - No timeout value changes  
+
+---
+
+## Stage 6 Final Assessment
+
+Date: 2026-09-09  
+HEAD after 6.3b: `88a3a82`  
+Production code changes on Stage 6.4: **none**
+
+### Comparison table
+
+| Concern | Before Stage 6 | After Stage 6 | Remaining risk | Refactor now? |
+|---------|----------------|---------------|----------------|---------------|
+| InventoryService LOC | ~605 | ~366 | Lower; Run still long but readable | **No** |
+| Sampling orchestration | Inline private methods | `ObjectSamplingCoordinator` | Low | **No** |
+| Sample buffer lifetime | Sticky across Runs; DocumentSamples alias | Clear per cycle; ToList snapshot | Low | **No** |
+| God-factory / discovery `new` | ~15 per Run + sampling | Still ~12–15 discovery `new` in Run | Maintainability noise | **No** |
+| PilotObjectScanner multi-new | 10 project-wide (6 in Inventory) | Still ~10 (5 Inventory + 1 coordinator + Discovery) | Cosmetic; façade is Stateless | **No** |
+| LoadChildren / GetRootObject | Same type as Run | Unchanged | Couples structure UI to scan façade | **No** |
+| Mutable instance state | 3 uncleared buffers | 3 buffers with correct lifecycle | Low | **No** |
+| Error / timeout boundaries | Scattered; sampling owned 30s | Sampling timeout with coordinator; FailZone unchanged | Acceptable | **No** |
+| IInventoryService | Not present | Still not present | None | **No** |
+| AnalyticsLogger | Static | Static | None for Stage 6 | **No** |
+
+### Achieved
+
+- Responsibility audit documented  
+- Sampling extracted without behavior redesign (6.2)  
+- Sticky-buffer + DocumentSamples alias correctness fix with RED→GREEN tests (6.3)  
+- InventoryService readable as orchestration: discovery → sampling coordinator → enrich → matrix  
+- Tests 100 → **102** PASS; build clean  
+
+### Remaining Coupling
+
+- Run still constructs many discovery services via `new` (composition noise, not a proven bug)  
+- Structure APIs on the same façade as inventory Run  
+- Scanner multi-`new` (stateless; no correctness issue)  
+- Static logger  
+
+### Deferred
+
+- Full `InventoryPipeline` extract  
+- `IInventoryService`  
+- Structure service extraction (`LoadChildren` / `GetRootObject`)  
+- PilotObjectScanner field reuse / interface  
+- AnalyticsLogger DI  
+- Async GetResult rewrite  
+- UI / VM / MEF / DI framework  
+
+### Specific verdicts
+
+| Item | Verdict |
+|------|---------|
+| God-factory still critical? | **No** — still a fat orchestrator, but sampling hotspot + correctness bugs addressed; remaining `new`s are acceptable composition for this plugin |
+| PilotObjectScanner multi-new | **Cosmetic construction noise** — not a correctness/testability blocker |
+| LoadChildren / GetRootObject extract now? | **No** — do not block Run readability enough to justify Stage 6 scope |
+| AnalyticsLogger | **Defer** — not a blocker |
+| IInventoryService | **NOT_NEEDED** (MAYBE_LATER if UI needs a thin fake after further shrink) |
+| Further >100 LOC extract without behavior risk? | **No clear block** — BIM/Remark/History already separate types; remaining Run body is ordered glue |
+
+### Risk Assessment
+
+Continuing Stage 6 with more mechanical extracts yields **low measurable benefit** vs. risk of accidental reorder of discovery stages / zone semantics. Correctness goals for sampling lifecycle are met.
+
+### Recommendation
+
+**STOP_STAGE_6**
