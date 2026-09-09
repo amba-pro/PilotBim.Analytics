@@ -201,7 +201,7 @@ namespace PilotBim.Analytics.Services
                 new RemarkAnalyticsService(_repository, _search, _searchManager)
                     .Analyze(report, mode, token, Progress);
 
-                report.DocumentSamples = _documentSampleBuffer;
+                report.DocumentSamples = PublishDocumentSamples(_documentSampleBuffer);
                 new SystemFieldDiscoveryService().EnrichFromSample(report, _systemFieldSampleBuffer);
 
                 report.AllAttributes = report.Types.SelectMany(t => t.Attributes).ToList();
@@ -241,6 +241,17 @@ namespace PilotBim.Analytics.Services
             }
 
             return report;
+        }
+
+        /// <summary>
+        /// Publishes working document samples into a report.
+        /// Stage 6.3: must snapshot the list so later buffer mutation cannot alter a finished report.
+        /// </summary>
+        internal static List<DocumentSampleRow> PublishDocumentSamples(List<DocumentSampleRow> workingBuffer)
+        {
+            // Pre-fix (alias): return workingBuffer;
+            // Kept intentionally for RED proof in Stage 6.3a — replaced in 6.3b.
+            return workingBuffer;
         }
 
         private readonly List<IDataObject> _historySampleBuffer = new List<IDataObject>();
