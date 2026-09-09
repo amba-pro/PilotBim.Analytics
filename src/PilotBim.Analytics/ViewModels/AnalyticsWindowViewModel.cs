@@ -21,8 +21,6 @@ namespace PilotBim.Analytics.ViewModels
         private BimModelFilterItem _selectedBimModelFilter;
         private List<BimPartAnalyticsRow> _allBimParts = new List<BimPartAnalyticsRow>();
         private List<BimElementTypeCountRow> _allBimTypes = new List<BimElementTypeCountRow>();
-        private readonly DashboardLayoutStore _dashboardLayoutStore = new DashboardLayoutStore();
-        private DashboardLayoutState _dashboardLayout;
         private ChartOptionItem _selectedChartKind;
         private ChartOptionItem _selectedChartSource;
         private ChartOptionItem _selectedChartTopN;
@@ -30,10 +28,14 @@ namespace PilotBim.Analytics.ViewModels
         private string _chartBuilderHint;
         private IList<ChartSeriesPoint> _chartBuilderSeries = new List<ChartSeriesPoint>();
         private readonly AnalyticsScanComparePresenter _scanCompare;
+        private readonly AnalyticsDashboardPresenter _dashboard;
 
         public AnalyticsWindowViewModel()
         {
             _scanCompare = new AnalyticsScanComparePresenter(name => OnPropertyChanged(name));
+            _dashboard = new AnalyticsDashboardPresenter(
+                name => OnPropertyChanged(name),
+                BuildDashboardContent);
 
             Navigation = new ObservableCollection<NavItem>
             {
@@ -113,10 +115,18 @@ namespace PilotBim.Analytics.ViewModels
             BimModelFilters.Add(new BimModelFilterItem { ModelId = Guid.Empty, DisplayName = "Все модели", IsAll = true });
             SelectedBimModelFilter = BimModelFilters[0];
 
-            DashboardLayoutItems = new ObservableCollection<DashboardLayoutItemVm>();
-            DashboardWidgets = new ObservableCollection<DashboardWidgetVm>();
-            InitDashboardLayout();
             _scanCompare.ReloadHistoryList();
+        }
+
+        private DashboardContentContext BuildDashboardContent()
+        {
+            return new DashboardContentContext
+            {
+                Snapshot = _snapshot,
+                Charts = _charts,
+                AllBimTypes = _allBimTypes,
+                Filter = _selectedBimModelFilter
+            };
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -143,8 +153,14 @@ namespace PilotBim.Analytics.ViewModels
         public ObservableCollection<ChartOptionItem> ChartSourceOptions { get; }
         public ObservableCollection<ChartOptionItem> ChartTopNOptions { get; }
         public ObservableCollection<BimModelFilterItem> BimModelFilters { get; }
-        public ObservableCollection<DashboardLayoutItemVm> DashboardLayoutItems { get; private set; }
-        public ObservableCollection<DashboardWidgetVm> DashboardWidgets { get; private set; }
+        public ObservableCollection<DashboardLayoutItemVm> DashboardLayoutItems
+        {
+            get { return _dashboard.DashboardLayoutItems; }
+        }
+        public ObservableCollection<DashboardWidgetVm> DashboardWidgets
+        {
+            get { return _dashboard.DashboardWidgets; }
+        }
 
         public ChartOptionItem SelectedChartKind
         {
@@ -423,7 +439,7 @@ namespace PilotBim.Analytics.ViewModels
                 : null;
 
             _scanCompare.RefreshOnSnapshot(_snapshot);
-            RebuildDashboardWidgets();
+            _dashboard.RebuildWidgetContent();
         }
 
         public void CompareWithSelectedHistory()
@@ -465,212 +481,39 @@ namespace PilotBim.Analytics.ViewModels
             _scanCompare.DeleteSelectedHistory();
         }
 
-        private void InitDashboardLayout()
-        {
-            _dashboardLayout = _dashboardLayoutStore.LoadOrDefault();
-            RebuildDashboardUi();
-        }
-
-        private void RebuildDashboardUi()
-        {
-            if (DashboardLayoutItems == null || DashboardWidgets == null || _dashboardLayout == null)
-                return;
-
-            DashboardLayoutItems.Clear();
-            DashboardWidgets.Clear();
-
-            foreach (var widget in (_dashboardLayout.Widgets ?? new List<DashboardWidgetState>()).OrderBy(b => b.Order))
-            {
-                DashboardLayoutItems.Add(new DashboardLayoutItemVm(widget.Id, widget.Title, widget.WidgetKind)
-                {
-                    IsVisible = widget.IsVisible
-                });
-                if (widget.IsVisible)
-                    DashboardWidgets.Add(new DashboardWidgetVm(widget));
-            }
-
-            RebuildDashboardWidgets();
-        }
-
         public void RebuildDashboardWidgets()
         {
-            if (DashboardWidgets == null)
-                return;
-
-            IEnumerable<BimElementTypeCountRow> ifc = _allBimTypes;
-            var filter = _selectedBimModelFilter;
-            if (filter != null && !filter.IsAll && filter.ModelId != Guid.Empty)
-                ifc = ifc.Where(t => t.ModelId == filter.ModelId);
-
-            foreach (var widget in DashboardWidgets)
-            {
-                if (widget.IsChart)
-                {
-                    AnalyticsChartKind kind;
-                    if (!Enum.TryParse(widget.ChartKindName ?? "", out kind))
-                        kind = AnalyticsChartKind.HorizontalBar;
-                    widget.ChartKind = kind;
-
-                    AnalyticsChartSource source;
-                    if (!Enum.TryParse(widget.ChartSource ?? "", out source))
-                        source = AnalyticsChartSource.Types;
-
-                    widget.ChartSeries = _snapshot == null
-                        ? new List<ChartSeriesPoint>()
-                        : _charts.BuildSeries(_snapshot, ifc, source, kind, widget.TopN);
-                    continue;
-                }
-
-                widget.Rows.Clear();
-                if (_snapshot == null)
-                    continue;
-
-                if (widget.WidgetKind == DashboardWidgetKinds.Kpi || widget.Id == DashboardBlockIds.Kpi)
-                {
-                    foreach (var row in _snapshot.Summary ?? Enumerable.Empty<AnalyticsKpiRow>())
-                        widget.Rows.Add(row);
-                }
-                else if (widget.WidgetKind == DashboardWidgetKinds.Bim || widget.Id == DashboardBlockIds.Bim)
-                {
-                    foreach (var row in _snapshot.BimSummary ?? Enumerable.Empty<AnalyticsKpiRow>())
-                        widget.Rows.Add(row);
-                }
-                else if (widget.WidgetKind == DashboardWidgetKinds.Responsible || widget.Id == DashboardBlockIds.Responsible)
-                {
-                    foreach (var row in (_snapshot.ObjectsByResponsible ?? Enumerable.Empty<ResponsibleCountRow>()).Take(10))
-                    {
-                        widget.Rows.Add(new AnalyticsKpiRow
-                        {
-                            Label = row.DisplayName,
-                            Value = row.SampledCount.ToString(),
-                            Detail = row.SharePercent.ToString("0.0") + "% · " + (row.Scope ?? "")
-                        });
-                    }
-                }
-            }
+            _dashboard.RebuildWidgetContent();
         }
 
         public void SetDashboardBlockVisible(string id, bool visible)
         {
-            var block = (_dashboardLayout.Widgets ?? new List<DashboardWidgetState>())
-                .FirstOrDefault(b => b.Id == id);
-            if (block == null)
-                return;
-            block.IsVisible = visible;
-            PersistAndRebuildDashboard();
+            _dashboard.SetBlockVisible(id, visible);
         }
 
         public void MoveDashboardBlock(string id, int delta)
         {
-            var ordered = (_dashboardLayout.Widgets ?? new List<DashboardWidgetState>()).OrderBy(b => b.Order).ToList();
-            var idx = ordered.FindIndex(b => b.Id == id);
-            if (idx < 0)
-                return;
-            var target = idx + delta;
-            if (target < 0 || target >= ordered.Count)
-                return;
-            var tmp = ordered[idx];
-            ordered[idx] = ordered[target];
-            ordered[target] = tmp;
-            for (var i = 0; i < ordered.Count; i++)
-                ordered[i].Order = i;
-            _dashboardLayout.Widgets = ordered;
-            PersistAndRebuildDashboard();
+            _dashboard.MoveBlock(id, delta);
         }
 
         public void AddDashboardWidget(DashboardWidgetState draft)
         {
-            if (draft == null || _dashboardLayout == null)
-                return;
-
-            if (_dashboardLayout.Widgets == null)
-                _dashboardLayout.Widgets = new List<DashboardWidgetState>();
-
-            // Built-in kinds: ensure single instance (unhide / update)
-            if (draft.WidgetKind == DashboardWidgetKinds.Kpi
-                || draft.WidgetKind == DashboardWidgetKinds.Bim
-                || draft.WidgetKind == DashboardWidgetKinds.Responsible)
-            {
-                var id = draft.WidgetKind == DashboardWidgetKinds.Kpi ? DashboardBlockIds.Kpi
-                    : draft.WidgetKind == DashboardWidgetKinds.Bim ? DashboardBlockIds.Bim
-                    : DashboardBlockIds.Responsible;
-                var existing = _dashboardLayout.Widgets.FirstOrDefault(w => w.Id == id);
-                if (existing != null)
-                {
-                    existing.IsVisible = true;
-                    existing.Title = draft.Title;
-                    PersistAndRebuildDashboard();
-                    return;
-                }
-                draft.Id = id;
-            }
-
-            if (string.IsNullOrWhiteSpace(draft.Id) || draft.WidgetKind == DashboardWidgetKinds.Chart)
-            {
-                draft = DashboardLayoutStore.CreateChartWidget(
-                    draft.Title,
-                    draft.ChartSource,
-                    draft.ChartKind,
-                    draft.TopN,
-                    draft.ColumnSpan,
-                    _dashboardLayout.Widgets.Count);
-            }
-
-            draft.Order = _dashboardLayout.Widgets.Count;
-            draft.IsVisible = true;
-            _dashboardLayout.Widgets.Add(draft);
-            PersistAndRebuildDashboard();
+            _dashboard.AddWidget(draft);
         }
 
         public void UpdateDashboardWidget(string id, DashboardWidgetState draft)
         {
-            if (string.IsNullOrWhiteSpace(id) || draft == null || _dashboardLayout == null)
-                return;
-            var existing = (_dashboardLayout.Widgets ?? new List<DashboardWidgetState>())
-                .FirstOrDefault(w => w.Id == id);
-            if (existing == null)
-                return;
-
-            existing.Title = draft.Title;
-            if (existing.WidgetKind == DashboardWidgetKinds.Chart)
-            {
-                existing.ChartSource = draft.ChartSource;
-                existing.ChartKind = draft.ChartKind;
-                existing.TopN = draft.TopN;
-                existing.ColumnSpan = draft.ColumnSpan <= 1 ? 1 : 2;
-            }
-
-            PersistAndRebuildDashboard();
+            _dashboard.UpdateWidget(id, draft);
         }
 
         public void RemoveDashboardWidget(string id)
         {
-            if (string.IsNullOrWhiteSpace(id) || _dashboardLayout == null)
-                return;
-            var list = _dashboardLayout.Widgets ?? new List<DashboardWidgetState>();
-            var target = list.FirstOrDefault(w => w.Id == id);
-            if (target == null)
-                return;
-            if (target.WidgetKind != DashboardWidgetKinds.Chart)
-                return; // built-ins: hide instead
-            list.Remove(target);
-            for (var i = 0; i < list.Count; i++)
-                list[i].Order = i;
-            _dashboardLayout.Widgets = list;
-            PersistAndRebuildDashboard();
+            _dashboard.RemoveWidget(id);
         }
 
         public DashboardWidgetState GetWidgetState(string id)
         {
-            return (_dashboardLayout.Widgets ?? new List<DashboardWidgetState>())
-                .FirstOrDefault(w => w.Id == id);
-        }
-
-        private void PersistAndRebuildDashboard()
-        {
-            _dashboardLayoutStore.Save(_dashboardLayout);
-            _dashboardLayout = _dashboardLayoutStore.LoadOrDefault();
-            RebuildDashboardUi();
+            return _dashboard.GetWidgetState(id);
         }
 
         private void ApplyBimModelFilter()
@@ -694,7 +537,7 @@ namespace PilotBim.Analytics.ViewModels
                 BimElementTypeCounts.Add(row);
 
             ReloadIfcChart();
-            RebuildDashboardWidgets();
+            _dashboard.RebuildWidgetContent();
         }
 
         private void ReloadCharts()

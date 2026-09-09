@@ -341,3 +341,77 @@ Nav, snapshot reload cascade, charts/builder, BIM filter, dashboard CRUD, progre
 ### Recommended next step
 
 Dashboard presentation extract (Stage 7.3) — not started.
+
+---
+
+## Stage 7.3 Result
+
+Date: 2026-09-09
+
+### Extracted component
+
+`AnalyticsDashboardPresenter` (+ `DashboardContentContext`) under `ViewModels/`.
+
+### State moved
+
+| State | Before | After |
+|-------|--------|-------|
+| `DashboardLayoutStore` / `_dashboardLayout` | VM | Presenter |
+| `DashboardLayoutItems` / `DashboardWidgets` | VM | Presenter (VM façade getters) |
+| Layout CRUD + persist/rebuild | VM | Presenter |
+| Widget content fill | VM (uses charts/snapshot) | Presenter via `DashboardContentContext` from VM |
+
+### Dependencies moved
+
+| Dependency | Before | After |
+|------------|--------|-------|
+| `DashboardLayoutStore` | VM field-new | Presenter |
+| `ChartDataService` | VM | **stays on VM** (passed via content context) |
+
+### Root VM façade retained
+
+`DashboardLayoutItems`, `DashboardWidgets`, `SetDashboardBlockVisible`, `MoveDashboardBlock`, `AddDashboardWidget`, `UpdateDashboardWidget`, `RemoveDashboardWidget`, `GetWidgetState`, `RebuildDashboardWidgets`, `AddChartBuilderToDashboard`.
+
+### PropertyChanged propagation
+
+Same as 7.2: `Action<string>` → VM `OnPropertyChanged` (collections are ObservableCollection; notify reserved for consistency).
+
+### Persistence semantics
+
+**UNCHANGED** (Save → LoadOrDefault → RebuildUi order)
+
+### XAML impact
+
+**NONE**
+
+| Binding property | Still exposed by root VM? |
+|------------------|---------------------------|
+| `DashboardLayoutItems` | YES |
+| `DashboardWidgets` | YES |
+
+### Window impact
+
+**NONE**
+
+### Tests
+
+107 → **111** PASS (`AnalyticsDashboardPresenterTests`)
+
+### Behavior
+
+**UNCHANGED**
+
+### Size
+
+| | Before | After |
+|--|--------|-------|
+| AnalyticsWindowViewModel | ~794 | ~637 |
+| AnalyticsDashboardPresenter | — | ~272 |
+
+### Remaining ViewModel responsibilities
+
+Nav, snapshot reload cascade, charts/builder wiring, BIM filter, progress/busy, scan-mode radios; façades to scan + dashboard presenters.
+
+### Recommended next step
+
+Chart presentation extract (optional Stage 7.4) or STOP Stage 7 — not started.
