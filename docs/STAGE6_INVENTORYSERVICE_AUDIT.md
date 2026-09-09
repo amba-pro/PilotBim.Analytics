@@ -294,49 +294,104 @@ See dedicated section below.
 
 ---
 
-## Stage 6.2 Recommendation
+## Stage 6.2 Result
 
-### Change
+Date: 2026-09-09  
+Commit target: Stage 6.2 extract only (behavior-preserving)
+
+### Extracted component
+
+`ObjectSamplingCoordinator` (`internal sealed`) under `Services/`.
+
+Moved (code move, not redesign):
+
+- `SampleAllTypes`
+- `ApplyWalkBucket`
+- `ApplySampledObjects`
+- `RecordCreatorAndCreatedDate`
+- `RecordResponsible`
+- Attributes zone + optional `CreatorAggregationService.Aggregate`
+
+### Removed from InventoryService
+
+Sampling implementation details; `Run` now calls:
+
+```
+new ObjectSamplingCoordinator(_repository, _search, buffers...).SampleAllTypes(...)
+```
+
+Public API unchanged (`Run` / `LoadChildren` / `GetRootObject` / ctor).  
+`ResolveObjectCount` remains on `InventoryService` (tests + coordinator call).
+
+### Ownership model
+
+| Concern | Before | After |
+|---------|--------|-------|
+| buffer owner | InventoryService instance fields | **InventoryService** (unchanged) |
+| sampling owner | InventoryService private methods | **ObjectSamplingCoordinator** |
+| timeout owner | SampleAllTypes / CallbackWaitSession 30s | **ObjectSamplingCoordinator** (same) |
+| callback semantics | ShouldAccept / SignalFailed / TimedOut≠success | **UNCHANGED** |
+
+Coordinator receives buffer **references**; does not own persistent buffer lifetime.
+
+### Behavior
+
+**UNCHANGED** — including sticky buffers across rescans and `DocumentSamples` aliasing.
+
+### Sticky buffer issue
+
+**STILL PRESENT** (intentionally deferred to Stage 6.3).
+
+### LOC
+
+| File | Before | After |
+|------|--------|-------|
+| InventoryService | ~605 | ~355 |
+| ObjectSamplingCoordinator | — | ~301 |
+
+### Stage 6.3 recommendation
+
+1. Characterization / regression tests for buffer lifetime (no Clear expected today → then fix).  
+2. Clear buffers at start of each sampling pass.  
+3. Assign `DocumentSamples` via copy (not alias).  
+4. Do not change timeout/callback semantics.
+
+---
+
+## Stage 6.2 Recommendation (historical — Stage 6.1 plan)
+
+Note: Stage 6.2 was executed as **extraction only**. Buffer Clear/copy was **not** done here (moved to Stage 6.3).
 
 Extract **object type sampling** from `InventoryService` into a dedicated coordinator type (e.g. `ObjectSamplingCoordinator` / `TypeInventorySampler`) that owns:
 
 - `SampleAllTypes` / `ApplyWalkBucket` / `ApplySampledObjects` / creator-responsible recording  
-- the three sample buffers  
+- sampling against caller-owned buffers (buffers remain owned by InventoryService in 6.2)  
 - per-type `CallbackWaitSession` (30s) semantics  
 - optional `CreatorAggregationService` call  
 
-At the start of each sampling pass: **Clear** buffers. When assigning `DocumentSamples`, **copy** (or ToList) — do not alias the live buffer.
+Buffer Clear/copy → **Stage 6.3**.
 
 `Run` continues to orchestrate discovery stages and calls the coordinator once.
 
 ### Why first
 
-- Smallest extract that removes the densest orchestration + timeout + mutable-state cluster  
-- Directly addresses a proven lifetime bug (sticky buffers on rescan)  
-- Improves testability without Pilot host  
+- Smallest extract that removes the densest orchestration + timeout cluster  
 - Does not require interfaces, MEF, UI, or async rewrite  
 - Leaves BIM/Remark/matrix where they already are  
 
 ### Files likely affected
 
 - `src/PilotBim.Analytics/Services/InventoryService.cs`
-- New: `src/PilotBim.Analytics/Services/ObjectSamplingCoordinator.cs` (or under `Discovery/`)
-- Tests: new focused tests for buffer clear / DocumentSamples copy; keep `InventoryServiceObjectCountTests`
+- New: `src/PilotBim.Analytics/Services/ObjectSamplingCoordinator.cs`
+- Tests: keep `InventoryServiceObjectCountTests`; buffer tests in Stage 6.3
 
 ### Expected production behavior
 
-**UNCHANGED** for first-scan path and zone/timeout semantics.  
-**Possible intentional fix:** second scan in the same window refreshes History/SystemField/Document samples (today sticky) — must be covered by a test and called out in the Stage 6.2 commit.
+**UNCHANGED** (including sticky buffers until Stage 6.3).
 
-### Expected test strategy
+### Explicit non-goals (Stage 6.2)
 
-1. Keep existing `ResolveObjectCount` characterization tests.  
-2. Add deterministic tests: buffers cleared between passes; `DocumentSamples` is not the same list instance as the internal buffer.  
-3. No real Pilot runtime required for those tests.  
-4. Manual smoke: two scans in one Inventory window → samples refresh.
-
-### Explicit non-goals
-
+- No buffer Clear/copy  
 - No `IInventoryService`  
 - No MEF / DI framework changes  
 - No moving BIM / Remark / CapabilityMatrix into the new type  
@@ -344,4 +399,3 @@ At the start of each sampling pass: **Clear** buffers. When assigning `DocumentS
 - No AnalyticsLogger changes  
 - No AnalyticsWindow / ViewModel / XAML changes  
 - No timeout value changes  
-- No Stage 6.3 pipeline extract in the same commit  
