@@ -244,14 +244,14 @@ namespace PilotBim.Analytics.Services
         }
 
         /// <summary>
-        /// Publishes working document samples into a report.
-        /// Stage 6.3: must snapshot the list so later buffer mutation cannot alter a finished report.
+        /// Publishes working document samples into a report as a list snapshot
+        /// so later mutation of the working buffer cannot alter a finished report.
         /// </summary>
         internal static List<DocumentSampleRow> PublishDocumentSamples(List<DocumentSampleRow> workingBuffer)
         {
-            // Pre-fix (alias): return workingBuffer;
-            // Kept intentionally for RED proof in Stage 6.3a — replaced in 6.3b.
-            return workingBuffer;
+            if (workingBuffer == null)
+                return new List<DocumentSampleRow>();
+            return workingBuffer.ToList();
         }
 
         private readonly List<IDataObject> _historySampleBuffer = new List<IDataObject>();

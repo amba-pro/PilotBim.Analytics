@@ -43,6 +43,11 @@ namespace PilotBim.Analytics.Services
             Action<string> progress,
             HierarchyWalkResult walk)
         {
+            // Each Run/sampling cycle must start clean — do not retain prior Run samples.
+            _historySampleBuffer.Clear();
+            _systemFieldSampleBuffer.Clear();
+            _documentSampleBuffer.Clear();
+
             var attrService = new AttributeDiscoveryService();
             var scanner = new PilotObjectScanner(_repository, _search);
             var sampler = new PilotObjectSampler(scanner);

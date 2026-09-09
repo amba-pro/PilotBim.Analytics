@@ -294,7 +294,84 @@ See dedicated section below.
 
 ---
 
+## Stage 6.3 Result
+
+Date: 2026-09-09
+
+### Bug reproduced
+
+**Sticky buffers: CONFIRMED**  
+Instance fields `_historySampleBuffer` / `_systemFieldSampleBuffer` / `_documentSampleBuffer` are never cleared; caps (5 / 20 / 20) cause prior Run samples to block or mix into the next Run.
+
+**DocumentSamples alias: CONFIRMED**  
+`InventoryService.Run` assigned `report.DocumentSamples = _documentSampleBuffer` (same list reference). Mutating the working buffer after publish altered a finished report.
+
+### RED tests
+
+| Test | Failure before fix |
+|------|--------------------|
+| `SampleAllTypes_SecondCycle_DoesNotRetainPriorBufferEntries` | `Assert.Empty` — stale entries remained |
+| `PublishDocumentSamples_MustNotAliasMutableWorkingBuffer` | Expected count 1, actual 2 after buffer mutation |
+
+Suite at RED: 102 total, **2 failed**, 100 passed.
+
+### Root cause
+
+1. No reset at sampling-cycle boundary.  
+2. Report published the live working collection by reference.
+
+### Fix
+
+1. `ObjectSamplingCoordinator.SampleAllTypes`: Clear all three buffers at method start (one explicit lifecycle reset per sampling cycle / Run).  
+2. `InventoryService.PublishDocumentSamples`: return `workingBuffer.ToList()` snapshot; `Run` assigns via that helper.
+
+### Buffer lifecycle before
+
+```
+InventoryService ctor → empty buffers
+Run #1 SampleAllTypes → fill (no clear)
+Run #1 → report.DocumentSamples aliases buffer
+Run #2 SampleAllTypes → no clear; caps retain/block Run #1 data
+Run #2 → may mutate same list still held by Run #1 report
+```
+
+### Buffer lifecycle after
+
+```
+Run #N SampleAllTypes start → Clear all three buffers
+→ fill for this cycle only
+→ report.DocumentSamples = snapshot (ToList)
+→ later buffer Clear/fill cannot change prior report list instance
+```
+
+### Alias result
+
+**FIXED**
+
+### Late callback safety
+
+**PASS**  
+Per-type `CallbackWaitSession`: on timeout/dispose, `Abandon` + `ShouldAccept()==false` before `ApplySampledObjects`. Run #1 late callbacks cannot write after Wait returns. Run #2 Clear happens only at the next `SampleAllTypes` entry, after prior sessions are abandoned/disposed. No CallbackWaitSession changes required.
+
+### Behavioral change
+
+**INTENTIONAL CORRECTNESS CHANGE**
+
+| Aspect | Change |
+|--------|--------|
+| Single Run (first scan) | **UNCHANGED** (clear of empty buffers is no-op; fill/timeouts identical) |
+| Repeated Run on same InventoryService | Prior samples no longer retained; second Run samples only current cycle |
+| Finished report DocumentSamples | Immune to later working-buffer mutation |
+| Timeout / callback / FailZone / SDK | **UNCHANGED** |
+
+### Stage 6.4+
+
+Not started. Scanner reuse / further Inventory decomposition remain deferred.
+
+---
+
 ## Stage 6.2 Result
+
 
 Date: 2026-09-09  
 Commit target: Stage 6.2 extract only (behavior-preserving)
