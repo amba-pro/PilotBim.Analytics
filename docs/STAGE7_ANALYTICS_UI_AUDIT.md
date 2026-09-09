@@ -414,4 +414,104 @@ Nav, snapshot reload cascade, charts/builder wiring, BIM filter, progress/busy, 
 
 ### Recommended next step
 
-Chart presentation extract (optional Stage 7.4) or STOP Stage 7 — not started.
+See **Stage 7 Final Assessment** — recommendation **STOP_STAGE_7**.
+
+---
+
+## Stage 7 Final Assessment
+
+Date: 2026-09-09  
+HEAD: `6aa529b`  
+Production code changes on Stage 7.4: **none**
+
+### Before / After
+
+| Metric | Before Stage 7 | After Stage 7.3 |
+|--------|----------------|-----------------|
+| AnalyticsWindowViewModel LOC | ~984 | **~637** (−~35%) |
+| Extracted presenters | 0 | 2 (~271 + ~272 LOC) |
+| XAML / Window code-behind | — | **UNCHANGED** |
+| Tests | 102 | **111** |
+| Behavior (structural stages) | — | **UNCHANGED** |
+
+### Extracted Components
+
+| Component | Responsibility |
+|-----------|----------------|
+| `AnalyticsScanComparePresenter` | scan/compare/history store+diff orchestration |
+| `AnalyticsDashboardPresenter` | dashboard layout CRUD/persist + widget content fill |
+
+Root VM remains XAML façade for both.
+
+### Root VM Remaining Responsibilities
+
+| Responsibility | Still in root VM? | Size/Risk | Extract now? |
+|----------------|-------------------|-----------|--------------|
+| Snapshot → table OCs (`ReloadCollections` ~73 LOC) | Yes | Medium orchestration | **No** (glue; shared) |
+| Charts / builder (`ReloadCharts`/`RebuildChartBuilder` ~80 LOC combined) | Yes | Medium; data already in `ChartDataService` | **No** |
+| BIM filter + caches | Yes | Small; shared by charts + dashboard | **No** |
+| Nav / progress / scan mode / busy | Yes | Thin | **No** |
+| Scan/compare façade | Yes (delegate) | Thin | Done |
+| Dashboard façade | Yes (delegate) | Thin | Done |
+| Field-new `ChartDataService` | Yes | Pure; also used by dashboard context | Keep |
+
+Methods >60 LOC now: `ReloadCollections` (~73), ctor (~70).  
+Methods >30: `RebuildChartBuilder` (~46).
+
+### Remaining Coupling
+
+| Concern | Current risk | Benefit of fixing now | Behavior risk | Recommendation |
+|---------|--------------|----------------------|---------------|----------------|
+| Chart wiring in root VM | Low–Med | Low (service already tested) | Low | **Defer** |
+| ChartDataService ownership | Low | Low | Low | Keep on VM |
+| BIM filter shared state | Low | Low | Med if split wrong | **Defer** |
+| Nav/progress | Low | None | — | Keep |
+| Snapshot ownership | Appropriate | — | — | Keep |
+| ChartCanvasControl | Already boundary | None | — | Keep |
+| Magic chart dimensions | Low (in service/control) | Cosmetic | Low | Defer |
+| Root VM façade size | Acceptable | — | — | Keep |
+| ShowPanel / 18 panels / string keys | Architecture debt | Readability only | **High** (XAML) | **Defer** (separate UI stage) |
+
+### Chart Presenter Decision
+
+- Chart-specific root methods ~`ReloadCharts` + `ReloadIfcChart` + `RebuildChartBuilder` (~80 LOC) plus option/OC fields.  
+- Series math already in **`ChartDataService`** (characterization tests exist).  
+- Dashboard widget charts still need `BuildSeries` via `DashboardContentContext` — extract would pass snapshot/filter/charts back and forth.  
+- XAML could stay unchanged with façades, but resulting presenter would be a **thin wiring wrapper** around shared VM state, not coherent ownership.  
+- ChartCanvasControl needs no change for extract.
+
+**CHART_PRESENTER: NOT_NEEDED_NOW**
+
+### BIM Filter Decision
+
+- Small field set; mutation in `ApplyBimModelFilter` (~23 LOC); used by charts + dashboard.  
+- Stage 7.1 duplicate visibility (`ShowBimModelFilter` unused vs Window `ShowPanel`) remains **architecture debt / possible correctness quirk** — not fixed in Stage 7; document only, do not fix here.
+
+**BIM_FILTER: DEFER**
+
+### Section Navigation Decision
+
+- 18 sibling panels + string keys + code-behind Visibility = debt, not a current correctness/testability blocker for extracted domains.  
+- Changing it requires **significant XAML rewrite**.
+
+**SECTION_NAVIGATION: DEFER** (later independent UI stage)
+
+### Testability Gain
+
+Now unit-testable without WPF: scan/compare presenter, dashboard presenter CRUD, plus existing Chart/Scan/Store services.  
+Root VM remaining logic is largely OC population glue — low ROI for further seams.
+
+Stage 7 has achieved **sufficient** testability gain for presentation extraction goals.
+
+### Deferred
+
+- Chart presenter  
+- BIM filter extract / visibility cleanup  
+- ShowPanel / UserControl section split  
+- ICommand migration  
+- Moving `Refresh_Click` out of Window  
+- Localization / MEF / DI  
+
+### Recommendation
+
+**STOP_STAGE_7**
