@@ -25,6 +25,14 @@
     <InternalsVisibleTo Include="PilotBim.Analytics.Tests" />
   </ItemGroup>
 
+  <!-- Resources.Designer.cs is checked in for deterministic CLI builds; do not regenerate. -->
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator></Generator>
+      <LastGenOutput></LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Ascon.Pilot.SDK">
       <HintPath>$(PilotSdkPath)\Ascon.Pilot.SDK.dll</HintPath>

@@ -9,6 +9,7 @@ using Ascon.Pilot.Bim.SDK.Search;
 using Ascon.Pilot.SDK;
 using PilotBim.Analytics.Diagnostics;
 using PilotBim.Analytics.Export;
+using PilotBim.Analytics.Properties;
 using PilotBim.Analytics.Services;
 using PilotBim.Analytics.Views;
 
@@ -56,7 +57,7 @@ namespace PilotBim.Analytics.Plugin.Commands
             {
                 AnalyticsLogger.Error("open-catalog", ex);
                 MessageBox.Show(
-                    "Не удалось открыть каталог данных:\n" + ex.Message,
+                    Resources.Catalog_OpenFailedPrefix + ex.Message,
                     "PilotBim.Analytics",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -86,7 +87,7 @@ namespace PilotBim.Analytics.Plugin.Commands
             {
                 AnalyticsLogger.Error("open-analytics", ex);
                 MessageBox.Show(
-                    "Не удалось открыть аналитику:\n" + ex.Message,
+                    Resources.Analytics_OpenFailedPrefix + ex.Message,
                     "PilotBim.Analytics",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

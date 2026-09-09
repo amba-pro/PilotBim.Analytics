@@ -9,6 +9,7 @@ using PilotBim.Analytics.Export;
 using PilotBim.Analytics.Models;
 using PilotBim.Analytics.Services;
 using PilotBim.Analytics.ViewModels;
+using UiResources = PilotBim.Analytics.Properties.Resources;
 using PilotDataObject = Ascon.Pilot.SDK.IDataObject;
 
 namespace PilotBim.Analytics.Views
@@ -112,7 +113,7 @@ namespace PilotBim.Analytics.Views
             EnsureReportText();
             if (string.IsNullOrEmpty(_lastReportText))
             {
-                MessageBox.Show("Сначала выполните сканирование.", "PilotBim.Analytics");
+                MessageBox.Show(UiResources.Common_ScanRequiredFirst, "PilotBim.Analytics");
                 return;
             }
 
@@ -125,7 +126,7 @@ namespace PilotBim.Analytics.Views
             EnsureReportText();
             if (string.IsNullOrEmpty(_lastReportText))
             {
-                MessageBox.Show("Сначала выполните сканирование.", "PilotBim.Analytics");
+                MessageBox.Show(UiResources.Common_ScanRequiredFirst, "PilotBim.Analytics");
                 return;
             }
 

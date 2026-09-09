@@ -7,6 +7,7 @@ using PilotBim.Analytics.Export;
 using PilotBim.Analytics.Models;
 using PilotBim.Analytics.Services;
 using PilotBim.Analytics.ViewModels;
+using UiResources = PilotBim.Analytics.Properties.Resources;
 
 namespace PilotBim.Analytics.Views
 {
@@ -73,7 +74,7 @@ namespace PilotBim.Analytics.Views
         {
             if (_vm.Snapshot == null)
             {
-                MessageBox.Show("Сначала выполните сканирование.", "PilotBim.Analytics");
+                MessageBox.Show(UiResources.Common_ScanRequiredFirst, "PilotBim.Analytics");
                 return;
             }
 
@@ -260,7 +261,7 @@ namespace PilotBim.Analytics.Views
             var name = (dlg.ResultText ?? "").Trim();
             if (string.IsNullOrEmpty(name))
             {
-                MessageBox.Show("Укажите имя снимка.", "PilotBim.Analytics");
+                MessageBox.Show(UiResources.Snapshot_EnterName, "PilotBim.Analytics");
                 return;
             }
             _vm.SaveNamedScan(name);

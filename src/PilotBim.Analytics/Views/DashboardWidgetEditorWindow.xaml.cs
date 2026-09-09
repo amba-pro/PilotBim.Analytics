@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using PilotBim.Analytics.Models;
+using UiResources = PilotBim.Analytics.Properties.Resources;
 
 namespace PilotBim.Analytics.Views
 {
@@ -116,7 +117,7 @@ namespace PilotBim.Analytics.Views
             var title = (TitleBox.Text ?? "").Trim();
             if (string.IsNullOrEmpty(title))
             {
-                MessageBox.Show("Укажите заголовок.", "PilotBim.Analytics");
+                MessageBox.Show(UiResources.Widget_EnterTitle, "PilotBim.Analytics");
                 return;
             }
 

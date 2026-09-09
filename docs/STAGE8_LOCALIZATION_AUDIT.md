@@ -338,3 +338,93 @@ Unblocks localization without touching ShowPanel keys, dashboard JSON kinds, Sca
 | Persistence+UI dual-use unclear | Dual-use identified and **excluded** from 8.2 |
 
 **Stage 8.1 complete. Do not start Stage 8.2 until confirmed.**
+
+---
+
+## Stage 8.2 Result
+
+Date: 2026-09-09  
+HEAD: (commit Stage 8.2)
+
+### Infrastructure
+
+| Item | Result |
+|------|--------|
+| Approach | Standard `Properties/Resources.resx` + checked-in strongly typed `Resources.Designer.cs` |
+| Access | `PilotBim.Analytics.Properties.Resources.*` (in Window code-behind: alias `UiResources` to avoid clash with `Window.Resources`) |
+| MSBuild generation | **Disabled** (`Generator` empty) so CLI builds do not overwrite Designer as `internal` |
+| LocalizationService | Not added |
+| ResourceDictionary framework | Not added |
+
+### Resource Files
+
+- `src/PilotBim.Analytics/Properties/Resources.resx`
+- `src/PilotBim.Analytics/Properties/Resources.Designer.cs`
+- `PilotBim.Analytics.csproj` EmbeddedResource update (no generator)
+
+Embedded manifest name: `PilotBim.Analytics.Properties.Resources.resources` inside `dist\PilotBim.Analytics.ext2.dll`  
+WPF `*.g.resources` unchanged. No satellite assemblies.
+
+### Naming Convention
+
+Semantic keys: `{Area}_{Purpose}`  
+
+Examples: `Common_ScanRequiredFirst`, `Widget_EnterTitle`, `Catalog_OpenFailedPrefix`, `Analytics_OpenFailedPrefix`, `Snapshot_EnterName`  
+
+Avoid: `Button1`, `Text3`, sequential junk names.
+
+### Smoke Strings Migrated
+
+| Key | Original location | Risk |
+|-----|-------------------|------|
+| `Common_ScanRequiredFirst` | AnalyticsWindow + InventoryWindow MessageBox | LOW |
+| `Widget_EnterTitle` | DashboardWidgetEditorWindow MessageBox | LOW |
+| `Catalog_OpenFailedPrefix` | AnalyticsCommandService MessageBox prefix | LOW |
+| `Analytics_OpenFailedPrefix` | AnalyticsCommandService MessageBox prefix | LOW |
+| `Snapshot_EnterName` | AnalyticsWindow MessageBox | LOW |
+
+XAML mass migration: **not done** (C# smoke only; avoids `Window.Resources` / markup infrastructure).
+
+Safety table (pre-migrate):
+
+| String | Occurrences (src) | Used in logic? | Safe? |
+|--------|-------------------|----------------|-------|
+| Сначала выполните сканирование. | 3 MessageBox | NO | YES |
+| Укажите заголовок. | 1 MessageBox | NO | YES |
+| Не удалось открыть каталог данных:\n | 1 MessageBox prefix | NO | YES |
+| Не удалось открыть аналитику:\n | 1 MessageBox prefix | NO | YES |
+| Укажите имя снимка. | 1 MessageBox | NO | YES |
+
+### Contract Strings Explicitly Untouched
+
+- Nav / ShowPanel keys  
+- Chart Ids / WidgetKinds / BlockIds  
+- KpiLabels / ScanDiff Area/Metric (`Скан`, `Время скана`, `Ошибка`)  
+- CSV headers/filenames  
+- JSON / path folder `PilotBim.Analytics` (also used as MessageBox caption — left literal)  
+- SDK names / `замечан` heuristic  
+
+### Runtime Culture Switching
+
+**NOT_IMPLEMENTED**
+
+### Additional Languages
+
+**NOT_ADDED** (no `Resources.en.resx` / `Resources.ru.resx`)
+
+### Tests
+
+111 → **115** PASS (`LocalizationResourcesTests` ×4)  
+0 failed / 0 skipped
+
+### Build
+
+PASS — **0** errors / **0** warnings
+
+### Behavior
+
+**UNCHANGED** (same default RU MessageBox text via resources)
+
+### Recommended Stage 8.3
+
+Migrate additional low-risk chrome (menu headers / button captions) via the same strongly typed Resources accessors; still exclude dual-use ScanDiff/KPI/key contracts.
