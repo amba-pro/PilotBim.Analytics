@@ -628,3 +628,51 @@ Embedded `PilotBim.Analytics.Properties.Resources.resources`; no satellites
 **ONE_MORE_LOW_RISK_BATCH**
 
 One further small batch for remaining unique Analytics/Inventory column headers and Inventory chrome, then prefer stopping low-risk migration before dual-use redesign.
+
+---
+
+## Stage 8.5 Result
+
+Date: 2026-09-11
+
+### Migrated Strings
+
+**61** new keys covering:
+
+- Analytics remaining RU DataGrid Headers (`Тип`, `Статус`, `Модель`, `Объект`, `Примечания`, …)
+- Inventory chrome (`Зоны`, filter labels, load-root, BIM tabs)
+- Inventory EN DataGrid Headers (`Type`, `Status`, `Name`, `Attribute`, …)
+
+Skipped intentionally: dual-use tabs `OPEN/CLOSED` / `Ответственные`; technical id Headers (`TypeId`, `PersonId`, `bimObjectId`, …); brand `PilotBim.Analytics`; icon glyphs.
+
+### Count
+
+**61** (Stage 8.5). Cumulative UI chrome migration across 8.2–8.5 complete for practical purposes.
+
+### Remaining Inventory
+
+**Low-risk (~15–25 scattered):** technical id column Headers; icon button glyphs; brand title literals left for path dual-use caution.
+
+**Medium-risk (~25–40):** ProgressText / hints / formatted MessageBoxes / HeaderSubtitle / persisted default Titles.
+
+**Dual-use/high-risk:** ScanDiff Area/Metric identities; KpiLabels; Nav/ShowPanel keys; Chart Ids / WidgetKinds; SDK/persistence/CSV; heuristics; dual-use tab captions.
+
+### Contract Safety
+
+UNCHANGED for Nav/ShowPanel, KpiLabels, ScanDiff semantics, Chart IDs, WidgetKinds, CSV/export, persistence, SDK/discovery, command ids.
+
+### Runtime Switching
+
+**NOT_IMPLEMENTED**
+
+### Additional Languages
+
+**NOT_ADDED**
+
+### Behavior
+
+**UNCHANGED**
+
+### Stage 8 Closure Recommendation
+
+**STOP_STAGE_8**

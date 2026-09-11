@@ -372,5 +372,311 @@ namespace PilotBim.Analytics.Properties
         {
             get { return ResourceManager.GetString("Widget_WidthLabel", resourceCulture); }
         }
+
+        // --- Stage 8.5 ---
+        public static string Column_Type
+        {
+            get { return ResourceManager.GetString("Column_Type", resourceCulture); }
+        }
+
+        public static string Column_Creator
+        {
+            get { return ResourceManager.GetString("Column_Creator", resourceCulture); }
+        }
+
+        public static string Column_Month
+        {
+            get { return ResourceManager.GetString("Column_Month", resourceCulture); }
+        }
+
+        public static string Column_Created
+        {
+            get { return ResourceManager.GetString("Column_Created", resourceCulture); }
+        }
+
+        public static string Column_Status
+        {
+            get { return ResourceManager.GetString("Column_Status", resourceCulture); }
+        }
+
+        public static string Column_Object
+        {
+            get { return ResourceManager.GetString("Column_Object", resourceCulture); }
+        }
+
+        public static string Column_Files
+        {
+            get { return ResourceManager.GetString("Column_Files", resourceCulture); }
+        }
+
+        public static string Column_PrevVersions
+        {
+            get { return ResourceManager.GetString("Column_PrevVersions", resourceCulture); }
+        }
+
+        public static string Column_Iterations
+        {
+            get { return ResourceManager.GetString("Column_Iterations", resourceCulture); }
+        }
+
+        public static string Column_Model
+        {
+            get { return ResourceManager.GetString("Column_Model", resourceCulture); }
+        }
+
+        public static string Column_Parts
+        {
+            get { return ResourceManager.GetString("Column_Parts", resourceCulture); }
+        }
+
+        public static string Column_Elements
+        {
+            get { return ResourceManager.GetString("Column_Elements", resourceCulture); }
+        }
+
+        public static string Column_Remarks
+        {
+            get { return ResourceManager.GetString("Column_Remarks", resourceCulture); }
+        }
+
+        public static string Column_Part
+        {
+            get { return ResourceManager.GetString("Column_Part", resourceCulture); }
+        }
+
+        public static string Column_WithoutGlobalId
+        {
+            get { return ResourceManager.GetString("Column_WithoutGlobalId", resourceCulture); }
+        }
+
+        public static string Column_Source
+        {
+            get { return ResourceManager.GetString("Column_Source", resourceCulture); }
+        }
+
+        public static string Column_IfcType
+        {
+            get { return ResourceManager.GetString("Column_IfcType", resourceCulture); }
+        }
+
+        public static string Column_Attribute
+        {
+            get { return ResourceManager.GetString("Column_Attribute", resourceCulture); }
+        }
+
+        public static string Column_RequiredShort
+        {
+            get { return ResourceManager.GetString("Column_RequiredShort", resourceCulture); }
+        }
+
+        public static string Column_Sample
+        {
+            get { return ResourceManager.GetString("Column_Sample", resourceCulture); }
+        }
+
+        public static string Column_RemarkType
+        {
+            get { return ResourceManager.GetString("Column_RemarkType", resourceCulture); }
+        }
+
+        public static string Column_ObjectCount
+        {
+            get { return ResourceManager.GetString("Column_ObjectCount", resourceCulture); }
+        }
+
+        public static string Column_PersonRole
+        {
+            get { return ResourceManager.GetString("Column_PersonRole", resourceCulture); }
+        }
+
+        public static string Column_Semantic
+        {
+            get { return ResourceManager.GetString("Column_Semantic", resourceCulture); }
+        }
+
+        public static string Column_StatusExample
+        {
+            get { return ResourceManager.GetString("Column_StatusExample", resourceCulture); }
+        }
+
+        public static string Column_FillPercent
+        {
+            get { return ResourceManager.GetString("Column_FillPercent", resourceCulture); }
+        }
+
+        public static string Inventory_Zones
+        {
+            get { return ResourceManager.GetString("Inventory_Zones", resourceCulture); }
+        }
+
+        public static string Inventory_TypeFilterLabel
+        {
+            get { return ResourceManager.GetString("Inventory_TypeFilterLabel", resourceCulture); }
+        }
+
+        public static string Inventory_AttributeFilterLabel
+        {
+            get { return ResourceManager.GetString("Inventory_AttributeFilterLabel", resourceCulture); }
+        }
+
+        public static string Inventory_LoadRoot
+        {
+            get { return ResourceManager.GetString("Inventory_LoadRoot", resourceCulture); }
+        }
+
+        public static string Inventory_TabSdkCapabilities
+        {
+            get { return ResourceManager.GetString("Inventory_TabSdkCapabilities", resourceCulture); }
+        }
+
+        public static string Inventory_TabIndexModels
+        {
+            get { return ResourceManager.GetString("Inventory_TabIndexModels", resourceCulture); }
+        }
+
+        public static string Inventory_TabIndexParts
+        {
+            get { return ResourceManager.GetString("Inventory_TabIndexParts", resourceCulture); }
+        }
+
+        public static string Inventory_TabIndexIfc
+        {
+            get { return ResourceManager.GetString("Inventory_TabIndexIfc", resourceCulture); }
+        }
+
+        public static string Inventory_TabStorageSample
+        {
+            get { return ResourceManager.GetString("Inventory_TabStorageSample", resourceCulture); }
+        }
+
+        public static string Inventory_TabRemarkLinks
+        {
+            get { return ResourceManager.GetString("Inventory_TabRemarkLinks", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Type
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Type", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Objects
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Objects", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Attributes
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Attributes", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Sampled
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Sampled", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Status
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Status", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Warnings
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Warnings", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Attribute
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Attribute", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Required
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Required", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Filled
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Filled", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Empty
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Empty", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Examples
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Examples", resourceCulture); }
+        }
+
+        public static string Inventory_Col_ValueType
+        {
+            get { return ResourceManager.GetString("Inventory_Col_ValueType", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Field
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Field", resourceCulture); }
+        }
+
+        public static string Inventory_Col_SdkSource
+        {
+            get { return ResourceManager.GetString("Inventory_Col_SdkSource", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Availability
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Availability", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Example
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Example", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Notes
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Notes", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Name
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Name", resourceCulture); }
+        }
+
+        public static string Inventory_Col_References
+        {
+            get { return ResourceManager.GetString("Inventory_Col_References", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Types
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Types", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Semantic
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Semantic", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Organisation
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Organisation", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Parent
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Parent", resourceCulture); }
+        }
+
+        public static string Inventory_Col_Children
+        {
+            get { return ResourceManager.GetString("Inventory_Col_Children", resourceCulture); }
+        }
+
+        public static string Inventory_Col_IsPosition
+        {
+            get { return ResourceManager.GetString("Inventory_Col_IsPosition", resourceCulture); }
+        }
     }
 }

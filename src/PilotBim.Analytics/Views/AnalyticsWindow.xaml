@@ -347,11 +347,11 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding ObjectsByType}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Тип" Binding="{Binding TypeName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Type}" Binding="{Binding TypeName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="TypeId" Binding="{Binding TypeId}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_Count}" Binding="{Binding CountDisplay}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_SharePercent}" Binding="{Binding SharePercent, StringFormat={}{0:0.0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Fill %" Binding="{Binding FillPercent, StringFormat={}{0:0.0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_FillPercent}" Binding="{Binding FillPercent, StringFormat={}{0:0.0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -360,7 +360,7 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding ObjectsByCreator}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Создатель" Binding="{Binding DisplayName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Creator}" Binding="{Binding DisplayName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="PersonId" Binding="{Binding CreatorId}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_InSample}" Binding="{Binding SampledCount}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_SharePercent}" Binding="{Binding SharePercent, StringFormat={}{0:0.0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
@@ -373,8 +373,8 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding ObjectsByCreatedMonth}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Месяц" Binding="{Binding Period}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Создано" Binding="{Binding Count}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Month}" Binding="{Binding Period}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Created}" Binding="{Binding Count}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_SharePercent}" Binding="{Binding SharePercent, StringFormat={}{0:0.0}}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
@@ -384,7 +384,7 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding ObjectsByUserState}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Статус" Binding="{Binding StateTitle}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Status}" Binding="{Binding StateTitle}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="StateId" Binding="{Binding StateId}" Width="220" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_InSample}" Binding="{Binding Count}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_SharePercent}" Binding="{Binding SharePercent, StringFormat={}{0:0.0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
@@ -397,11 +397,11 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding DocumentVersions}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Объект" Binding="{Binding DisplayName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Тип" Binding="{Binding TypeName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Файлов" Binding="{Binding FileCount}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Пред. версий" Binding="{Binding PreviousSnapshotCount}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Итераций" Binding="{Binding TotalIterations}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Object}" Binding="{Binding DisplayName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Type}" Binding="{Binding TypeName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Files}" Binding="{Binding FileCount}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_PrevVersions}" Binding="{Binding PreviousSnapshotCount}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Iterations}" Binding="{Binding TotalIterations}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -421,14 +421,14 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding BimModelAnalytics}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Модель" Binding="{Binding ModelName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Model}" Binding="{Binding ModelName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="ModelId" Binding="{Binding ModelId}" Width="220" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Частей" Binding="{Binding PartCount}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Элементов" Binding="{Binding ElementCountDisplay}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Parts}" Binding="{Binding PartCount}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Elements}" Binding="{Binding ElementCountDisplay}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="GlobalId" Binding="{Binding GlobalIdCount}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="GlobalId %" Binding="{Binding GlobalIdFillPercent, StringFormat={}{0:0.0}}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Примечания" Binding="{Binding Notes}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Status}" Binding="{Binding Status}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Remarks}" Binding="{Binding Notes}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -437,16 +437,16 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding BimPartAnalytics}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Часть" Binding="{Binding PartName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Модель" Binding="{Binding ModelName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Part}" Binding="{Binding PartName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Model}" Binding="{Binding ModelName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="PartId" Binding="{Binding PartId}" Width="220" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Элементов" Binding="{Binding ElementCountDisplay}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Elements}" Binding="{Binding ElementCountDisplay}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="GlobalId" Binding="{Binding GlobalIdCount}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Без GlobalId" Binding="{Binding WithoutGlobalIdCount}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_WithoutGlobalId}" Binding="{Binding WithoutGlobalIdCount}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="GlobalId %" Binding="{Binding GlobalIdFillPercent, StringFormat={}{0:0.0}}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Источник" Binding="{Binding DataSource}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Примечания" Binding="{Binding Notes}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Source}" Binding="{Binding DataSource}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Status}" Binding="{Binding Status}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Remarks}" Binding="{Binding Notes}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -455,9 +455,9 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding BimElementTypeCounts}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="IFC тип" Binding="{Binding IfcType}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Модель" Binding="{Binding ModelName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Часть" Binding="{Binding PartName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_IfcType}" Binding="{Binding IfcType}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Model}" Binding="{Binding ModelName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Part}" Binding="{Binding PartName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_Count}" Binding="{Binding Count}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_SharePercent}" Binding="{Binding SharePercent, StringFormat={}{0:0.0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
@@ -468,12 +468,12 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding DataQuality}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Тип" Binding="{Binding TypeName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Атрибут" Binding="{Binding AttributeTitle}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Обяз." Binding="{Binding IsObligatory}" Width="50" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Fill %" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Сэмпл" Binding="{Binding SampledCount}" Width="60" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Type}" Binding="{Binding TypeName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Attribute}" Binding="{Binding AttributeTitle}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_RequiredShort}" Binding="{Binding IsObligatory}" Width="50" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_FillPercent}" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Sample}" Binding="{Binding SampledCount}" Width="60" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Status}" Binding="{Binding Status}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -482,11 +482,11 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding ModelRemarks}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Тип замечания" Binding="{Binding TypeName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Объектов" Binding="{Binding ObjectCount}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_RemarkType}" Binding="{Binding TypeName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_ObjectCount}" Binding="{Binding ObjectCount}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="bimObjectId fill" Binding="{Binding BimObjectIdFillRate, StringFormat={}{0:P0}}" Width="110" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="Mapping" Binding="{Binding MappingStatus}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Примечания" Binding="{Binding Notes}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Remarks}" Binding="{Binding Notes}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -495,12 +495,12 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding RemarkLinks}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Объект" Binding="{Binding DisplayName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Тип" Binding="{Binding TypeName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Object}" Binding="{Binding DisplayName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Type}" Binding="{Binding TypeName}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="bimObjectId" Binding="{Binding BimObjectId}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="Index" Binding="{Binding ResolvedInIndex}" Width="60" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="Mapping" Binding="{Binding MappingStatus}" Width="100" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Примечания" Binding="{Binding Notes}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Remarks}" Binding="{Binding Notes}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -509,7 +509,7 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding ObjectsByResponsible}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="ФИО / должность" Binding="{Binding DisplayName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_PersonRole}" Binding="{Binding DisplayName}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="PersonId" Binding="{Binding PersonId}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="OrgUnitId" Binding="{Binding OrgUnitId}" Width="90" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_InSample}" Binding="{Binding SampledCount}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
@@ -564,8 +564,8 @@
                   ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
                   ItemsSource="{Binding ObjectsByUserStateSemantic}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Семантика" Binding="{Binding Semantic}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-            <DataGridTextColumn Header="Пример статуса" Binding="{Binding StateTitle}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_Semantic}" Binding="{Binding Semantic}" Width="120" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Column_StatusExample}" Binding="{Binding StateTitle}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_InSample}" Binding="{Binding Count}" Width="80" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_SharePercent}" Binding="{Binding SharePercent, StringFormat={}{0:0.0}}" Width="70" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
             <DataGridTextColumn Header="{x:Static props:Resources.Column_Scope}" Binding="{Binding Scope}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />

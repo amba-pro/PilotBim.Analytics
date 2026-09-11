@@ -149,7 +149,7 @@
         <ScrollViewer x:Name="PanelOverview" Grid.Row="1" Visibility="Visible">
           <StackPanel>
             <TextBlock Text="{Binding OverviewSummary}" TextWrapping="Wrap" FontFamily="Consolas" FontSize="13" Foreground="#1F2A24" />
-            <TextBlock Text="Зоны" FontWeight="SemiBold" Foreground="#1F2A24" Margin="0,16,0,6" />
+            <TextBlock Text="{x:Static props:Resources.Inventory_Zones}" FontWeight="SemiBold" Foreground="#1F2A24" Margin="0,16,0,6" />
             <DataGrid ItemsSource="{Binding Zones}" Style="{StaticResource InventoryDataGrid}"
                       ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                       AutoGenerateColumns="True" IsReadOnly="True" Height="180" />
@@ -167,14 +167,14 @@
                     AutoGenerateColumns="False" IsReadOnly="True"
                     SelectionChanged="TypesGrid_SelectionChanged">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Type" Binding="{Binding Title}" Width="2*" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Type}" Binding="{Binding Title}" Width="2*" />
               <DataGridTextColumn Header="TypeId" Binding="{Binding TypeId}" Width="70" />
-              <DataGridTextColumn Header="Objects" Binding="{Binding ObjectCount}" Width="80" />
-              <DataGridTextColumn Header="Attributes" Binding="{Binding AttributeCount}" Width="80" />
-              <DataGridTextColumn Header="Sampled" Binding="{Binding SampledCount}" Width="70" />
-              <DataGridTextColumn Header="Fill %" Binding="{Binding FillPercent, StringFormat={}{0:0.0}}" Width="70" />
-              <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" />
-              <DataGridTextColumn Header="Warnings" Binding="{Binding Warnings}" Width="*" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Objects}" Binding="{Binding ObjectCount}" Width="80" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Attributes}" Binding="{Binding AttributeCount}" Width="80" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Sampled}" Binding="{Binding SampledCount}" Width="70" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Column_FillPercent}" Binding="{Binding FillPercent, StringFormat={}{0:0.0}}" Width="70" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Status}" Binding="{Binding Status}" Width="100" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Warnings}" Binding="{Binding Warnings}" Width="*" />
             </DataGrid.Columns>
           </DataGrid>
           <DataGrid Grid.Row="1" ItemsSource="{Binding SelectedType.Attributes}"
@@ -182,15 +182,15 @@
                     ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                     AutoGenerateColumns="False" IsReadOnly="True" Margin="0,8,0,0">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Attribute" Binding="{Binding Title}" Width="*" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Attribute}" Binding="{Binding Title}" Width="*" />
               <DataGridTextColumn Header="Id" Binding="{Binding AttributeId}" Width="120" />
-              <DataGridTextColumn Header="Type" Binding="{Binding ValueType}" Width="90" />
-              <DataGridTextColumn Header="Required" Binding="{Binding IsObligatory}" Width="70" />
-              <DataGridTextColumn Header="Filled" Binding="{Binding PopulatedCount}" Width="60" />
-              <DataGridTextColumn Header="Empty" Binding="{Binding EmptyCount}" Width="60" />
-              <DataGridTextColumn Header="Fill %" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" />
-              <DataGridTextColumn Header="Status" Binding="{Binding PopulationStatus}" Width="120" />
-              <DataGridTextColumn Header="Examples" Binding="{Binding ExamplesText}" Width="2*" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Type}" Binding="{Binding ValueType}" Width="90" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Required}" Binding="{Binding IsObligatory}" Width="70" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Filled}" Binding="{Binding PopulatedCount}" Width="60" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Empty}" Binding="{Binding EmptyCount}" Width="60" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Column_FillPercent}" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Status}" Binding="{Binding PopulationStatus}" Width="120" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Examples}" Binding="{Binding ExamplesText}" Width="2*" />
             </DataGrid.Columns>
           </DataGrid>
         </Grid>
@@ -202,10 +202,10 @@
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <TextBlock Text="Type:" VerticalAlignment="Center" Foreground="#1F2A24" Margin="0,0,6,0" />
+            <TextBlock Text="{x:Static props:Resources.Inventory_TypeFilterLabel}" VerticalAlignment="Center" Foreground="#1F2A24" Margin="0,0,6,0" />
             <TextBox Width="180" Text="{Binding AttributeTypeFilter, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,12,0"
                      Background="White" Foreground="#1F2A24" />
-            <TextBlock Text="Attribute:" VerticalAlignment="Center" Foreground="#1F2A24" Margin="0,0,6,0" />
+            <TextBlock Text="{x:Static props:Resources.Inventory_AttributeFilterLabel}" VerticalAlignment="Center" Foreground="#1F2A24" Margin="0,0,6,0" />
             <TextBox Width="180" Text="{Binding AttributeNameFilter, UpdateSourceTrigger=PropertyChanged}"
                      Background="White" Foreground="#1F2A24" />
           </StackPanel>
@@ -214,14 +214,14 @@
                     ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                     AutoGenerateColumns="False" IsReadOnly="True">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="*" />
-              <DataGridTextColumn Header="Attribute" Binding="{Binding Title}" Width="*" />
-              <DataGridTextColumn Header="Value Type" Binding="{Binding ValueType}" Width="100" />
-              <DataGridTextColumn Header="Required" Binding="{Binding IsObligatory}" Width="70" />
-              <DataGridTextColumn Header="Filled" Binding="{Binding PopulatedCount}" Width="60" />
-              <DataGridTextColumn Header="Empty" Binding="{Binding EmptyCount}" Width="60" />
-              <DataGridTextColumn Header="Fill %" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" />
-              <DataGridTextColumn Header="Examples" Width="2*" Binding="{Binding ExamplesText}" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Type}" Binding="{Binding TypeName}" Width="*" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Attribute}" Binding="{Binding Title}" Width="*" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_ValueType}" Binding="{Binding ValueType}" Width="100" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Required}" Binding="{Binding IsObligatory}" Width="70" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Filled}" Binding="{Binding PopulatedCount}" Width="60" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Empty}" Binding="{Binding EmptyCount}" Width="60" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Column_FillPercent}" Binding="{Binding FillRate, StringFormat={}{0:P0}}" Width="70" />
+              <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Examples}" Width="2*" Binding="{Binding ExamplesText}" />
             </DataGrid.Columns>
           </DataGrid>
         </Grid>
@@ -231,11 +231,11 @@
                   ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                   ItemsSource="{Binding SystemFields}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Field" Binding="{Binding Field}" Width="140" />
-            <DataGridTextColumn Header="SDK Source" Binding="{Binding SdkSource}" Width="2*" />
-            <DataGridTextColumn Header="Availability" Binding="{Binding Availability}" Width="120" />
-            <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="*" />
-            <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="2*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Field}" Binding="{Binding Field}" Width="140" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_SdkSource}" Binding="{Binding SdkSource}" Width="2*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Availability}" Binding="{Binding Availability}" Width="120" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Example}" Binding="{Binding Example}" Width="*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Notes}" Binding="{Binding Notes}" Width="2*" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -245,10 +245,10 @@
                   ItemsSource="{Binding States}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn Header="StateId" Binding="{Binding StateId}" Width="220" />
-            <DataGridTextColumn Header="Name" Binding="{Binding Title}" Width="*" />
-            <DataGridTextColumn Header="References" Binding="{Binding ReferencedObjects}" Width="90" />
-            <DataGridTextColumn Header="Types" Binding="{Binding ReferencedTypesText}" Width="2*" />
-            <DataGridTextColumn Header="Semantic" Binding="{Binding SemanticStatus}" Width="100" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Name}" Binding="{Binding Title}" Width="*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_References}" Binding="{Binding ReferencedObjects}" Width="90" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Types}" Binding="{Binding ReferencedTypesText}" Width="2*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Semantic}" Binding="{Binding SemanticStatus}" Width="100" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -258,8 +258,8 @@
                   ItemsSource="{Binding Persons}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn Header="PersonId" Binding="{Binding PersonId}" Width="80" />
-            <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="*" />
-            <DataGridTextColumn Header="Organisation" Binding="{Binding OrganisationName}" Width="*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Name}" Binding="{Binding DisplayName}" Width="*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Organisation}" Binding="{Binding OrganisationName}" Width="*" />
             <DataGridTextColumn Header="OrgId" Binding="{Binding OrganisationId}" Width="80" />
           </DataGrid.Columns>
         </DataGrid>
@@ -270,10 +270,10 @@
                   ItemsSource="{Binding Organisations}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn Header="OrganisationId" Binding="{Binding OrganisationId}" Width="100" />
-            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
-            <DataGridTextColumn Header="Parent" Binding="{Binding ParentOrganisationId}" Width="90" />
-            <DataGridTextColumn Header="IsPosition" Binding="{Binding IsPosition}" Width="80" />
-            <DataGridTextColumn Header="Children" Binding="{Binding ChildrenCount}" Width="80" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Name}" Binding="{Binding Name}" Width="*" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Parent}" Binding="{Binding ParentOrganisationId}" Width="90" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_IsPosition}" Binding="{Binding IsPosition}" Width="80" />
+            <DataGridTextColumn Header="{x:Static props:Resources.Inventory_Col_Children}" Binding="{Binding ChildrenCount}" Width="80" />
           </DataGrid.Columns>
         </DataGrid>
 
@@ -282,7 +282,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
-          <Button Content="Загрузить корень (lazy)" Width="180" HorizontalAlignment="Left" Click="LoadStructureRoot_Click" Margin="0,0,0,8" />
+          <Button Content="{x:Static props:Resources.Inventory_LoadRoot}" Width="180" HorizontalAlignment="Left" Click="LoadStructureRoot_Click" Margin="0,0,0,8" />
           <TreeView x:Name="StructureTree" Grid.Row="1" ItemsSource="{Binding StructureRoots}"
                     Background="White" Foreground="#1F2A24"
                     TreeViewItem.Expanded="StructureTree_Expanded">
@@ -332,31 +332,31 @@
 
         <Grid x:Name="PanelBim" Grid.Row="1" Visibility="Collapsed">
           <TabControl Background="White" Foreground="#1F2A24">
-            <TabItem Header="SDK capabilities">
+            <TabItem Header="{x:Static props:Resources.Inventory_TabSdkCapabilities}">
               <DataGrid ItemsSource="{Binding BimCapabilities}"
                         Style="{StaticResource InventoryDataGrid}"
                         ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                         AutoGenerateColumns="True" IsReadOnly="True" />
             </TabItem>
-            <TabItem Header="Index — модели">
+            <TabItem Header="{x:Static props:Resources.Inventory_TabIndexModels}">
               <DataGrid ItemsSource="{Binding BimModelAnalytics}"
                         Style="{StaticResource InventoryDataGrid}"
                         ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                         AutoGenerateColumns="True" IsReadOnly="True" />
             </TabItem>
-            <TabItem Header="Index — части">
+            <TabItem Header="{x:Static props:Resources.Inventory_TabIndexParts}">
               <DataGrid ItemsSource="{Binding BimPartAnalytics}"
                         Style="{StaticResource InventoryDataGrid}"
                         ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                         AutoGenerateColumns="True" IsReadOnly="True" />
             </TabItem>
-            <TabItem Header="Index — IFC типы">
+            <TabItem Header="{x:Static props:Resources.Inventory_TabIndexIfc}">
               <DataGrid ItemsSource="{Binding BimElementTypeCounts}"
                         Style="{StaticResource InventoryDataGrid}"
                         ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"
                         AutoGenerateColumns="True" IsReadOnly="True" />
             </TabItem>
-            <TabItem Header="Storage sample">
+            <TabItem Header="{x:Static props:Resources.Inventory_TabStorageSample}">
               <Grid>
                 <Grid.RowDefinitions>
                   <RowDefinition Height="*" />
@@ -372,7 +372,7 @@
                          Text="{Binding SelectedBimPropertiesText, Mode=OneWay}" VerticalScrollBarVisibility="Auto" />
               </Grid>
             </TabItem>
-            <TabItem Header="Remark links">
+            <TabItem Header="{x:Static props:Resources.Inventory_TabRemarkLinks}">
               <DataGrid ItemsSource="{Binding RemarkLinks}"
                         Style="{StaticResource InventoryDataGrid}"
                         ColumnHeaderStyle="{StaticResource InventoryDataGridColumnHeader}"

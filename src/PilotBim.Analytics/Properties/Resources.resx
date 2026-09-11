@@ -268,4 +268,189 @@
   <data name="Widget_WidthLabel" xml:space="preserve">
     <value>Ширина</value>
   </data>
+
+  <!-- Stage 8.5: final low-risk chrome / grid headers -->
+  <data name="Column_Type" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="Column_Creator" xml:space="preserve">
+    <value>Создатель</value>
+  </data>
+  <data name="Column_Month" xml:space="preserve">
+    <value>Месяц</value>
+  </data>
+  <data name="Column_Created" xml:space="preserve">
+    <value>Создано</value>
+  </data>
+  <data name="Column_Status" xml:space="preserve">
+    <value>Статус</value>
+  </data>
+  <data name="Column_Object" xml:space="preserve">
+    <value>Объект</value>
+  </data>
+  <data name="Column_Files" xml:space="preserve">
+    <value>Файлов</value>
+  </data>
+  <data name="Column_PrevVersions" xml:space="preserve">
+    <value>Пред. версий</value>
+  </data>
+  <data name="Column_Iterations" xml:space="preserve">
+    <value>Итераций</value>
+  </data>
+  <data name="Column_Model" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="Column_Parts" xml:space="preserve">
+    <value>Частей</value>
+  </data>
+  <data name="Column_Elements" xml:space="preserve">
+    <value>Элементов</value>
+  </data>
+  <data name="Column_Remarks" xml:space="preserve">
+    <value>Примечания</value>
+  </data>
+  <data name="Column_Part" xml:space="preserve">
+    <value>Часть</value>
+  </data>
+  <data name="Column_WithoutGlobalId" xml:space="preserve">
+    <value>Без GlobalId</value>
+  </data>
+  <data name="Column_Source" xml:space="preserve">
+    <value>Источник</value>
+  </data>
+  <data name="Column_IfcType" xml:space="preserve">
+    <value>IFC тип</value>
+  </data>
+  <data name="Column_Attribute" xml:space="preserve">
+    <value>Атрибут</value>
+  </data>
+  <data name="Column_RequiredShort" xml:space="preserve">
+    <value>Обяз.</value>
+  </data>
+  <data name="Column_Sample" xml:space="preserve">
+    <value>Сэмпл</value>
+  </data>
+  <data name="Column_RemarkType" xml:space="preserve">
+    <value>Тип замечания</value>
+  </data>
+  <data name="Column_ObjectCount" xml:space="preserve">
+    <value>Объектов</value>
+  </data>
+  <data name="Column_PersonRole" xml:space="preserve">
+    <value>ФИО / должность</value>
+  </data>
+  <data name="Column_Semantic" xml:space="preserve">
+    <value>Семантика</value>
+  </data>
+  <data name="Column_StatusExample" xml:space="preserve">
+    <value>Пример статуса</value>
+  </data>
+  <data name="Column_FillPercent" xml:space="preserve">
+    <value>Fill %</value>
+  </data>
+  <data name="Inventory_Zones" xml:space="preserve">
+    <value>Зоны</value>
+  </data>
+  <data name="Inventory_TypeFilterLabel" xml:space="preserve">
+    <value>Type:</value>
+  </data>
+  <data name="Inventory_AttributeFilterLabel" xml:space="preserve">
+    <value>Attribute:</value>
+  </data>
+  <data name="Inventory_LoadRoot" xml:space="preserve">
+    <value>Загрузить корень (lazy)</value>
+  </data>
+  <data name="Inventory_TabSdkCapabilities" xml:space="preserve">
+    <value>SDK capabilities</value>
+  </data>
+  <data name="Inventory_TabIndexModels" xml:space="preserve">
+    <value>Index — модели</value>
+  </data>
+  <data name="Inventory_TabIndexParts" xml:space="preserve">
+    <value>Index — части</value>
+  </data>
+  <data name="Inventory_TabIndexIfc" xml:space="preserve">
+    <value>Index — IFC типы</value>
+  </data>
+  <data name="Inventory_TabStorageSample" xml:space="preserve">
+    <value>Storage sample</value>
+  </data>
+  <data name="Inventory_TabRemarkLinks" xml:space="preserve">
+    <value>Remark links</value>
+  </data>
+  <data name="Inventory_Col_Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Inventory_Col_Objects" xml:space="preserve">
+    <value>Objects</value>
+  </data>
+  <data name="Inventory_Col_Attributes" xml:space="preserve">
+    <value>Attributes</value>
+  </data>
+  <data name="Inventory_Col_Sampled" xml:space="preserve">
+    <value>Sampled</value>
+  </data>
+  <data name="Inventory_Col_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Inventory_Col_Warnings" xml:space="preserve">
+    <value>Warnings</value>
+  </data>
+  <data name="Inventory_Col_Attribute" xml:space="preserve">
+    <value>Attribute</value>
+  </data>
+  <data name="Inventory_Col_Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Inventory_Col_Filled" xml:space="preserve">
+    <value>Filled</value>
+  </data>
+  <data name="Inventory_Col_Empty" xml:space="preserve">
+    <value>Empty</value>
+  </data>
+  <data name="Inventory_Col_Examples" xml:space="preserve">
+    <value>Examples</value>
+  </data>
+  <data name="Inventory_Col_ValueType" xml:space="preserve">
+    <value>Value Type</value>
+  </data>
+  <data name="Inventory_Col_Field" xml:space="preserve">
+    <value>Field</value>
+  </data>
+  <data name="Inventory_Col_SdkSource" xml:space="preserve">
+    <value>SDK Source</value>
+  </data>
+  <data name="Inventory_Col_Availability" xml:space="preserve">
+    <value>Availability</value>
+  </data>
+  <data name="Inventory_Col_Example" xml:space="preserve">
+    <value>Example</value>
+  </data>
+  <data name="Inventory_Col_Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="Inventory_Col_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Inventory_Col_References" xml:space="preserve">
+    <value>References</value>
+  </data>
+  <data name="Inventory_Col_Types" xml:space="preserve">
+    <value>Types</value>
+  </data>
+  <data name="Inventory_Col_Semantic" xml:space="preserve">
+    <value>Semantic</value>
+  </data>
+  <data name="Inventory_Col_Organisation" xml:space="preserve">
+    <value>Organisation</value>
+  </data>
+  <data name="Inventory_Col_Parent" xml:space="preserve">
+    <value>Parent</value>
+  </data>
+  <data name="Inventory_Col_Children" xml:space="preserve">
+    <value>Children</value>
+  </data>
+  <data name="Inventory_Col_IsPosition" xml:space="preserve">
+    <value>IsPosition</value>
+  </data>
 </root>

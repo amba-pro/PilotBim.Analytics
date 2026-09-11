@@ -65,5 +65,16 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal("Типы (top)", Resources.ChartTab_TypesTop);
             Assert.Equal("Источник данных", Resources.Widget_SourceLabel);
         }
+
+        [Fact]
+        public void Stage85_FinalChromeKeys_MatchExpectedDefaults()
+        {
+            Assert.Equal("Тип", Resources.Column_Type);
+            Assert.Equal("Статус", Resources.Column_Status);
+            Assert.Equal("Модель", Resources.Column_Model);
+            Assert.Equal("Зоны", Resources.Inventory_Zones);
+            Assert.Equal("Type", Resources.Inventory_Col_Type);
+            Assert.Equal("Index — модели", Resources.Inventory_TabIndexModels);
+        }
     }
 }
