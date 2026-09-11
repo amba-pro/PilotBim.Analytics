@@ -107,10 +107,12 @@ namespace PilotBim.Analytics.Services
                         {
                             if (!session.ShouldAccept())
                                 return;
-                            ApplySampledObjects(report, typeRecord, objects, total, attrService, docService, estimate: total < 0);
+                            ApplySampledObjects(report, typeRecord, objects, total, attrService, docService, estimate: total < 0, session);
                         }
                         catch (Exception ex)
                         {
+                            if (!session.ShouldAccept())
+                                return;
                             sampleError = ex;
                             typeRecord.Status = CapabilityStatus.Error;
                             typeRecord.Warnings = ex.Message;
@@ -121,6 +123,8 @@ namespace PilotBim.Analytics.Services
                         }
                     }, ex =>
                     {
+                        if (!session.ShouldAccept())
+                            return;
                         sampleError = ex;
                         session.SignalFailed(ex);
                     });
@@ -197,10 +201,14 @@ namespace PilotBim.Analytics.Services
             long total,
             AttributeDiscoveryService attrService,
             DocumentDiscoveryService docService,
-            bool estimate)
+            bool estimate,
+            CallbackWaitSession session = null)
         {
             if (objects == null)
                 objects = new List<IDataObject>();
+
+            if (session != null && !session.ShouldAccept())
+                return;
 
             typeRecord.ObjectCount = InventoryService.ResolveObjectCount(total, objects.Count);
             typeRecord.ObjectCountIsEstimate = estimate || total < 0;
@@ -208,6 +216,8 @@ namespace PilotBim.Analytics.Services
 
             foreach (var obj in objects)
             {
+                if (session != null && !session.ShouldAccept())
+                    return;
                 if (obj == null || obj.State != DataState.Loaded)
                     continue;
                 attrService.ProfileObject(obj, typeRecord.Attributes, typeRecord);
@@ -220,15 +230,23 @@ namespace PilotBim.Analytics.Services
                     _historySampleBuffer.Add(obj);
             }
 
+            if (session != null && !session.ShouldAccept())
+                return;
+
             if (_documentSampleBuffer.Count < 20)
             {
                 foreach (var row in docService.SampleDocuments(objects, 5))
                 {
+                    if (session != null && !session.ShouldAccept())
+                        return;
                     if (_documentSampleBuffer.Count >= 20)
                         break;
                     _documentSampleBuffer.Add(row);
                 }
             }
+
+            if (session != null && !session.ShouldAccept())
+                return;
 
             foreach (var a in typeRecord.Attributes)
                 attrService.FinalizeAttribute(a);

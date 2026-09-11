@@ -291,13 +291,16 @@ namespace PilotBim.Analytics.Services
 
         public void LoadChildren(Guid parentId, Action<IReadOnlyList<IDataObject>> onDone)
         {
+            // TD-14: SDK may invoke last-object + OnCompleted + OnError; deliver at most once.
+            var onceDone = OneShotCallback.Wrap(onDone);
+
             var cached = new PilotObjectScanner(_repository, _search).TryGetCached(parentId);
             if (cached != null && cached.Children != null)
             {
                 var childIds = cached.Children.ToList();
                 if (childIds.Count == 0)
                 {
-                    onDone(new List<IDataObject>());
+                    onceDone(new List<IDataObject>());
                     return;
                 }
 
@@ -309,11 +312,11 @@ namespace PilotBim.Analytics.Services
                         return;
                     loaded.Add(obj);
                     if (remaining.Count == 0)
-                        onDone(loaded);
-                }, () => onDone(loaded), ex =>
+                        onceDone(loaded);
+                }, () => onceDone(loaded), ex =>
                 {
                     AnalyticsLogger.Error("structure-children", ex);
-                    onDone(loaded);
+                    onceDone(loaded);
                 });
                 return;
             }
@@ -322,7 +325,7 @@ namespace PilotBim.Analytics.Services
             {
                 if (parent == null || parent.Children == null || parent.Children.Count == 0)
                 {
-                    onDone(new List<IDataObject>());
+                    onceDone(new List<IDataObject>());
                     return;
                 }
 
@@ -335,16 +338,16 @@ namespace PilotBim.Analytics.Services
                         return;
                     loaded.Add(obj);
                     if (remaining.Count == 0)
-                        onDone(loaded);
-                }, () => onDone(loaded), ex =>
+                        onceDone(loaded);
+                }, () => onceDone(loaded), ex =>
                 {
                     AnalyticsLogger.Error("structure-children", ex);
-                    onDone(loaded);
+                    onceDone(loaded);
                 });
             }, () => { }, ex =>
             {
                 AnalyticsLogger.Error("structure-parent", ex);
-                onDone(new List<IDataObject>());
+                onceDone(new List<IDataObject>());
             });
         }
 

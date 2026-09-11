@@ -83,8 +83,6 @@ No remaining MUST_FIX_BEFORE_STAGE_10 items after Stage 9.2.
 | ID | Area | Severity | Title |
 |----|------|----------|-------|
 | TD-38 | N String contracts | MEDIUM | `IsRemarkType` heuristic duplicated verbatim in two services |
-| TD-25 | J Thread safety | MEDIUM | Post-timeout callback can mutate `report` lists concurrently with the waiting thread |
-| TD-14 | F InventoryService | MEDIUM | `LoadChildren` can invoke `onDone` more than once (no completion guard) |
 | TD-08 | D ChartCanvasControl | MEDIUM | `420.0` / `220.0` divisors duplicate private `ChartDataService` constants |
 | TD-06 | C UI navigation | MEDIUM | BIM filter visibility predicate duplicated in VM and Window |
 | TD-11 | E ViewModel | MEDIUM | Snapshot reload re-evaluates chart builder ×4 and dashboard content ×3 |
@@ -95,6 +93,8 @@ No remaining MUST_FIX_BEFORE_STAGE_10 items after Stage 9.2.
 | TD-30 | L Null safety | LOW | `AnalyticsWindow` ctor validates 2 of 3 dependencies |
 | TD-37 | N String contracts | LOW | `"bimObjectId"` literal repeated in three files |
 | TD-48 | U Hygiene | LOW | `csproj` `Description`/`Version` metadata stale (`Stage 1 …`, `0.9.0-rich-diff-to-dashboard`) |
+
+~~TD-25~~ / ~~TD-14~~ — **FIXED_IN_STAGE_9_3** (see Stage 9.3 Result).
 
 ## DEFER
 
@@ -242,12 +242,9 @@ Pilot runtime required: NO.
 
 **TD-14 — `LoadChildren` can call `onDone` more than once**
 Area F. Severity MEDIUM.
-Evidence: `Services/InventoryService.cs:292-349`. Both branches subscribe with `obj => { … if (remaining.Count == 0) onDone(loaded); }` **and** `onCompleted: () => onDone(loaded)` **and** `onError: ex => onDone(loaded)` — with no `finished` latch. Contrast `Data/PilotObjectScanner.cs:281-288`, where `PilotObjectSampler.SampleType` guards exactly this with a `finished` flag, and `SearchByType` (`:87-93`) does the same. So the one-shot contract is enforced everywhere except here.
-Risk: `onDone` fires on the last object *and* again on `OnCompleted`. Today's two consumers are accidentally idempotent (`InventoryWindow.xaml.cs:166-187` and `:217-228` both `Clear()` then re-add inside `Dispatcher.BeginInvoke`), so no visible bug — but the tree is rebuilt twice per expand, and any future non-idempotent consumer will duplicate children.
-Classification: **SHOULD_FIX**.
-Suggested minimal action: wrap `onDone` in the same `finished`-latch local `Action` already used by `PilotObjectSampler`. ~6 LOC, applied twice.
-Regression risk: LOW; testable with a fake `IObjectsRepository` returning a synthetic `IObservable<IDataObject>`.
-Pilot runtime required: NO for the unit test; YES to confirm tree behaviour.
+Evidence (pre-fix): `Services/InventoryService.cs` both branches subscribed with `obj => { … if (remaining.Count == 0) onDone(loaded); }` **and** `onCompleted: () => onDone(loaded)` **and** `onError: ex => onDone(loaded)` — with no `finished` latch. Contrast `PilotObjectSampler.SampleType` / `SearchByType` one-shot guards.
+Status: **FIXED_IN_STAGE_9_3**.
+Fix: `Data/OneShotCallback.Wrap(onDone)` at `LoadChildren` entry; all completion paths call `onceDone`. Tests: `OneShotCallbackTests`.
 
 **TD-15 — `Run` is 210 LOC and constructs ~12 services inline** — DEFER. Evidence: `:35-244`; `new PilotSdkDiscoveryService/TypeDiscoveryService/StateDiscoveryService/StateMappingService/OrganisationDiscoveryService/PersonDiscoveryService/PilotObjectScanner/HierarchyWalkSampler/ObjectSamplingCoordinator/DocumentDiscoveryService/HistoryDiscoveryService/BimDiscoveryService/RemarkAnalyticsService/SystemFieldDiscoveryService/CapabilityMatrixService`. It reads as a linear, ordered, cancellation-checked pipeline with per-zone `try/catch` — genuinely the clearest form for what it does. Stage 6 extracted the densest cluster and stopped deliberately; further extraction risks reordering zones.
 
@@ -323,17 +320,9 @@ Pilot runtime required: **YES**.
 
 **TD-25 — Post-timeout callback races with the waiting thread over `report` collections**
 Area J. Severity MEDIUM.
-Evidence: `Services/ObjectSamplingCoordinator.cs:101-146`.
-- `Exception sampleError = null;` (`:103`) is captured by two lambdas and read by the waiter at `:136` — a plain local, no `volatile`, no lock.
-- `ShouldAccept()` is checked **once** at entry (`:108`). If the 30 s timeout fires while the callback is already inside `ApplySampledObjects` (`:110`), that callback keeps writing `typeRecord`, `report.CreatorSampleCounts`, `report.ResponsibleSampleCounts`, `_systemFieldSampleBuffer`, `_historySampleBuffer`, `_documentSampleBuffer` (`:193-240`) — while the waiter has already proceeded to `report.Warnings.Add(...)` (`:133`) and then to the next type, which mutates the same buffers.
-- The error lambda (`:122-126`) writes `sampleError` with no abandon check at all.
-- `report.Warnings`, `report.Diagnostics`, the sample buffers and the `Dictionary` counters are all plain `List<T>`/`Dictionary<,>`.
-
-Risk: concurrent `List<T>.Add` / `Dictionary` insert from the SDK callback thread and the scan worker thread — the classic corruption/`IndexOutOfRangeException`/`InvalidOperationException` failure mode. Requires the timeout to coincide with an in-flight callback, so it is rare, but it is a genuine data race on shared mutable state, and a mid-scan crash surfaces as the coarse `BLOCKED_BY_SDK` (TD-21) with no diagnosis.
-Classification: **SHOULD_FIX**.
-Suggested minimal action: re-check `session.ShouldAccept()` inside `ApplySampledObjects`' per-object loop (cheap, matches the pattern `RemarkAnalyticsService:85-86` already uses), make `sampleError` an `Interlocked`/`volatile` field, and add the abandon check to the error lambda. No locking, no structural change.
-Regression risk: LOW-MEDIUM — it can turn a "late data accepted" case into a "late data dropped" case, which is the documented intent but is a behaviour delta on the timeout path.
-Pilot runtime required: **YES** to reproduce; the guard itself is unit-testable via a fake sampler.
+Evidence (pre-fix): `Services/ObjectSamplingCoordinator.cs` SampleAllTypes — `ShouldAccept()` checked once at callback entry, then `ApplySampledObjects` could keep mutating `typeRecord` / creator-responsible maps / sample buffers after `Wait` timed out and abandoned. Error lambda wrote `sampleError` with no abandon check.
+Status: **FIXED_IN_STAGE_9_3**.
+Fix: pass `CallbackWaitSession` into `ApplySampledObjects`; re-check `ShouldAccept()` before header writes, each object, document buffer writes, and finalization/`Status=Available`; guard catch + error lambdas with `ShouldAccept()` before mutating. Pattern matches `RemarkAnalyticsService`. Tests: `SampleCallbackRaceTests`.
 
 **TD-26 — UI marshalling is correct** — LEAVE_AS_IS. Verified: `AnalyticsWindow.xaml.cs:137-139` and `InventoryWindow.xaml.cs:82-84` marshal progress via `Dispatcher.BeginInvoke`; `InventoryWindow.xaml.cs:168,219` marshal `LoadChildren` callbacks; `_vm.Snapshot = snapshot` (`:142`) runs on the UI thread after `await`. No `ObservableCollection` is touched off-thread anywhere.
 
@@ -580,10 +569,10 @@ Sorted MUST → SHOULD → DEFER → LEAVE_AS_IS; within a band, by severity the
 
 | # | ID | Class | Sev | Area | Finding | Minimal action | Regr. risk | Pilot runtime |
 |--:|----|-------|-----|------|---------|----------------|-----------|---------------|
-| 1 | TD-22 | **MUST_FIX_BEFORE_STAGE_10** | HIGH | I | CTS never disposed / scan not cancelled on close / concurrent orphan scans | Cancel+dispose previous CTS, dispose in `finally`, `OnClosed` cancel | LOW-MED | YES |
+| 1 | TD-22 | **FIXED_IN_STAGE_9_2** | HIGH | I | CTS never disposed / scan not cancelled on close / concurrent orphan scans | Cancel+dispose previous CTS, dispose in `finally`, `OnClosed` cancel | LOW-MED | YES |
 | 2 | TD-38 | SHOULD_FIX | MED | N | `IsRemarkType` duplicated verbatim in 2 services | Extract one shared helper | LOW | NO |
-| 3 | TD-25 | SHOULD_FIX | MED | J | Post-timeout callback races with waiter on `report` lists | Re-check `ShouldAccept` per object; volatile `sampleError` | LOW-MED | YES |
-| 4 | TD-14 | SHOULD_FIX | MED | F | `LoadChildren` may call `onDone` twice | Add the `finished` latch used elsewhere | LOW | NO |
+| 3 | TD-25 | **FIXED_IN_STAGE_9_3** | MED | J | Post-timeout callback races with waiter on `report` lists | Re-check `ShouldAccept` per object; guard error lambda | LOW-MED | YES |
+| 4 | TD-14 | **FIXED_IN_STAGE_9_3** | MED | F | `LoadChildren` may call `onDone` twice | `OneShotCallback.Wrap` | LOW | NO |
 | 5 | TD-08 | SHOULD_FIX | MED | D | `420.0`/`220.0` duplicated from `ChartDataService` consts | Reference shared named constants | LOW | NO |
 | 6 | TD-06 | SHOULD_FIX | MED | C | BIM filter visibility duplicated VM/Window | Window reads `_vm.ShowBimModelFilter` | LOW | NO |
 | 7 | TD-11 | SHOULD_FIX | MED | E | Chart builder rebuilt ×4, dashboard ×3 per snapshot | Delete 2 redundant calls (needs VM tests first) | MED | NO |
@@ -630,7 +619,7 @@ Sorted MUST → SHOULD → DEFER → LEAVE_AS_IS; within a band, by severity the
 | 48 | TD-44 | LEAVE_AS_IS | — | S | Backlog in docs, zero `TODO` markers | — | — | — |
 | 49 | TD-49 | LEAVE_AS_IS | LOW | U | Multiple types per file | — | — | — |
 
-Counts: **MUST_FIX_BEFORE_STAGE_10 = 1**, **SHOULD_FIX = 13**, **DEFER = 24**, **LEAVE_AS_IS = 11**.
+Counts (after Stage 9.3): **MUST_FIX_BEFORE_STAGE_10 = 0**, **SHOULD_FIX = 11**, **DEFER = 24**, **LEAVE_AS_IS = 11**. Fixed in Stage 9: TD-22, TD-25, TD-14.
 
 ## Recommended Stage 9.2
 
@@ -701,5 +690,56 @@ Status: **TD-22 FIXED**
 - Inventory/Pilot scan business logic unchanged.
 
 ### Stage 10 blockers remaining
+
+**0**
+
+---
+
+## Stage 9.3 Result
+
+Date: 2026-09-11  
+Status: **TD-25 FIXED_IN_STAGE_9_3**, **TD-14 FIXED_IN_STAGE_9_3**
+
+### TD-25
+
+Evidence: `ObjectSamplingCoordinator.SampleAllTypes` used `CallbackWaitSession` but checked `ShouldAccept()` only once before `ApplySampledObjects`; mid-mutation after timeout could still write `typeRecord`, creator/responsible maps, and sample buffers while the waiter set `Partial` and continued. Error lambda mutated `sampleError` without an abandon check.
+
+Fix: pass `session` into `ApplySampledObjects`; re-check `ShouldAccept()` before header mutation, each object, document-buffer writes, and finalization/`Status=Available`; guard catch + error lambdas. Walk path still calls `ApplySampledObjects` without a session (unchanged).
+
+### TD-14
+
+Evidence: `InventoryService.LoadChildren` could invoke `onDone` from last-child, `OnCompleted`, and `OnError` with no latch.
+
+Fix: `OneShotCallback.Wrap(onDone)` at method entry; all branches deliver through `onceDone`.
+
+### Tests
+
+- `SampleCallbackRaceTests` (5) — accept / timeout-late / dispose-late / mid-abandon stop / double-entry after abandon  
+- `OneShotCallbackTests` (6) — once, duplicate, success→error, error→success, null action, parameterless  
+- Suite: **127 → 138 PASS**, 0 failed, 0 skipped
+
+### Build
+
+PASS — 0 errors / 0 warnings
+
+### Behavior
+
+| Path | Result |
+|------|--------|
+| Normal successful sample / LoadChildren | UNCHANGED |
+| Timeout / error status semantics | UNCHANGED |
+| Pilot SDK call patterns / public API / MEF | UNCHANGED |
+| Late callback after timeout/abandon | INTENTIONALLY_HARDENED |
+| Duplicate LoadChildren completion | INTENTIONALLY_HARDENED |
+
+### Remaining MUST_FIX
+
+**0**
+
+### Remaining SHOULD_FIX
+
+TD-38, TD-08, TD-06, TD-11, TD-41, TD-40, TD-03, TD-02, TD-30, TD-37, TD-48
+
+### Stage 10 blockers
 
 **0**
