@@ -27,9 +27,6 @@ namespace PilotBim.Analytics.Properties
         {
         }
 
-        /// <summary>
-        ///   Returns the cached ResourceManager instance used by this class.
-        /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         public static global::System.Resources.ResourceManager ResourceManager
         {
@@ -47,9 +44,6 @@ namespace PilotBim.Analytics.Properties
             }
         }
 
-        /// <summary>
-        ///   Overrides the current thread's CurrentUICulture for all resource lookups.
-        /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         public static global::System.Globalization.CultureInfo Culture
         {
@@ -57,44 +51,180 @@ namespace PilotBim.Analytics.Properties
             set { resourceCulture = value; }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Сначала выполните сканирование.
-        /// </summary>
+        // --- Stage 8.2 ---
         public static string Common_ScanRequiredFirst
         {
             get { return ResourceManager.GetString("Common_ScanRequiredFirst", resourceCulture); }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Укажите заголовок.
-        /// </summary>
         public static string Widget_EnterTitle
         {
             get { return ResourceManager.GetString("Widget_EnterTitle", resourceCulture); }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Не удалось открыть каталог данных:\n
-        /// </summary>
         public static string Catalog_OpenFailedPrefix
         {
             get { return ResourceManager.GetString("Catalog_OpenFailedPrefix", resourceCulture); }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Не удалось открыть аналитику:\n
-        /// </summary>
         public static string Analytics_OpenFailedPrefix
         {
             get { return ResourceManager.GetString("Analytics_OpenFailedPrefix", resourceCulture); }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to Укажите имя снимка.
-        /// </summary>
         public static string Snapshot_EnterName
         {
             get { return ResourceManager.GetString("Snapshot_EnterName", resourceCulture); }
+        }
+
+        // --- Stage 8.3 common ---
+        public static string Common_Cancel
+        {
+            get { return ResourceManager.GetString("Common_Cancel", resourceCulture); }
+        }
+
+        public static string Common_OK
+        {
+            get { return ResourceManager.GetString("Common_OK", resourceCulture); }
+        }
+
+        public static string Common_Refresh
+        {
+            get { return ResourceManager.GetString("Common_Refresh", resourceCulture); }
+        }
+
+        public static string Common_Delete
+        {
+            get { return ResourceManager.GetString("Common_Delete", resourceCulture); }
+        }
+
+        public static string Common_Configure
+        {
+            get { return ResourceManager.GetString("Common_Configure", resourceCulture); }
+        }
+
+        public static string Common_ScanModeFast
+        {
+            get { return ResourceManager.GetString("Common_ScanModeFast", resourceCulture); }
+        }
+
+        public static string Common_ScanModeStandard
+        {
+            get { return ResourceManager.GetString("Common_ScanModeStandard", resourceCulture); }
+        }
+
+        public static string Common_ScanModeFull
+        {
+            get { return ResourceManager.GetString("Common_ScanModeFull", resourceCulture); }
+        }
+
+        public static string Common_NameLabel
+        {
+            get { return ResourceManager.GetString("Common_NameLabel", resourceCulture); }
+        }
+
+        // --- Analytics ---
+        public static string Analytics_WindowTitle
+        {
+            get { return ResourceManager.GetString("Analytics_WindowTitle", resourceCulture); }
+        }
+
+        public static string Analytics_ExportCsv
+        {
+            get { return ResourceManager.GetString("Analytics_ExportCsv", resourceCulture); }
+        }
+
+        public static string Analytics_ExportsFolder
+        {
+            get { return ResourceManager.GetString("Analytics_ExportsFolder", resourceCulture); }
+        }
+
+        public static string Analytics_OpenExportsFolderTooltip
+        {
+            get { return ResourceManager.GetString("Analytics_OpenExportsFolderTooltip", resourceCulture); }
+        }
+
+        public static string Analytics_ModelLabel
+        {
+            get { return ResourceManager.GetString("Analytics_ModelLabel", resourceCulture); }
+        }
+
+        public static string Analytics_AddWidget
+        {
+            get { return ResourceManager.GetString("Analytics_AddWidget", resourceCulture); }
+        }
+
+        public static string Analytics_DashboardBuilder
+        {
+            get { return ResourceManager.GetString("Analytics_DashboardBuilder", resourceCulture); }
+        }
+
+        public static string Analytics_ToDashboard
+        {
+            get { return ResourceManager.GetString("Analytics_ToDashboard", resourceCulture); }
+        }
+
+        public static string Analytics_AddChartToDashboardTooltip
+        {
+            get { return ResourceManager.GetString("Analytics_AddChartToDashboardTooltip", resourceCulture); }
+        }
+
+        // --- Inventory ---
+        public static string Inventory_WindowTitle
+        {
+            get { return ResourceManager.GetString("Inventory_WindowTitle", resourceCulture); }
+        }
+
+        public static string Inventory_Scan
+        {
+            get { return ResourceManager.GetString("Inventory_Scan", resourceCulture); }
+        }
+
+        public static string Inventory_CopyReport
+        {
+            get { return ResourceManager.GetString("Inventory_CopyReport", resourceCulture); }
+        }
+
+        public static string Inventory_SaveReport
+        {
+            get { return ResourceManager.GetString("Inventory_SaveReport", resourceCulture); }
+        }
+
+        // --- Widget editor ---
+        public static string Widget_WindowTitle
+        {
+            get { return ResourceManager.GetString("Widget_WindowTitle", resourceCulture); }
+        }
+
+        public static string Widget_TitleLabel
+        {
+            get { return ResourceManager.GetString("Widget_TitleLabel", resourceCulture); }
+        }
+
+        public static string Widget_KindLabel
+        {
+            get { return ResourceManager.GetString("Widget_KindLabel", resourceCulture); }
+        }
+
+        // --- Menu / toolbar ---
+        public static string Menu_Overview
+        {
+            get { return ResourceManager.GetString("Menu_Overview", resourceCulture); }
+        }
+
+        public static string Menu_Catalog
+        {
+            get { return ResourceManager.GetString("Menu_Catalog", resourceCulture); }
+        }
+
+        public static string Toolbar_Analytics
+        {
+            get { return ResourceManager.GetString("Toolbar_Analytics", resourceCulture); }
+        }
+
+        public static string Toolbar_Catalog
+        {
+            get { return ResourceManager.GetString("Toolbar_Catalog", resourceCulture); }
         }
     }
 }

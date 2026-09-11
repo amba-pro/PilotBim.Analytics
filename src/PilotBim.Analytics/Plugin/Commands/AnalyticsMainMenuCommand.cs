@@ -3,6 +3,7 @@ using System.ComponentModel.Composition;
 using Ascon.Pilot.SDK;
 using Ascon.Pilot.SDK.Menu;
 using PilotBim.Analytics.Diagnostics;
+using PilotBim.Analytics.Properties;
 
 namespace PilotBim.Analytics.Plugin.Commands
 {
@@ -10,7 +11,6 @@ namespace PilotBim.Analytics.Plugin.Commands
     public sealed class AnalyticsMainMenuCommand : IMenu<MainViewContext>
     {
         private const string CommandName = "PilotBim_Analytics_DataSources";
-        private const string MenuItemHeader = "Аналитика — источники данных";
 
         private readonly AnalyticsCommandService _service;
 
@@ -30,7 +30,7 @@ namespace PilotBim.Analytics.Plugin.Commands
                 AnalyticsLogger.Info("main-menu-build", "register data sources");
                 var item = builder.AddItem(CommandName, 0);
                 if (item != null)
-                    item.WithHeader(MenuItemHeader);
+                    item.WithHeader(Resources.Menu_Catalog);
             }
             catch (Exception ex)
             {
@@ -59,7 +59,6 @@ namespace PilotBim.Analytics.Plugin.Commands
     public sealed class AnalyticsOverviewMenuCommand : IMenu<MainViewContext>
     {
         private const string CommandName = "PilotBim_Analytics_Overview";
-        private const string MenuItemHeader = "Аналитика — обзор проекта";
 
         private readonly AnalyticsCommandService _service;
 
@@ -79,7 +78,7 @@ namespace PilotBim.Analytics.Plugin.Commands
                 AnalyticsLogger.Info("overview-menu-build", "register overview");
                 var item = builder.AddItem(CommandName, 1);
                 if (item != null)
-                    item.WithHeader(MenuItemHeader);
+                    item.WithHeader(Resources.Menu_Overview);
             }
             catch (Exception ex)
             {

@@ -428,3 +428,105 @@ PASS — **0** errors / **0** warnings
 ### Recommended Stage 8.3
 
 Migrate additional low-risk chrome (menu headers / button captions) via the same strongly typed Resources accessors; still exclude dual-use ScanDiff/KPI/key contracts.
+
+---
+
+## Stage 8.3 Result
+
+Date: 2026-09-11  
+Access pattern: XAML `{x:Static props:Resources.Key}` + C# `Resources.Key` for menus
+
+### Migrated Strings
+
+| Key | Original text | Location | Risk |
+|-----|---------------|----------|------|
+| `Common_Cancel` | Отмена | Analytics/Inventory/WidgetEditor/SimplePrompt | LOW |
+| `Common_OK` | OK | WidgetEditor/SimplePrompt | LOW |
+| `Common_Refresh` | Обновить | AnalyticsWindow button | LOW |
+| `Common_Delete` | Удалить | Analytics tooltips + ScanDiff button | LOW |
+| `Common_Configure` | Настроить | Analytics dashboard tooltip | LOW |
+| `Common_ScanModeFast` | Быстро | Analytics + Inventory radios | LOW |
+| `Common_ScanModeStandard` | Стандарт | Analytics + Inventory radios | LOW |
+| `Common_ScanModeFull` | Полный | Analytics + Inventory radios | LOW |
+| `Common_NameLabel` | Имя: | SimplePrompt default | LOW |
+| `Analytics_WindowTitle` | Pilot-BIM Analytics — Обзор проекта | Title + header | LOW |
+| `Analytics_ExportCsv` | Экспорт CSV | Analytics toolbar | LOW |
+| `Analytics_ExportsFolder` | Папка CSV | Analytics toolbar | LOW |
+| `Analytics_OpenExportsFolderTooltip` | Открыть папку Exports | ToolTip | LOW |
+| `Analytics_ModelLabel` | Модель: | BIM filter bar | LOW |
+| `Analytics_AddWidget` | + Виджет | Dashboard | LOW |
+| `Analytics_DashboardBuilder` | Конструктор дашборда | Dashboard | LOW |
+| `Analytics_ToDashboard` | На дашборд | Chart builder | LOW |
+| `Analytics_AddChartToDashboardTooltip` | Добавить текущий график на Сводку | ToolTip | LOW |
+| `Inventory_WindowTitle` | Pilot-BIM Analytics — Каталог данных | Inventory Title | LOW |
+| `Inventory_Scan` | Сканировать | Inventory toolbar | LOW |
+| `Inventory_CopyReport` | Скопировать отчёт | Inventory toolbar | LOW |
+| `Inventory_SaveReport` | Сохранить отчёт | Inventory toolbar | LOW |
+| `Widget_WindowTitle` | Виджет дашборда | Editor Title | LOW |
+| `Widget_TitleLabel` | Заголовок | Editor label | LOW |
+| `Widget_KindLabel` | Тип виджета | Editor label | LOW |
+| `Menu_Overview` | Аналитика — обзор проекта | Main/context menu | LOW |
+| `Menu_Catalog` | Аналитика — источники данных | Main/context menu | LOW |
+| `Toolbar_Analytics` | Аналитика | Toolbar header | LOW |
+| `Toolbar_Catalog` | Каталог данных | Toolbar header | LOW |
+
+### Count
+
+**29** new keys (Stage 8.3). Cumulative resources include Stage 8.2 smoke keys.
+
+### Contract Strings Untouched
+
+Nav/ShowPanel, KpiLabels, ScanDiff Area/Metric logic, Chart IDs, WidgetKinds, CSV/export, JSON/persistence paths, SDK names, discovery heuristics, command **ids**.
+
+### XAML impact
+
+**TEXT SOURCE ONLY** (`{x:Static}` on existing attributes)
+
+### Layout impact
+
+**NONE**
+
+### Runtime language switching
+
+**NOT_IMPLEMENTED**
+
+### Additional languages
+
+**NOT_ADDED**
+
+### Tests
+
+115 → **116** PASS (+ representative chrome key checks)  
+0 failed / 0 skipped
+
+### Build
+
+PASS — **0** errors / **0** warnings  
+Embedded: `PilotBim.Analytics.Properties.Resources.resources` (no satellites)
+
+### Behavior
+
+**UNCHANGED**
+
+### Remaining Low-Risk Strings
+
+- Many DataGrid column Headers (Analytics/Inventory)
+- Chart TabItem headers
+- ScanDiff chrome (`База:`, `Сравнить`, `Сохранить как…`, `Только изменения`)
+- Chart builder labels (`Данные:`, `Тип:`, `Объём:`)
+- Remaining widget editor labels (`Источник данных`, `Тип графика`, `Объём`, `Ширина`)
+- Remaining MessageBox / ProgressText strings
+- Footer `Ограничения (read-only)`
+
+### Deferred Dual-Use Strings
+
+- ScanDiff `Area`/`Metric` (`Скан`, `Время скана`, `Ошибка`)
+- `KpiLabels` / Summary Labels
+- Nav Keys / ShowPanel
+- Chart Ids / WidgetKinds
+- Heuristic `замечан`
+- Path folder / brand `PilotBim.Analytics` where used as persistence
+
+### Recommended Next Step
+
+Continue small-batch chrome (grid Headers / remaining dialogs) **or** design stable codes for dual-use ScanDiff/KPI before localizing those display values — do not start without confirmation.

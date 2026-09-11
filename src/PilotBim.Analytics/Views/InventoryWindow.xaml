@@ -1,7 +1,8 @@
 <Window x:Class="PilotBim.Analytics.Views.InventoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Pilot-BIM Analytics — Каталог данных"
+        xmlns:props="clr-namespace:PilotBim.Analytics.Properties"
+        Title="{x:Static props:Resources.Inventory_WindowTitle}"
         Height="760" Width="1180"
         WindowStartupLocation="CenterScreen"
         Background="#F7F7F5"
@@ -87,15 +88,15 @@
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
           <TextBlock Text="PilotBim.Analytics" Foreground="White" FontSize="18" FontWeight="SemiBold" Margin="0,0,18,0" />
-          <RadioButton Content="Быстро" GroupName="ScanMode" IsChecked="{Binding IsFast}" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center" />
-          <RadioButton Content="Стандарт" GroupName="ScanMode" IsChecked="{Binding IsStandard}" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center" />
-          <RadioButton Content="Полный" GroupName="ScanMode" IsChecked="{Binding IsFull}" Foreground="White" Margin="0,0,18,0" VerticalAlignment="Center" />
+          <RadioButton Content="{x:Static props:Resources.Common_ScanModeFast}" GroupName="ScanMode" IsChecked="{Binding IsFast}" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center" />
+          <RadioButton Content="{x:Static props:Resources.Common_ScanModeStandard}" GroupName="ScanMode" IsChecked="{Binding IsStandard}" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center" />
+          <RadioButton Content="{x:Static props:Resources.Common_ScanModeFull}" GroupName="ScanMode" IsChecked="{Binding IsFull}" Foreground="White" Margin="0,0,18,0" VerticalAlignment="Center" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal">
-          <Button Content="Сканировать" Width="110" Height="28" Margin="0,0,8,0" Click="Scan_Click" />
-          <Button Content="Отмена" Width="80" Height="28" Margin="0,0,8,0" Click="Cancel_Click" />
-          <Button Content="Скопировать отчёт" Width="140" Height="28" Margin="0,0,8,0" Click="CopyReport_Click" />
-          <Button Content="Сохранить отчёт" Width="130" Height="28" Click="SaveReport_Click" />
+          <Button Content="{x:Static props:Resources.Inventory_Scan}" Width="110" Height="28" Margin="0,0,8,0" Click="Scan_Click" />
+          <Button Content="{x:Static props:Resources.Common_Cancel}" Width="80" Height="28" Margin="0,0,8,0" Click="Cancel_Click" />
+          <Button Content="{x:Static props:Resources.Inventory_CopyReport}" Width="140" Height="28" Margin="0,0,8,0" Click="CopyReport_Click" />
+          <Button Content="{x:Static props:Resources.Inventory_SaveReport}" Width="130" Height="28" Click="SaveReport_Click" />
         </StackPanel>
       </Grid>
     </Border>

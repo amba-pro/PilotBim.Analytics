@@ -3,6 +3,7 @@ using System.ComponentModel.Composition;
 using Ascon.Pilot.SDK;
 using Ascon.Pilot.SDK.Menu;
 using PilotBim.Analytics.Diagnostics;
+using PilotBim.Analytics.Properties;
 
 namespace PilotBim.Analytics.Plugin.Commands
 {
@@ -31,11 +32,11 @@ namespace PilotBim.Analytics.Plugin.Commands
 
                 var overview = builder.AddItem(OverviewCommand, 0);
                 if (overview != null)
-                    overview.WithHeader("Аналитика — обзор проекта");
+                    overview.WithHeader(Resources.Menu_Overview);
 
                 var catalog = builder.AddItem(CatalogCommand, 1);
                 if (catalog != null)
-                    catalog.WithHeader("Аналитика — источники данных");
+                    catalog.WithHeader(Resources.Menu_Catalog);
             }
             catch (Exception ex)
             {

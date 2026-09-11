@@ -41,5 +41,18 @@ namespace PilotBim.Analytics.Tests
                 names,
                 n => n.Equals("PilotBim.Analytics.Properties.Resources.resources", StringComparison.Ordinal));
         }
+
+        [Fact]
+        public void Stage83_ChromeKeys_MatchExpectedDefaults()
+        {
+            Assert.Equal("Отмена", Resources.Common_Cancel);
+            Assert.Equal("OK", Resources.Common_OK);
+            Assert.Equal("Обновить", Resources.Common_Refresh);
+            Assert.Equal("Pilot-BIM Analytics — Обзор проекта", Resources.Analytics_WindowTitle);
+            Assert.Equal("Pilot-BIM Analytics — Каталог данных", Resources.Inventory_WindowTitle);
+            Assert.Equal("Аналитика — обзор проекта", Resources.Menu_Overview);
+            Assert.Equal("Каталог данных", Resources.Toolbar_Catalog);
+            Assert.Equal("Настроить", Resources.Common_Configure);
+        }
     }
 }

@@ -58,6 +58,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+
+  <!-- Stage 8.2 smoke -->
   <data name="Common_ScanRequiredFirst" xml:space="preserve">
     <value>Сначала выполните сканирование.</value>
     <comment>MessageBox when export/report requires a completed scan.</comment>
@@ -79,5 +81,102 @@
   <data name="Snapshot_EnterName" xml:space="preserve">
     <value>Укажите имя снимка.</value>
     <comment>MessageBox when named scan snapshot name is empty.</comment>
+  </data>
+
+  <!-- Stage 8.3 common chrome -->
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Common_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Common_Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="Common_Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="Common_Configure" xml:space="preserve">
+    <value>Настроить</value>
+  </data>
+  <data name="Common_ScanModeFast" xml:space="preserve">
+    <value>Быстро</value>
+  </data>
+  <data name="Common_ScanModeStandard" xml:space="preserve">
+    <value>Стандарт</value>
+  </data>
+  <data name="Common_ScanModeFull" xml:space="preserve">
+    <value>Полный</value>
+  </data>
+  <data name="Common_NameLabel" xml:space="preserve">
+    <value>Имя:</value>
+  </data>
+
+  <!-- Analytics window chrome -->
+  <data name="Analytics_WindowTitle" xml:space="preserve">
+    <value>Pilot-BIM Analytics — Обзор проекта</value>
+  </data>
+  <data name="Analytics_ExportCsv" xml:space="preserve">
+    <value>Экспорт CSV</value>
+  </data>
+  <data name="Analytics_ExportsFolder" xml:space="preserve">
+    <value>Папка CSV</value>
+  </data>
+  <data name="Analytics_OpenExportsFolderTooltip" xml:space="preserve">
+    <value>Открыть папку Exports</value>
+  </data>
+  <data name="Analytics_ModelLabel" xml:space="preserve">
+    <value>Модель:</value>
+  </data>
+  <data name="Analytics_AddWidget" xml:space="preserve">
+    <value>+ Виджет</value>
+  </data>
+  <data name="Analytics_DashboardBuilder" xml:space="preserve">
+    <value>Конструктор дашборда</value>
+  </data>
+  <data name="Analytics_ToDashboard" xml:space="preserve">
+    <value>На дашборд</value>
+  </data>
+  <data name="Analytics_AddChartToDashboardTooltip" xml:space="preserve">
+    <value>Добавить текущий график на Сводку</value>
+  </data>
+
+  <!-- Inventory window chrome -->
+  <data name="Inventory_WindowTitle" xml:space="preserve">
+    <value>Pilot-BIM Analytics — Каталог данных</value>
+  </data>
+  <data name="Inventory_Scan" xml:space="preserve">
+    <value>Сканировать</value>
+  </data>
+  <data name="Inventory_CopyReport" xml:space="preserve">
+    <value>Скопировать отчёт</value>
+  </data>
+  <data name="Inventory_SaveReport" xml:space="preserve">
+    <value>Сохранить отчёт</value>
+  </data>
+
+  <!-- Widget editor chrome -->
+  <data name="Widget_WindowTitle" xml:space="preserve">
+    <value>Виджет дашборда</value>
+  </data>
+  <data name="Widget_TitleLabel" xml:space="preserve">
+    <value>Заголовок</value>
+  </data>
+  <data name="Widget_KindLabel" xml:space="preserve">
+    <value>Тип виджета</value>
+  </data>
+
+  <!-- Pilot menu / toolbar display headers (command ids unchanged) -->
+  <data name="Menu_Overview" xml:space="preserve">
+    <value>Аналитика — обзор проекта</value>
+  </data>
+  <data name="Menu_Catalog" xml:space="preserve">
+    <value>Аналитика — источники данных</value>
+  </data>
+  <data name="Toolbar_Analytics" xml:space="preserve">
+    <value>Аналитика</value>
+  </data>
+  <data name="Toolbar_Catalog" xml:space="preserve">
+    <value>Каталог данных</value>
   </data>
 </root>
