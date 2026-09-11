@@ -74,9 +74,9 @@ Stage 9 is **not** a licence to rewrite: the 984→637 LOC VM, the 18-panel `Sho
 
 | ID | Area | Severity | Title |
 |----|------|----------|-------|
-| TD-22 | I Disposal/lifetime | HIGH | Scan `CancellationTokenSource` never disposed and never cancelled on window close; orphaned scans can run concurrently |
+| ~~TD-22~~ | I Disposal/lifetime | HIGH | **FIXED in Stage 9.2** — Scan session CTS lifecycle hardened |
 
-Detail in [Disposal and Lifetime](#disposal-and-lifetime). This is the sole MUST and is the basis of the recommended Stage 9.2.
+No remaining MUST_FIX_BEFORE_STAGE_10 items after Stage 9.2.
 
 ## SHOULD_FIX
 
@@ -685,3 +685,21 @@ No new tests touch the filesystem, the Pilot SDK, or WPF, so the suite stays her
 - No chart geometry change (TD-08), no localization work (TD-33/TD-34), no logging rotation (TD-03).
 - No MEF/DI changes: `AnalyticsCommandService` window reuse and the `Closed` handlers stay as they are.
 - No `IModelSearchService` or subscription disposal (TD-23/TD-24) — both require SDK verification against a Pilot runtime.
+
+---
+
+## Stage 9.2 Result
+
+Date: 2026-09-11  
+Status: **TD-22 FIXED**
+
+### Implementation
+
+- Added `Services/ScanSessionScope.cs` with versioned `ScanSession` so `Complete(old)` cannot dispose a newer session.
+- Wired `AnalyticsWindow` and `InventoryWindow`: `Begin` on scan start, `Complete(session)` in `finally`, `Cancel` on Cancel click, `Dispose` in `OnClosed`.
+- Added `ScanSessionScopeTests` (9 facts). Tests: **118 → 127 PASS**.
+- Inventory/Pilot scan business logic unchanged.
+
+### Stage 10 blockers remaining
+
+**0**

@@ -17,7 +17,7 @@ namespace PilotBim.Analytics.Views
         private readonly IProjectAnalyticsService _projectAnalytics;
         private readonly IAnalyticsCsvExporter _csvExporter;
         private readonly AnalyticsWindowViewModel _vm;
-        private CancellationTokenSource _cts;
+        private readonly ScanSessionScope _scanSession = new ScanSessionScope();
 
         public AnalyticsWindow(
             InventoryService inventory,
@@ -123,11 +123,11 @@ namespace PilotBim.Analytics.Views
                     return;
             }
 
-            _cts = new CancellationTokenSource();
+            var session = _scanSession.Begin();
             _vm.IsBusy = true;
             _vm.ProgressText = "Сканирование...";
             var mode = _vm.ScanMode;
-            var token = _cts.Token;
+            var token = session.Token;
 
             try
             {
@@ -152,10 +152,10 @@ namespace PilotBim.Analytics.Views
             }
             finally
             {
+                _scanSession.Complete(session);
                 _vm.IsBusy = false;
             }
         }
-
         
         private void DashboardVisible_Click(object sender, RoutedEventArgs e)
         {
@@ -286,9 +286,14 @@ namespace PilotBim.Analytics.Views
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            if (_cts != null)
-                _cts.Cancel();
+            _scanSession.Cancel();
             _vm.ProgressText = "Отмена запрошена...";
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _scanSession.Dispose();
+            base.OnClosed(e);
         }
     }
 }

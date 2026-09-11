@@ -18,7 +18,7 @@ namespace PilotBim.Analytics.Views
     {
         private readonly InventoryService _inventory;
         private readonly InventoryWindowViewModel _vm;
-        private CancellationTokenSource _cts;
+        private readonly ScanSessionScope _scanSession = new ScanSessionScope();
         private string _lastReportText;
 
         public InventoryWindow(InventoryService inventory)
@@ -68,11 +68,11 @@ namespace PilotBim.Analytics.Views
                     return;
             }
 
-            _cts = new CancellationTokenSource();
+            var session = _scanSession.Begin();
             _vm.IsBusy = true;
             _vm.ProgressText = "Scanning...";
             var mode = _vm.ScanMode;
-            var token = _cts.Token;
+            var token = session.Token;
 
             try
             {
@@ -97,15 +97,21 @@ namespace PilotBim.Analytics.Views
             }
             finally
             {
+                _scanSession.Complete(session);
                 _vm.IsBusy = false;
             }
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            if (_cts != null)
-                _cts.Cancel();
+            _scanSession.Cancel();
             _vm.ProgressText = "Отмена запрошена...";
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _scanSession.Dispose();
+            base.OnClosed(e);
         }
 
         private void CopyReport_Click(object sender, RoutedEventArgs e)
