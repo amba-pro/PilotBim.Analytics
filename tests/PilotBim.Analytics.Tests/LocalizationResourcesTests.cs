@@ -54,5 +54,16 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal("Каталог данных", Resources.Toolbar_Catalog);
             Assert.Equal("Настроить", Resources.Common_Configure);
         }
+
+        [Fact]
+        public void Stage84_ColumnAndScanDiffKeys_MatchExpectedDefaults()
+        {
+            Assert.Equal("Показатель", Resources.Column_Indicator);
+            Assert.Equal("Доля %", Resources.Column_SharePercent);
+            Assert.Equal("Сравнить", Resources.ScanDiff_Compare);
+            Assert.Equal("Только изменения", Resources.ScanDiff_ChangesOnly);
+            Assert.Equal("Типы (top)", Resources.ChartTab_TypesTop);
+            Assert.Equal("Источник данных", Resources.Widget_SourceLabel);
+        }
     }
 }

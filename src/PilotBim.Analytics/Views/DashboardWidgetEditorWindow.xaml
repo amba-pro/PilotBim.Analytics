@@ -23,16 +23,16 @@
                 DisplayMemberPath="Title" />
 
       <StackPanel x:Name="ChartPanel">
-        <TextBlock Text="Источник данных" Margin="0,0,0,4" />
+        <TextBlock Text="{x:Static props:Resources.Widget_SourceLabel}" Margin="0,0,0,4" />
         <ComboBox x:Name="SourceBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
 
-        <TextBlock Text="Тип графика" Margin="0,0,0,4" />
+        <TextBlock Text="{x:Static props:Resources.Widget_ChartKindLabel}" Margin="0,0,0,4" />
         <ComboBox x:Name="ChartKindBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
 
-        <TextBlock Text="Объём" Margin="0,0,0,4" />
+        <TextBlock Text="{x:Static props:Resources.Widget_VolumeLabel}" Margin="0,0,0,4" />
         <ComboBox x:Name="TopNBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
 
-        <TextBlock Text="Ширина" Margin="0,0,0,4" />
+        <TextBlock Text="{x:Static props:Resources.Widget_WidthLabel}" Margin="0,0,0,4" />
         <ComboBox x:Name="SpanBox" Height="28" Margin="0,0,0,12" DisplayMemberPath="Title" />
       </StackPanel>
     </StackPanel>

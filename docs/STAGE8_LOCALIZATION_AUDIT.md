@@ -530,3 +530,101 @@ Embedded: `PilotBim.Analytics.Properties.Resources.resources` (no satellites)
 ### Recommended Next Step
 
 Continue small-batch chrome (grid Headers / remaining dialogs) **or** design stable codes for dual-use ScanDiff/KPI before localizing those display values — do not start without confirmation.
+
+---
+
+## Stage 8.4 Result
+
+Date: 2026-09-11
+
+### Migrated Strings
+
+| Key | Original text | Location | Risk |
+|-----|---------------|----------|------|
+| `Column_Indicator` | Показатель | Analytics KPI grids | LOW |
+| `Column_Value` | Значение | Analytics grids | LOW |
+| `Column_Details` | Детали | Analytics grids | LOW |
+| `Column_Caption` | Подпись | Chart builder grid | LOW |
+| `Column_SharePercent` | Доля % | Analytics grids | LOW |
+| `Column_Count` | Кол-во | Analytics grids | LOW |
+| `Column_Scope` | Охват | Analytics grids | LOW |
+| `Column_InSample` | В сэмпле | Analytics grids | LOW |
+| `Column_Area` | Область | ScanDiff grid header | LOW |
+| `Column_Metric` | Метрика | ScanDiff grid header | LOW |
+| `Column_Previous` | Было | ScanDiff grid | LOW |
+| `Column_Current` | Стало | ScanDiff grid | LOW |
+| `Column_Notes` | Заметки | ScanDiff grid | LOW |
+| `Analytics_DataLabel` | Данные: | Chart builder | LOW |
+| `Analytics_TypeLabel` | Тип: | Chart builder | LOW |
+| `Analytics_VolumeLabel` | Объём: | Chart builder | LOW |
+| `Analytics_LimitationsHeader` | Ограничения (read-only) | Footer | LOW |
+| `ChartTab_TypesTop` | Типы (top) | Charts tabs | LOW |
+| `ChartTab_Creators` | Создатели | Charts tabs | LOW |
+| `ChartTab_CreatedTimeline` | Динамика создания | Charts tabs | LOW |
+| `ChartTab_IfcTypes` | IFC типы | Charts tabs | LOW |
+| `ScanDiff_BaselineLabel` | База: | ScanDiff chrome | LOW |
+| `ScanDiff_Compare` | Сравнить | ScanDiff chrome | LOW |
+| `ScanDiff_SaveAs` | Сохранить как… | ScanDiff chrome | LOW |
+| `ScanDiff_ChangesOnly` | Только изменения | ScanDiff chrome | LOW |
+| `Widget_SourceLabel` | Источник данных | Widget editor | LOW |
+| `Widget_ChartKindLabel` | Тип графика | Widget editor | LOW |
+| `Widget_VolumeLabel` | Объём | Widget editor | LOW |
+| `Widget_WidthLabel` | Ширина | Widget editor | LOW |
+
+**Explicitly skipped (dual-use):** TabItem `OPEN/CLOSED`, TabItem `Ответственные` (also ScanDiff Area / widget Title defaults).
+
+### Count
+
+**29** new keys (Stage 8.4).
+
+### Contract Strings Untouched
+
+Nav/ShowPanel, KpiLabels, ScanDiff Area/Metric **cell values**, Chart IDs, WidgetKinds, CSV/export, JSON/persistence, SDK/discovery, command ids.
+
+### XAML impact
+
+**TEXT SOURCE ONLY**
+
+### Layout impact
+
+**NONE**
+
+### Runtime language switching
+
+**NOT_IMPLEMENTED**
+
+### Additional languages
+
+**NOT_ADDED**
+
+### Tests
+
+116 → **117** PASS  
+0 failed / 0 skipped
+
+### Build
+
+PASS — **0** errors / **0** warnings  
+Embedded `PilotBim.Analytics.Properties.Resources.resources`; no satellites
+
+### Remaining Inventory
+
+**Low-risk (~50–70):** remaining Analytics DataGrid Headers (`Тип`, `Статус`, `Создатель`, `Модель`, `Объект`, …); Inventory EN Headers/tabs; `Зоны`; `Type:`/`Attribute:`; `Загрузить корень (lazy)`; `Семантика` / `Пример статуса`; leftover MessageBox captions that are pure display.
+
+**Medium-risk (~25–40):** ProgressText / ScanDiffHint / ChartBuilderHint / HeaderSubtitle; formatted MessageBoxes; default dashboard Titles as persisted values.
+
+**Dual-use/high-risk:** ScanDiff Area/Metric (`Скан`, `Время скана`, `Ошибка`, `Ответственные`, `OPEN/CLOSED`, …); `KpiLabels` / Summary Labels; Nav Keys / ShowPanel; Chart Ids / WidgetKinds; `замечан` heuristic; path/`PilotBim.Analytics` folder name.
+
+### Deferred Stable-Code Migration
+
+1. ScanDiff `Area`/`Metric` identity codes separate from display  
+2. KPI Summary Label match keys → stable ids  
+3. Nav Key / ShowPanel (already EN keys; Titles display-only later)  
+4. ChartOption/Widget Title defaults vs Ids/Kinds  
+5. Remark discovery heuristic locale independence  
+
+### Recommendation
+
+**ONE_MORE_LOW_RISK_BATCH**
+
+One further small batch for remaining unique Analytics/Inventory column headers and Inventory chrome, then prefer stopping low-risk migration before dual-use redesign.

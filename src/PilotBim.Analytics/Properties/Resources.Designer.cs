@@ -226,5 +226,151 @@ namespace PilotBim.Analytics.Properties
         {
             get { return ResourceManager.GetString("Toolbar_Catalog", resourceCulture); }
         }
+
+        // --- Stage 8.4 columns / labels ---
+        public static string Column_Indicator
+        {
+            get { return ResourceManager.GetString("Column_Indicator", resourceCulture); }
+        }
+
+        public static string Column_Value
+        {
+            get { return ResourceManager.GetString("Column_Value", resourceCulture); }
+        }
+
+        public static string Column_Details
+        {
+            get { return ResourceManager.GetString("Column_Details", resourceCulture); }
+        }
+
+        public static string Column_Caption
+        {
+            get { return ResourceManager.GetString("Column_Caption", resourceCulture); }
+        }
+
+        public static string Column_SharePercent
+        {
+            get { return ResourceManager.GetString("Column_SharePercent", resourceCulture); }
+        }
+
+        public static string Column_Count
+        {
+            get { return ResourceManager.GetString("Column_Count", resourceCulture); }
+        }
+
+        public static string Column_Scope
+        {
+            get { return ResourceManager.GetString("Column_Scope", resourceCulture); }
+        }
+
+        public static string Column_InSample
+        {
+            get { return ResourceManager.GetString("Column_InSample", resourceCulture); }
+        }
+
+        public static string Column_Area
+        {
+            get { return ResourceManager.GetString("Column_Area", resourceCulture); }
+        }
+
+        public static string Column_Metric
+        {
+            get { return ResourceManager.GetString("Column_Metric", resourceCulture); }
+        }
+
+        public static string Column_Previous
+        {
+            get { return ResourceManager.GetString("Column_Previous", resourceCulture); }
+        }
+
+        public static string Column_Current
+        {
+            get { return ResourceManager.GetString("Column_Current", resourceCulture); }
+        }
+
+        public static string Column_Notes
+        {
+            get { return ResourceManager.GetString("Column_Notes", resourceCulture); }
+        }
+
+        public static string Analytics_DataLabel
+        {
+            get { return ResourceManager.GetString("Analytics_DataLabel", resourceCulture); }
+        }
+
+        public static string Analytics_TypeLabel
+        {
+            get { return ResourceManager.GetString("Analytics_TypeLabel", resourceCulture); }
+        }
+
+        public static string Analytics_VolumeLabel
+        {
+            get { return ResourceManager.GetString("Analytics_VolumeLabel", resourceCulture); }
+        }
+
+        public static string Analytics_LimitationsHeader
+        {
+            get { return ResourceManager.GetString("Analytics_LimitationsHeader", resourceCulture); }
+        }
+
+        public static string ChartTab_TypesTop
+        {
+            get { return ResourceManager.GetString("ChartTab_TypesTop", resourceCulture); }
+        }
+
+        public static string ChartTab_Creators
+        {
+            get { return ResourceManager.GetString("ChartTab_Creators", resourceCulture); }
+        }
+
+        public static string ChartTab_CreatedTimeline
+        {
+            get { return ResourceManager.GetString("ChartTab_CreatedTimeline", resourceCulture); }
+        }
+
+        public static string ChartTab_IfcTypes
+        {
+            get { return ResourceManager.GetString("ChartTab_IfcTypes", resourceCulture); }
+        }
+
+        public static string ScanDiff_BaselineLabel
+        {
+            get { return ResourceManager.GetString("ScanDiff_BaselineLabel", resourceCulture); }
+        }
+
+        public static string ScanDiff_Compare
+        {
+            get { return ResourceManager.GetString("ScanDiff_Compare", resourceCulture); }
+        }
+
+        public static string ScanDiff_SaveAs
+        {
+            get { return ResourceManager.GetString("ScanDiff_SaveAs", resourceCulture); }
+        }
+
+        public static string ScanDiff_ChangesOnly
+        {
+            get { return ResourceManager.GetString("ScanDiff_ChangesOnly", resourceCulture); }
+        }
+
+        public static string Widget_SourceLabel
+        {
+            get { return ResourceManager.GetString("Widget_SourceLabel", resourceCulture); }
+        }
+
+        public static string Widget_ChartKindLabel
+        {
+            get { return ResourceManager.GetString("Widget_ChartKindLabel", resourceCulture); }
+        }
+
+        public static string Widget_VolumeLabel
+        {
+            get { return ResourceManager.GetString("Widget_VolumeLabel", resourceCulture); }
+        }
+
+        public static string Widget_WidthLabel
+        {
+            get { return ResourceManager.GetString("Widget_WidthLabel", resourceCulture); }
+        }
     }
 }

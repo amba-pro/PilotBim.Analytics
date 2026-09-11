@@ -179,4 +179,93 @@
   <data name="Toolbar_Catalog" xml:space="preserve">
     <value>Каталог данных</value>
   </data>
+
+  <!-- Stage 8.4: grid headers / labels / ScanDiff chrome (display-only) -->
+  <data name="Column_Indicator" xml:space="preserve">
+    <value>Показатель</value>
+  </data>
+  <data name="Column_Value" xml:space="preserve">
+    <value>Значение</value>
+  </data>
+  <data name="Column_Details" xml:space="preserve">
+    <value>Детали</value>
+  </data>
+  <data name="Column_Caption" xml:space="preserve">
+    <value>Подпись</value>
+  </data>
+  <data name="Column_SharePercent" xml:space="preserve">
+    <value>Доля %</value>
+  </data>
+  <data name="Column_Count" xml:space="preserve">
+    <value>Кол-во</value>
+  </data>
+  <data name="Column_Scope" xml:space="preserve">
+    <value>Охват</value>
+  </data>
+  <data name="Column_InSample" xml:space="preserve">
+    <value>В сэмпле</value>
+  </data>
+  <data name="Column_Area" xml:space="preserve">
+    <value>Область</value>
+  </data>
+  <data name="Column_Metric" xml:space="preserve">
+    <value>Метрика</value>
+  </data>
+  <data name="Column_Previous" xml:space="preserve">
+    <value>Было</value>
+  </data>
+  <data name="Column_Current" xml:space="preserve">
+    <value>Стало</value>
+  </data>
+  <data name="Column_Notes" xml:space="preserve">
+    <value>Заметки</value>
+  </data>
+  <data name="Analytics_DataLabel" xml:space="preserve">
+    <value>Данные:</value>
+  </data>
+  <data name="Analytics_TypeLabel" xml:space="preserve">
+    <value>Тип:</value>
+  </data>
+  <data name="Analytics_VolumeLabel" xml:space="preserve">
+    <value>Объём:</value>
+  </data>
+  <data name="Analytics_LimitationsHeader" xml:space="preserve">
+    <value>Ограничения (read-only)</value>
+  </data>
+  <data name="ChartTab_TypesTop" xml:space="preserve">
+    <value>Типы (top)</value>
+  </data>
+  <data name="ChartTab_Creators" xml:space="preserve">
+    <value>Создатели</value>
+  </data>
+  <data name="ChartTab_CreatedTimeline" xml:space="preserve">
+    <value>Динамика создания</value>
+  </data>
+  <data name="ChartTab_IfcTypes" xml:space="preserve">
+    <value>IFC типы</value>
+  </data>
+  <data name="ScanDiff_BaselineLabel" xml:space="preserve">
+    <value>База:</value>
+  </data>
+  <data name="ScanDiff_Compare" xml:space="preserve">
+    <value>Сравнить</value>
+  </data>
+  <data name="ScanDiff_SaveAs" xml:space="preserve">
+    <value>Сохранить как…</value>
+  </data>
+  <data name="ScanDiff_ChangesOnly" xml:space="preserve">
+    <value>Только изменения</value>
+  </data>
+  <data name="Widget_SourceLabel" xml:space="preserve">
+    <value>Источник данных</value>
+  </data>
+  <data name="Widget_ChartKindLabel" xml:space="preserve">
+    <value>Тип графика</value>
+  </data>
+  <data name="Widget_VolumeLabel" xml:space="preserve">
+    <value>Объём</value>
+  </data>
+  <data name="Widget_WidthLabel" xml:space="preserve">
+    <value>Ширина</value>
+  </data>
 </root>
