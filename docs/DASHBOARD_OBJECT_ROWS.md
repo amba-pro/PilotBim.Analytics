@@ -1,8 +1,8 @@
 # Dashboard Object Rows
 
-Status: **BLOCKED_DB3_FULL_COVERAGE**  
-Date: 2026-09-14  
-No production ObjectRows implementation.
+Status: **DB-3 BLOCKED_DB3_FULL_COVERAGE** (whole-project stream)  
+**DB-3.1: complete TypeId dataset materializer added** (unused by dashboard UI)  
+Date: 2026-09-14
 
 ## Purpose
 
@@ -204,4 +204,187 @@ Product choice required:
    - Pilot runtime validation mandatory
    - still **0 scans per widget** after the shared pass
 
-Until (2) is accepted as product cost, ObjectRows stay blocked.
+Until DB-3.1, ObjectRows stayed blocked for whole-project coverage. DB-3.1 implements (2) **per explicit TypeId only**, not a full-project load.
+
+## DB-3.1 Complete Type Dataset
+
+Status: **implemented, not wired to dashboard**  
+Date: 2026-09-14  
+Feasibility: **FULL_TYPE_LOAD_SUPPORTED_WITH_LIMIT**
+
+### Why whole-project eager load was rejected
+
+DB-3 proved there is no reusable full `IDataObject` stream. Inventory sampling (`SampleLimit` 50 / 200 / 10000) is not complete data. Loading every object of every type when a dashboard opens would be an unbounded project-wide SDK cost and a high memory risk.
+
+Custom dashboard attributes already have type-scoped identity: `attribute:{typeId}:{attributeName}`.
+
+### Why TypeId is the V1 boundary
+
+V1 arbitrary-attribute analytics is:
+
+- current project
+- **one explicit Entity TypeId**
+- the complete object set for that type
+
+Many widgets may later share one TypeId dataset. Types that are not requested are not loaded.
+
+PATH A remains `ProjectAnalyticsSnapshot` → `SnapshotWidgetQueryEngine` (aggregates).  
+PATH B is `TypeId` → `DashboardTypeDatasetMaterializer` → `DashboardObjectRows` (object-level).
+
+### Search semantics
+
+Evidence: Ascon.Pilot.SDK 25.9 (`Ascon.Pilot.SDK.dll` reflection).
+
+| API | Signature / type |
+|-----|------------------|
+| `IQueryBuilder.MaxResults` | `MaxResults(Int32)` |
+| Skip / Offset / page | **none** |
+| `ISearchResult.Total` | `Int64` |
+| `ISearchResult.Result` | `IEnumerable<Guid>` |
+| `ISearchService.Search` | `IObservable<ISearchResult>` |
+| `IObjectsRepository.SubscribeObjects` | `IObservable<IDataObject> SubscribeObjects(IEnumerable<Guid>)` |
+
+Existing wrapper: `PilotObjectScanner.SearchByType(int typeId, int maxResults, Action<IReadOnlyList<Guid>, long> onDone, ...)`.
+
+**Total vs MaxResults:** inventory already treats `Total` as the type population while `Result` is capped by `maxResults`. Completeness must **not** assume `Result.Count == Total` unless they are equal after a request with `maxResults = Total` (when `Total <= Int32.MaxValue`).
+
+**Paging:** not exposed. Continuation is not available.
+
+**Backend cap:** **unknown** (NeedsRuntime). If the server silently returns fewer IDs than `Total`, coverage is **Partial**, never Complete.
+
+**Int32 limit:** if `Total > Int32.MaxValue`, MaxResults cannot request the full population → **Failed** (`TotalExceedsInt32`). No unchecked `(int)Total`.
+
+### Coverage definition
+
+`DashboardTypeCoverage`: `Complete` | `Partial` | `Failed`
+
+A dataset is **Complete** only when:
+
+- the load outcome succeeded (not timeout / cancel / fail / overflow), **and**
+- `LoadedUniqueCount == ExpectedCount`
+
+No percentage heuristic. Empty type (`Total = 0`, loaded 0) is **Complete** with empty rows.
+
+Timeout with some rows → **Partial**. Timeout with none → **Failed**. Cancel / fail / overflow → **Failed**.
+
+`ExpectedCount` is `ISearchResult.Total` from the type search.
+
+### Row model
+
+`DashboardObjectRow` (internal, no WPF):
+
+- `Guid ObjectId`
+- `int TypeId`
+- `Guid? ParentId` (null when `Guid.Empty`)
+- `IReadOnlyDictionary<string, DashboardFieldValue> Fields` — sparse, DB-1 ids
+
+### Field values
+
+`DashboardFieldValue`: `Kind`, `Value` (typed), `StableKey?`, `DisplayText?`
+
+Display text is never identity. Kinds follow DB-1 `DashboardFieldType` (Text, Integer, Number, Boolean, DateTime, Enum, User, Reference, Guid). Unsupported runtime values skip that field and increment `SkippedUnsupportedValues`; the dataset continues.
+
+`system:createdMonth` is **not** stored (derive later from `system:created`).
+
+`system:userState` / `system:responsible` are copied from the first in-memory `UserState` / `OrgUnit` attribute when present (same object, no extra SDK call).
+
+### Custom attributes
+
+Loaded from existing `IDataObject.Attributes` after `SubscribeObjects`.  
+**Extra SDK call per attribute: NO.**
+
+Ids: `attribute:{typeId}:{attributeName}` via `DashboardFieldIds.Attribute`.
+
+### Materializer
+
+`DashboardTypeDatasetMaterializer.Materialize(TypeId, CancellationToken)` → `DashboardTypeDataset`
+
+Not a widget operation. Does not accept `WidgetQueryDefinition` / `DashboardWidgetQuery`.
+
+Per TypeId SDK work:
+
+1. `SearchByType(typeId, 1)` — read `Total` (probe)
+2. if `Total == 0` → Complete empty
+3. if `Total > Int32.MaxValue` → Failed
+4. `SearchByType(typeId, (int)Total)` — ID set (skipped when Total is 1 and probe already returned that id)
+5. `SubscribeObjects` those unique IDs once
+
+No static cache. Future dashboard session should own TypeId datasets:
+
+```
+Dashboard refresh/session
+        │
+        ├── TypeId 12 dataset
+        ├── TypeId 34 dataset
+        └── TypeId 77 dataset
+
+Widgets A/B on Type 12 share ONE Type 12 dataset.
+```
+
+### Cancellation
+
+`CallbackWaitSession` + `CancellationToken` (same Stage 9 pattern as inventory sampling). Cancel or abandon → coverage not Complete. Late callbacks must pass `ShouldAccept` (`DashboardTypeCallbackCollector`); they must not mutate an abandoned set.
+
+### Timeout
+
+Search and subscribe each wait **30 seconds** — same as `ObjectSamplingCoordinator` sample wait. Timeout never yields Complete.
+
+Pilot SDK subscriptions are not cancellable here; timeout **abandons** acceptance, it does not stop SDK work.
+
+### Deduplication
+
+ObjectId (`Guid`) identity. Duplicate SubscribeObjects callbacks: **first wins**, no silent overwrite. `LoadedUniqueCount` is unique Guid count.
+
+### Memory
+
+Sparse `fieldId → value` per row. Catalog descriptors are not copied onto rows. No columnar store.
+
+Diagnostic log (no object payloads):
+
+`Dashboard type materialization: TypeId=… Expected=… Loaded=… Coverage=… FieldValues=… DurationMs=…`
+
+Area: `dashboard-type-dataset`.
+
+Risk for one large type: **MEDIUM** (bounded by that type’s population, not the whole project). A remarks type with tens of thousands of objects plus attributes can still be heavy — runtime canary required.
+
+### Performance
+
+- Per dataset TypeId: 1–2 searches + 1 SubscribeObjects batch
+- Per widget: **0** (materializer is unused by UI)
+- Inventory sample limits: **unchanged**
+- Dashboard presenter / query engine / persistence: **unchanged**
+
+### Runtime validation
+
+**REQUIRED: YES.** Do not run automatically.
+
+Canary:
+
+1. Pick one moderate TypeId (example: remarks / «Замечания к ЦИМ»).
+2. Record search `Total`.
+3. Call `Materialize`.
+4. Verify `LoadedUniqueCount == Total` and `Coverage = Complete`.
+5. Record elapsed time, memory delta if practical, log errors, try cancel.
+6. Repeat on one larger TypeId.
+7. No full-project stress yet.
+
+If `LoadedUniqueCount < Total` with a successful wait, treat as possible silent server cap — do not claim Complete.
+
+### Known SDK limits
+
+- `MaxResults` is Int32; no search paging
+- Backend result cap **unknown**
+- `SubscribeObjects` disposable still discarded (TD-24, same as rest of plugin); late-callback safety is `ShouldAccept`
+- Completeness of `Total` vs actually loadable objects is NeedsRuntime
+- Materializer is **not** called from `AnalyticsDashboardPresenter` / widget editor / `ChartDataService` / snapshot engine
+
+### DB-4 recommendation (not implemented)
+
+ObjectRows-backed widget query engine:
+
+- same DB-2 query contract
+- plus `EntityTypeId` + CurrentProject + Count + one arbitrary Dimension
+- input: **Complete** `DashboardTypeDataset` only
+- **reject** if `Coverage != Complete`
+- filters later (DB-5)
+

@@ -834,7 +834,57 @@ Architectural fork (not implemented):
 - **DB-3.1** explicit once-per-refresh full object materialization (product cost), then ObjectRows + coverage metadata; **or**
 - Stay on **DB-2 snapshot widgets** for preset dimensions until that cost is accepted.
 
-Recommended immediate product path: do **not** start an ObjectRows query engine (would have nothing complete to query).
+Recommended immediate product path after DB-3: do **not** start an ObjectRows query engine (would have nothing complete to query). **DB-3.1** added an explicit one-TypeId materializer instead of a whole-project load.
+
+---
+
+## DB-3.1 Result
+
+Date: 2026-09-14  
+Status: **COMPLETE_TYPE_DATASET_FOUNDATION**  
+Production caller: **none** (dashboard / editor / snapshot engine unchanged)
+
+### Decision
+
+Whole-project eager load **rejected**. V1 object-level analytics boundary is **one explicit TypeId**.
+
+PATH A (snapshot aggregates) unchanged.  
+PATH B: `DashboardTypeDatasetMaterializer` loads that TypeId completely, or reports Partial/Failed.
+
+### Search semantics
+
+- `IQueryBuilder.MaxResults(Int32)` — no Skip/Offset
+- `ISearchResult.Total` = `Int64`
+- `ISearchResult.Result` = `IEnumerable<Guid>`
+- Paging: **none**
+- Backend cap: **unknown** (detect via LoadedUniqueCount vs Total)
+
+Feasibility: **FULL_TYPE_LOAD_SUPPORTED_WITH_LIMIT** (limit = Int32.MaxValue for MaxResults; silent server caps → Partial, never Complete).
+
+### What was added
+
+- `DashboardObjectRow` / `DashboardFieldValue` / `DashboardTypeDataset` / `DashboardTypeCoverage`
+- `DashboardObjectRowFactory` (SDK-free normalization)
+- `DashboardObjectSourceAdapter` (`IDataObject.Attributes` in memory, no per-attribute SDK)
+- `DashboardTypeDatasetAssembler` (coverage + first-wins Guid dedupe)
+- `DashboardTypeDatasetMaterializer` (TypeId in, dataset out; not a widget query)
+
+### Completeness
+
+`Complete` iff succeeded and `LoadedUniqueCount == ExpectedCount`. Empty type is Complete. Timeout/cancel/fail/overflow are never Complete.
+
+### Sample buffers / inventory
+
+**Unused.** `PilotObjectSampler.SampleLimit`, `ObjectSamplingCoordinator`, Inventory scan limits **unchanged**.
+
+### Wiring
+
+No presenter, editor, persistence, or query-engine call.
+
+### Next: DB-4
+
+ObjectRows widget query engine on **Complete** datasets only; reject Partial. Same DB-2 contract + EntityTypeId + Count + one Dimension. Filters = later. **Not implemented in 3.1.**
+
 
 
 
