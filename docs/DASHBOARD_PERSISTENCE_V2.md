@@ -62,16 +62,33 @@ Tests inject a temp dashboards root. Production default is `DashboardDefinitionS
 
 ## Schema Version
 
-`SchemaVersion = 2`
+Writer version after DB-10: `SchemaVersion = 3` (`DashboardPersistenceV2.CurrentSchemaVersion`).
+
+V2 remains a supported **load and migration input**. It is not redefined.
 
 | Document | Meaning |
 |----------|---------|
 | No `SchemaVersion` (legacy layout JSON) | `LEGACY_V1` |
-| `SchemaVersion = 2` | current |
-| `SchemaVersion > 2` | `UNSUPPORTED_VERSION` — do not parse as V2, do not overwrite |
+| `SchemaVersion = 2` | V2 Order/ColumnSpan document; migrated to V3 in memory on open |
+| `SchemaVersion = 3` | current grid layout document |
+| `SchemaVersion > 3` | `UNSUPPORTED_VERSION` — do not parse as V3, do not overwrite |
 | Other / corrupt | invalid or corrupt — do not overwrite |
 
 Do not deserialize a future schema as the current schema for use.
+
+## Schema V3 — Grid Layout
+
+V3 persists logical grid rectangles, not pixels:
+
+| Layout field | Role |
+|--------------|------|
+| X, Y, Width, Height | V3 layout authority (grid units) |
+| IsVisible | occupancy when true |
+| Order, ColumnSpan | V2 migration input / serialization hint; not visual authority after V3 |
+
+See `docs/DASHBOARD_GRID_LAYOUT.md`.
+
+Open never writes V3. Loading V2 migrates V2 → V3 in memory. Loading V1 migrates V1 → V2 → V3 in memory. The first explicit mutation writes `SchemaVersion = 3`. Visible overlap is invalid and rejected.
 
 ## Dashboard Definition
 
@@ -79,7 +96,7 @@ Do not deserialize a future schema as the current schema for use.
 
 | Field | Role |
 |-------|------|
-| SchemaVersion | 2 |
+| SchemaVersion | 2 or 3 (writer is 3) |
 | Id | machine id; V1 uses `"default"` (one dashboard per project). Title is not identity. |
 | Title | user-authored display |
 | ProjectKey | canonical database Guid |

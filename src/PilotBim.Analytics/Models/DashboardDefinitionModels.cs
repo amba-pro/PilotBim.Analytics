@@ -6,11 +6,13 @@ namespace PilotBim.Analytics.Models
     internal static class DashboardPersistenceV2
     {
         public const int SchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
         public const string DefaultDashboardId = "default";
         public const string DefaultTitle = "Dashboard";
         public const string FileName = "dashboard.json";
         public const string ContentLegacy = "Legacy";
         public const string ContentQuery = "Query";
+        public const int GridColumns = 12;
     }
 
     internal enum DashboardDefinitionLoadStatus
@@ -36,7 +38,8 @@ namespace PilotBim.Analytics.Models
         LegacyV1 = 0,
         V2 = 1,
         UnsupportedVersion = 2,
-        Invalid = 3
+        Invalid = 3,
+        V3 = 4
     }
 
     [DataContract]
@@ -96,6 +99,22 @@ namespace PilotBim.Analytics.Models
 
         [DataMember(Order = 3)]
         public bool IsVisible { get; set; }
+
+        /// <summary>Logical grid column. V3 layout authority. Not pixels.</summary>
+        [DataMember(Order = 4)]
+        public int X { get; set; }
+
+        /// <summary>Logical grid row. V3 layout authority. Not pixels.</summary>
+        [DataMember(Order = 5)]
+        public int Y { get; set; }
+
+        /// <summary>Logical column span 1..12. V3 layout authority.</summary>
+        [DataMember(Order = 6)]
+        public int Width { get; set; }
+
+        /// <summary>Logical row span ≥ 1. V3 layout authority.</summary>
+        [DataMember(Order = 7)]
+        public int Height { get; set; }
     }
 
     [DataContract]

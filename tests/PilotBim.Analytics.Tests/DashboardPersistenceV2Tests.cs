@@ -25,7 +25,7 @@ namespace PilotBim.Analytics.Tests
                 var def = session.Store.CreateDefault(ProjectA);
                 string error;
                 Assert.True(DashboardDefinitionValidator.TryValidate(def, out error), error);
-                Assert.Equal(2, def.SchemaVersion);
+                Assert.Equal(DashboardPersistenceV2.CurrentSchemaVersion, def.SchemaVersion);
                 Assert.Equal("default", def.Id);
                 Assert.Equal("Dashboard", def.Title);
                 Assert.Equal(ProjectA.ToString("D"), def.ProjectKey);
@@ -107,6 +107,108 @@ namespace PilotBim.Analytics.Tests
                 Assert.Null(loaded.Definition);
                 Assert.Equal(original, File.ReadAllBytes(path));
             }
+        }
+
+        [Fact]
+        public void SchemaVersion3_RoundTrip_PreservesGridRect()
+        {
+            using (var session = new StoreSession())
+            {
+                var def = session.Store.CreateDefault(ProjectA);
+                def.Widgets.Add(new DashboardWidgetDefinition
+                {
+                    Id = "q1",
+                    Title = "Query",
+                    ContentKind = DashboardPersistenceV2.ContentQuery,
+                    Layout = new DashboardWidgetLayoutDefinition
+                    {
+                        X = 3,
+                        Y = 4,
+                        Width = 6,
+                        Height = 3,
+                        IsVisible = true,
+                        ColumnSpan = 1,
+                        Order = 4 * 12 + 3
+                    },
+                    Query = DashboardQueryPersistence.ToDocument(ScalarQuery()),
+                    Visualization = new DashboardVisualizationDefinition { Type = "Kpi" }
+                });
+                Assert.Equal(DashboardDefinitionSaveStatus.Success, session.Store.Save(def).Status);
+                var loaded = session.Store.Load(ProjectA);
+                Assert.Equal(DashboardDefinitionLoadStatus.Success, loaded.Status);
+                Assert.Equal(3, loaded.Definition.SchemaVersion);
+                var widget = loaded.Definition.Widgets[0];
+                Assert.Equal(3, widget.Layout.X);
+                Assert.Equal(4, widget.Layout.Y);
+                Assert.Equal(6, widget.Layout.Width);
+                Assert.Equal(3, widget.Layout.Height);
+            }
+        }
+
+        [Fact]
+        public void SchemaVersion2_StillLoads()
+        {
+            using (var session = new StoreSession())
+            {
+                var def = MixedDashboard();
+                Assert.Equal(2, def.SchemaVersion);
+                Assert.Equal(DashboardDefinitionSaveStatus.Success, session.Store.Save(def).Status);
+                var loaded = session.Store.Load(ProjectA);
+                Assert.Equal(DashboardDefinitionLoadStatus.Success, loaded.Status);
+                Assert.Equal(2, loaded.Definition.SchemaVersion);
+            }
+        }
+
+        [Fact]
+        public void SchemaVersion3_ProjectMismatch_Blocked()
+        {
+            using (var session = new StoreSession())
+            {
+                var def = session.Store.CreateDefault(ProjectB);
+                Assert.Equal(DashboardDefinitionSaveStatus.Success, session.Store.Save(def).Status);
+                var pathA = session.Store.GetPath(ProjectA);
+                Directory.CreateDirectory(Path.GetDirectoryName(pathA));
+                File.Copy(session.Store.GetPath(ProjectB), pathA, true);
+                var before = File.ReadAllBytes(pathA);
+                var loaded = session.Store.Load(ProjectA);
+                Assert.Equal(DashboardDefinitionLoadStatus.ProjectMismatch, loaded.Status);
+                Assert.Equal(before, File.ReadAllBytes(pathA));
+            }
+        }
+
+        [Fact]
+        public void CorruptV3_Preserved()
+        {
+            using (var session = new StoreSession())
+            {
+                var path = session.Store.GetPath(ProjectA);
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path, "{\"SchemaVersion\":3,not-json", Encoding.UTF8);
+                var original = File.ReadAllBytes(path);
+                var loaded = session.Store.Load(ProjectA);
+                Assert.Equal(DashboardDefinitionLoadStatus.Corrupt, loaded.Status);
+                Assert.Equal(original, File.ReadAllBytes(path));
+            }
+        }
+
+        [Fact]
+        public void VisibleOverlapV3_Rejected()
+        {
+            var def = sessionlessDefault();
+            def.SchemaVersion = 3;
+            def.Widgets.Add(QueryWidget("a", 0, ScalarQuery()));
+            def.Widgets[0].Layout.X = 0;
+            def.Widgets[0].Layout.Y = 0;
+            def.Widgets[0].Layout.Width = 6;
+            def.Widgets[0].Layout.Height = 2;
+            def.Widgets.Add(QueryWidget("b", 1, ScalarQuery()));
+            def.Widgets[1].Layout.X = 3;
+            def.Widgets[1].Layout.Y = 0;
+            def.Widgets[1].Layout.Width = 6;
+            def.Widgets[1].Layout.Height = 2;
+            string error;
+            Assert.False(DashboardDefinitionValidator.TryValidate(def, out error));
+            Assert.Contains("overlap", error);
         }
 
         [Fact]
@@ -561,7 +663,16 @@ namespace PilotBim.Analytics.Tests
                 Id = id,
                 Title = "KPI / сводка",
                 ContentKind = DashboardPersistenceV2.ContentLegacy,
-                Layout = new DashboardWidgetLayoutDefinition { Order = order, ColumnSpan = 2, IsVisible = true },
+                Layout = new DashboardWidgetLayoutDefinition
+                {
+                    Order = order,
+                    ColumnSpan = 2,
+                    IsVisible = true,
+                    X = 0,
+                    Y = order * 2,
+                    Width = 12,
+                    Height = 2
+                },
                 Legacy = new DashboardLegacyWidgetContent
                 {
                     WidgetKind = DashboardWidgetKinds.Kpi,
@@ -585,7 +696,16 @@ namespace PilotBim.Analytics.Tests
                 Id = id,
                 Title = title,
                 ContentKind = DashboardPersistenceV2.ContentQuery,
-                Layout = new DashboardWidgetLayoutDefinition { Order = order, ColumnSpan = columnSpan, IsVisible = true },
+                Layout = new DashboardWidgetLayoutDefinition
+                {
+                    Order = order,
+                    ColumnSpan = columnSpan,
+                    IsVisible = true,
+                    X = 0,
+                    Y = order * 3,
+                    Width = columnSpan <= 1 ? 6 : 12,
+                    Height = 3
+                },
                 Query = DashboardQueryPersistence.ToDocument(query),
                 Visualization = new DashboardVisualizationDefinition { Type = visualization }
             };

@@ -49,7 +49,10 @@ namespace PilotBim.Analytics.ViewModels
         private Task _refreshTask = Task.CompletedTask;
         private bool _mutationsEnabled = true;
         private string _dashboardWarning;
+        private bool _isEditMode;
         private bool _lastSaveFailed;
+        private readonly Dictionary<string, DashboardQueryRuntimeCache> _queryRuntime =
+            new Dictionary<string, DashboardQueryRuntimeCache>();
 
         public AnalyticsDashboardPresenter(
             Action<string> notifyPropertyChanged,
@@ -121,6 +124,7 @@ namespace PilotBim.Analytics.ViewModels
         internal DashboardFieldCatalog Catalog { get { return _catalog; } }
         internal IReadOnlyList<DashboardObjectTypeOption> TypeOptions { get { return _typeOptions; } }
         internal Task RefreshTask { get { return _refreshTask ?? Task.CompletedTask; } }
+        internal bool IsEditMode { get { return _isEditMode && _mutationsEnabled; } }
         internal bool LastSaveFailed { get { return _lastSaveFailed; } }
         internal int ApplyGeneration { get { return Volatile.Read(ref _applyGeneration); } }
 
@@ -205,7 +209,10 @@ namespace PilotBim.Analytics.ViewModels
                     var widget = FindWidget(copy, id);
                     if (widget == null || widget.Layout == null)
                         return false;
-                    widget.Layout.IsVisible = visible;
+                    if (visible)
+                        DashboardGridLayoutEngine.Unhide(copy, id);
+                    else
+                        widget.Layout.IsVisible = false;
                     return true;
                 }, out _);
                 return;
@@ -225,25 +232,14 @@ namespace PilotBim.Analytics.ViewModels
             {
                 TryMutate(copy =>
                 {
-                    var ordered = Ordered(copy);
-                    var idx = ordered.FindIndex(b => b.Id == id);
-                    if (idx < 0)
+                    var widget = FindWidget(copy, id);
+                    if (widget == null || widget.Layout == null)
                         return false;
-                    var target = idx + delta;
-                    if (target < 0 || target >= ordered.Count)
-                        return false;
-                    var tmp = ordered[idx];
-                    ordered[idx] = ordered[target];
-                    ordered[target] = tmp;
-                    for (var i = 0; i < ordered.Count; i++)
-                    {
-                        if (ordered[i].Layout == null)
-                            ordered[i].Layout = new DashboardWidgetLayoutDefinition();
-                        ordered[i].Layout.Order = i;
-                    }
-                    copy.Widgets = ordered;
+                    var rect = DashboardGridLayoutEngine.FromLayout(widget.Layout);
+                    rect.Y += delta;
+                    DashboardGridLayoutEngine.Move(copy, id, rect);
                     return true;
-                }, out _);
+                }, out _, refreshQueries: false);
                 return;
             }
 
@@ -284,8 +280,7 @@ namespace PilotBim.Analytics.ViewModels
                         if (existing != null)
                         {
                             existing.Title = draft.Title;
-                            if (existing.Layout != null)
-                                existing.Layout.IsVisible = true;
+                            DashboardGridLayoutEngine.Unhide(copy, id);
                             return true;
                         }
                         draft.Id = id;
@@ -304,8 +299,9 @@ namespace PilotBim.Analytics.ViewModels
 
                     draft.Order = copy.Widgets.Count;
                     draft.IsVisible = true;
-                    copy.Widgets.Add(DashboardLegacyWidgetBridge.ToDefinition(draft, copy.Widgets.Count));
-                    Reindex(copy);
+                    var added = DashboardLegacyWidgetBridge.ToDefinition(draft, copy.Widgets.Count);
+                    copy.Widgets.Add(added);
+                    DashboardGridLayoutEngine.PlaceNew(copy, added);
                     return true;
                 }, out _);
                 return;
@@ -370,9 +366,6 @@ namespace PilotBim.Analytics.ViewModels
                         existing.Legacy.ChartSource = draft.ChartSource;
                         existing.Legacy.ChartKind = draft.ChartKind;
                         existing.Legacy.TopN = draft.TopN;
-                        if (existing.Layout == null)
-                            existing.Layout = new DashboardWidgetLayoutDefinition();
-                        existing.Layout.ColumnSpan = draft.ColumnSpan <= 1 ? 1 : 2;
                     }
                     return true;
                 }, out _);
@@ -479,21 +472,75 @@ namespace PilotBim.Analytics.ViewModels
                 if (existing != null)
                 {
                     var index = copy.Widgets.IndexOf(existing);
-                    if (widget.Layout == null)
-                        widget.Layout = existing.Layout;
+                    var layout = existing.Layout;
                     copy.Widgets[index] = widget;
+                    widget.Layout = layout;
+                    _queryRuntime.Remove(widget.Id);
                 }
                 else
                 {
                     if (widget.Layout == null)
                         widget.Layout = new DashboardWidgetLayoutDefinition();
-                    widget.Layout.Order = copy.Widgets.Count;
                     widget.Layout.IsVisible = true;
                     copy.Widgets.Add(widget);
+                    DashboardGridLayoutEngine.PlaceNew(copy, widget);
                 }
-                Reindex(copy);
                 return true;
             }, out error);
+        }
+
+        public void SetEditMode(bool value)
+        {
+            if (!_mutationsEnabled)
+                value = false;
+            _isEditMode = value;
+            foreach (var widget in DashboardWidgets)
+                widget.IsEditMode = IsEditMode;
+            Notify("IsEditMode");
+            Notify("IsDashboardEditMode");
+        }
+
+        public bool TryCommitWidgetRect(string id, DashboardGridRect rect, bool resize, out string error)
+        {
+            return TryMutate(copy =>
+            {
+                if (resize)
+                    DashboardGridLayoutEngine.Resize(copy, id, rect);
+                else
+                    DashboardGridLayoutEngine.Move(copy, id, rect);
+                return FindWidget(copy, id) != null;
+            }, out error, refreshQueries: false);
+        }
+
+        public void PreviewWidgetRect(string id, DashboardGridRect rect, bool resize)
+        {
+            if (!_v2 || _definition == null || !_mutationsEnabled)
+                return;
+            var copy = DashboardDefinitionCopy.Clone(_definition);
+            if (copy == null)
+                return;
+            if (resize)
+                DashboardGridLayoutEngine.Resize(copy, id, rect);
+            else
+                DashboardGridLayoutEngine.Move(copy, id, rect);
+            foreach (var vm in DashboardWidgets)
+            {
+                var widget = FindWidget(copy, vm.Id);
+                if (widget != null)
+                    vm.ApplyGrid(widget.Layout);
+            }
+        }
+
+        public void CancelLayoutPreview()
+        {
+            if (_definition == null)
+                return;
+            foreach (var vm in DashboardWidgets)
+            {
+                var widget = FindWidget(_definition, vm.Id);
+                if (widget != null)
+                    vm.ApplyGrid(widget.Layout);
+            }
         }
 
         public void ReplaceDataSession(
@@ -514,6 +561,7 @@ namespace PilotBim.Analytics.ViewModels
                 return;
 
             Interlocked.Increment(ref _applyGeneration);
+            _queryRuntime.Clear();
             var old = _coordinator;
             _catalog = catalog ?? new PilotFieldCatalogBuilder().Build(Enumerable.Empty<TypeInventoryRecord>());
             _typeOptions = types ?? new List<DashboardObjectTypeOption>();
@@ -560,18 +608,24 @@ namespace PilotBim.Analytics.ViewModels
             {
                 case DashboardDefinitionLoadStatus.Success:
                     _definition = loaded.Definition;
-                    AnalyticsLogger.Info("Dashboard", "Loaded V2 path=" + loaded.Path);
+                    if (_definition != null && _definition.SchemaVersion == DashboardPersistenceV2.SchemaVersion)
+                    {
+                        _definition = DashboardDefinitionV3Migrator.FromV2(_definition);
+                        AnalyticsLogger.Info("Dashboard", "Migrated V2 → V3 in memory path=" + loaded.Path);
+                    }
+                    else
+                        AnalyticsLogger.Info("Dashboard", "Loaded V3 path=" + loaded.Path);
                     break;
                 case DashboardDefinitionLoadStatus.Missing:
                     var v1 = _dashboardLayoutStore.TryLoad() ?? DashboardLayoutStore.Default();
-                    _definition = DashboardDefinitionV2Migrator.FromLegacy(v1, _projectKey);
-                    AnalyticsLogger.Info("Dashboard", "Migrated V1 in memory (V2 not written)");
+                    _definition = DashboardDefinitionV3Migrator.FromLegacy(v1, _projectKey);
+                    AnalyticsLogger.Info("Dashboard", "Migrated V1 → V3 in memory (not written)");
                     break;
                 default:
                     _mutationsEnabled = false;
                     _dashboardWarning = WarningFor(loaded.Status);
                     var fallback = _dashboardLayoutStore.TryLoad() ?? DashboardLayoutStore.Default();
-                    _definition = DashboardDefinitionV2Migrator.FromLegacy(fallback, _projectKey);
+                    _definition = DashboardDefinitionV3Migrator.FromLegacy(fallback, _projectKey);
                     AnalyticsLogger.Warning("Dashboard", "Degraded status=" + loaded.Status + " path=" + loaded.Path);
                     break;
             }
@@ -603,7 +657,7 @@ namespace PilotBim.Analytics.ViewModels
             _coordinator = new DashboardQueryCoordinator(snapshot, _catalog, _typeProvider);
         }
 
-        private bool TryMutate(Func<DashboardDefinition, bool> apply, out string error)
+        private bool TryMutate(Func<DashboardDefinition, bool> apply, out string error, bool refreshQueries = true)
         {
             error = null;
             _lastSaveFailed = false;
@@ -622,6 +676,7 @@ namespace PilotBim.Analytics.ViewModels
             if (copy == null || !apply(copy))
                 return false;
 
+            copy.SchemaVersion = DashboardPersistenceV2.CurrentSchemaVersion;
             var save = _definitionStore.Save(copy);
             if (save.Status != DashboardDefinitionSaveStatus.Success)
             {
@@ -629,13 +684,14 @@ namespace PilotBim.Analytics.ViewModels
                 error = string.IsNullOrWhiteSpace(save.Reason)
                     ? Resources.Dashboard_SaveFailed
                     : Resources.Dashboard_SaveFailed + " " + save.Reason;
-                AnalyticsLogger.Warning("Dashboard", "V2 save failed: " + save.Reason);
+                AnalyticsLogger.Warning("Dashboard", "V3 save failed: " + save.Reason);
                 return false;
             }
 
             _definition = copy;
             RebuildUi();
-            ScheduleQueryRefresh();
+            if (refreshQueries)
+                ScheduleQueryRefresh();
             return true;
         }
 
@@ -648,13 +704,22 @@ namespace PilotBim.Analytics.ViewModels
                 return;
 
             var items = Ordered(definition)
-                .Where(w => w != null && w.ContentKind == DashboardPersistenceV2.ContentQuery)
+                .Where(w => w != null
+                    && w.ContentKind == DashboardPersistenceV2.ContentQuery
+                    && (w.Layout == null || w.Layout.IsVisible))
                 .ToList();
 
             foreach (var widget in items)
             {
                 if (generation != Volatile.Read(ref _applyGeneration) || Volatile.Read(ref _disposed) != 0)
                     return;
+
+                DashboardQueryRuntimeCache cached;
+                if (_queryRuntime.TryGetValue(widget.Id, out cached)
+                    && cached != null
+                    && cached.Status != DashboardQueryWidgetRuntimeStatus.Idle
+                    && cached.Status != DashboardQueryWidgetRuntimeStatus.Loading)
+                    continue;
 
                 Post(() => ApplyLoading(widget.Id, generation));
 
@@ -799,6 +864,12 @@ namespace PilotBim.Analytics.ViewModels
             if (vm == null || !vm.IsQueryWidget)
                 return;
             vm.ApplyQueryRuntime(status, message, render);
+            _queryRuntime[id] = new DashboardQueryRuntimeCache
+            {
+                Status = status,
+                Message = message,
+                Render = render
+            };
         }
 
         private DashboardWidgetVm FindVm(string id)
@@ -835,6 +906,14 @@ namespace PilotBim.Analytics.ViewModels
             if (DashboardLayoutItems == null || DashboardWidgets == null)
                 return;
 
+            var captured = new Dictionary<string, DashboardQueryRuntimeCache>(_queryRuntime);
+            foreach (var existing in DashboardWidgets)
+            {
+                var snap = existing.CaptureQueryRuntime();
+                if (snap != null)
+                    captured[existing.Id] = snap;
+            }
+
             DashboardLayoutItems.Clear();
             DashboardWidgets.Clear();
 
@@ -857,14 +936,22 @@ namespace PilotBim.Analytics.ViewModels
                     DashboardLayoutItems.Add(item);
                     if (!visible)
                         continue;
+                    DashboardWidgetVm vm;
                     if (widget.ContentKind == DashboardPersistenceV2.ContentQuery)
-                        DashboardWidgets.Add(new DashboardWidgetVm(widget));
+                        vm = new DashboardWidgetVm(widget);
                     else
                     {
                         var state = DashboardLegacyWidgetBridge.ToState(widget);
-                        if (state != null)
-                            DashboardWidgets.Add(new DashboardWidgetVm(state));
+                        if (state == null)
+                            continue;
+                        vm = new DashboardWidgetVm(state);
                     }
+                    vm.ApplyGrid(widget.Layout);
+                    vm.IsEditMode = IsEditMode;
+                    DashboardQueryRuntimeCache cache;
+                    if (captured.TryGetValue(vm.Id, out cache) && cache != null)
+                        vm.ApplyQueryRuntime(cache.Status, cache.Message, cache.Render);
+                    DashboardWidgets.Add(vm);
                 }
             }
             else
@@ -880,6 +967,7 @@ namespace PilotBim.Analytics.ViewModels
                     if (widget.IsVisible)
                         DashboardWidgets.Add(new DashboardWidgetVm(widget));
                 }
+                ApplyV1Flow();
             }
 
             RebuildWidgetContent();
@@ -890,6 +978,41 @@ namespace PilotBim.Analytics.ViewModels
             Notify("DashboardWarning");
             Notify("HasDashboardWarning");
             Notify("DashboardMutationsEnabled");
+            Notify("IsDashboardEditMode");
+            Notify("IsEditMode");
+        }
+
+        private void ApplyV1Flow()
+        {
+            var cursorX = 0;
+            var cursorY = 0;
+            var rowHeight = 0;
+            foreach (var vm in DashboardWidgets)
+            {
+                var width = vm.ColumnSpan <= 1
+                    ? DashboardGridLayoutEngine.DefaultWidth
+                    : DashboardGridLayoutEngine.Columns;
+                var height = vm.IsChart
+                    ? DashboardGridLayoutEngine.DefaultHeight
+                    : DashboardGridLayoutEngine.CompactHeight;
+                if (cursorX + width > DashboardGridLayoutEngine.Columns)
+                {
+                    cursorX = 0;
+                    cursorY += rowHeight;
+                    rowHeight = height;
+                }
+                if (height > rowHeight)
+                    rowHeight = height;
+                vm.ApplyGrid(new DashboardWidgetLayoutDefinition
+                {
+                    X = cursorX,
+                    Y = cursorY,
+                    Width = width,
+                    Height = height,
+                    IsVisible = true
+                });
+                cursorX += width;
+            }
         }
 
         private static void EnsureWidgets(DashboardDefinition definition)
@@ -903,7 +1026,9 @@ namespace PilotBim.Analytics.ViewModels
             EnsureWidgets(definition);
             return definition.Widgets
                 .Where(w => w != null)
-                .OrderBy(w => w.Layout != null ? w.Layout.Order : 0)
+                .OrderBy(w => w.Layout != null ? w.Layout.Y : 0)
+                .ThenBy(w => w.Layout != null ? w.Layout.X : 0)
+                .ThenBy(w => w.Id ?? string.Empty, StringComparer.Ordinal)
                 .ToList();
         }
 
@@ -921,7 +1046,8 @@ namespace PilotBim.Analytics.ViewModels
             {
                 if (ordered[i].Layout == null)
                     ordered[i].Layout = new DashboardWidgetLayoutDefinition();
-                ordered[i].Layout.Order = i;
+                if (ordered[i].Layout.Width >= 1 && ordered[i].Layout.Height >= 1)
+                    ordered[i].Layout.Order = ordered[i].Layout.Y * DashboardGridLayoutEngine.Columns + ordered[i].Layout.X;
             }
             definition.Widgets = ordered;
         }

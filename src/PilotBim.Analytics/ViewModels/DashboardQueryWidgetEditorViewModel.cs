@@ -376,7 +376,11 @@ namespace PilotBim.Analytics.ViewModels
                 {
                     Order = _layout.Order,
                     ColumnSpan = span <= 1 ? 1 : 2,
-                    IsVisible = _layout.IsVisible
+                    IsVisible = _layout.IsVisible,
+                    X = _layout.X,
+                    Y = _layout.Y,
+                    Width = _layout.Width,
+                    Height = _layout.Height
                 },
                 Query = DashboardQueryPersistence.ToDocument(query),
                 Visualization = new DashboardVisualizationDefinition
@@ -961,7 +965,11 @@ namespace PilotBim.Analytics.ViewModels
             {
                 Order = layout.Order,
                 ColumnSpan = layout.ColumnSpan <= 1 ? 1 : 2,
-                IsVisible = layout.IsVisible
+                IsVisible = layout.IsVisible,
+                X = layout.X,
+                Y = layout.Y,
+                Width = layout.Width,
+                Height = layout.Height
             };
         }
 

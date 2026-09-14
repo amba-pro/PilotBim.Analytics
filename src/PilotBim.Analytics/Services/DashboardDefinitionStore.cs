@@ -47,7 +47,7 @@ namespace PilotBim.Analytics.Services
         {
             return new DashboardDefinition
             {
-                SchemaVersion = DashboardPersistenceV2.SchemaVersion,
+                SchemaVersion = DashboardPersistenceV2.CurrentSchemaVersion,
                 Id = DashboardPersistenceV2.DefaultDashboardId,
                 Title = DashboardPersistenceV2.DefaultTitle,
                 ProjectKey = DashboardProjectKey.ToFolderName(projectKey),
@@ -66,9 +66,11 @@ namespace PilotBim.Analytics.Services
                 var probe = ser.ReadObject(stream) as DashboardSchemaVersionProbe;
                 if (probe == null)
                     return DashboardPersistenceKind.Invalid;
+                if (probe.SchemaVersion == DashboardPersistenceV2.CurrentSchemaVersion)
+                    return DashboardPersistenceKind.V3;
                 if (probe.SchemaVersion == DashboardPersistenceV2.SchemaVersion)
                     return DashboardPersistenceKind.V2;
-                if (probe.SchemaVersion > DashboardPersistenceV2.SchemaVersion)
+                if (probe.SchemaVersion > DashboardPersistenceV2.CurrentSchemaVersion)
                     return DashboardPersistenceKind.UnsupportedVersion;
                 return DashboardPersistenceKind.LegacyV1;
             }
@@ -98,7 +100,7 @@ namespace PilotBim.Analytics.Services
                     if (kind == DashboardPersistenceKind.UnsupportedVersion)
                     {
                         result.Status = DashboardDefinitionLoadStatus.UnsupportedVersion;
-                        result.Reason = "dashboard schema version is newer than " + DashboardPersistenceV2.SchemaVersion;
+                        result.Reason = "dashboard schema version is newer than " + DashboardPersistenceV2.CurrentSchemaVersion;
                         AnalyticsLogger.Warning("DashboardPersistence", result.Reason + " path=" + path);
                         return result;
                     }
@@ -113,6 +115,14 @@ namespace PilotBim.Analytics.Services
                     {
                         result.Status = DashboardDefinitionLoadStatus.Invalid;
                         result.Reason = "V2 path contains a legacy unversioned document";
+                        AnalyticsLogger.Warning("DashboardPersistence", result.Reason + " path=" + path);
+                        return result;
+                    }
+
+                    if (kind != DashboardPersistenceKind.V2 && kind != DashboardPersistenceKind.V3)
+                    {
+                        result.Status = DashboardDefinitionLoadStatus.Corrupt;
+                        result.Reason = "dashboard JSON is corrupt or unreadable";
                         AnalyticsLogger.Warning("DashboardPersistence", result.Reason + " path=" + path);
                         return result;
                     }
@@ -132,7 +142,7 @@ namespace PilotBim.Analytics.Services
                     return result;
                 }
 
-                if (loaded.SchemaVersion > DashboardPersistenceV2.SchemaVersion)
+                if (loaded.SchemaVersion > DashboardPersistenceV2.CurrentSchemaVersion)
                 {
                     result.Status = DashboardDefinitionLoadStatus.UnsupportedVersion;
                     result.Reason = "dashboard schema version " + loaded.SchemaVersion + " is unsupported";
@@ -251,6 +261,16 @@ namespace PilotBim.Analytics.Services
                 definition.Widgets = new System.Collections.Generic.List<DashboardWidgetDefinition>();
             definition.Widgets.Sort((a, b) =>
             {
+                var ay = a != null && a.Layout != null ? a.Layout.Y : 0;
+                var by = b != null && b.Layout != null ? b.Layout.Y : 0;
+                var cmp = ay.CompareTo(by);
+                if (cmp != 0)
+                    return cmp;
+                var ax = a != null && a.Layout != null ? a.Layout.X : 0;
+                var bx = b != null && b.Layout != null ? b.Layout.X : 0;
+                cmp = ax.CompareTo(bx);
+                if (cmp != 0)
+                    return cmp;
                 var ao = a != null && a.Layout != null ? a.Layout.Order : 0;
                 var bo = b != null && b.Layout != null ? b.Layout.Order : 0;
                 return ao.CompareTo(bo);

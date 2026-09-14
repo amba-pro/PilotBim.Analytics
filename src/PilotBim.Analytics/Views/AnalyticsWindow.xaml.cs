@@ -3,6 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using PilotBim.Analytics.Diagnostics;
 using PilotBim.Analytics.Export;
 using PilotBim.Analytics.Models;
@@ -19,6 +21,18 @@ namespace PilotBim.Analytics.Views
         private readonly IAnalyticsCsvExporter _csvExporter;
         private readonly AnalyticsWindowViewModel _vm;
         private readonly ScanSessionScope _scanSession = new ScanSessionScope();
+        private DashboardWidgetVm _layoutWidget;
+        private DashboardGridRect _layoutOrigin;
+        private DashboardGridRect _layoutPreview;
+        private Point _layoutStart;
+        private double _grabOffsetX;
+        private double _grabOffsetY;
+        private bool _layoutResize;
+        private bool _layoutArmed;
+        private bool _layoutActive;
+        private bool _layoutCommitted;
+        private UIElement _layoutCapture;
+        private UIElement _layoutContainer;
 
         public AnalyticsWindow(
             InventoryService inventory,
@@ -219,20 +233,156 @@ namespace PilotBim.Analytics.Views
             _vm.SetDashboardBlockVisible(box.Tag.ToString(), box.IsChecked == true);
         }
 
-        private void DashboardMoveUp_Click(object sender, RoutedEventArgs e)
+        private void DashboardEditMode_Click(object sender, RoutedEventArgs e)
         {
-            var btn = sender as Button;
-            if (btn == null || btn.Tag == null || !_vm.DashboardMutationsEnabled)
+            if (!_vm.DashboardMutationsEnabled)
                 return;
-            _vm.MoveDashboardBlock(btn.Tag.ToString(), -1);
+            _vm.SetDashboardEditMode(!_vm.IsDashboardEditMode);
         }
 
-        private void DashboardMoveDown_Click(object sender, RoutedEventArgs e)
+        private void DashboardCardHeader_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var btn = sender as Button;
-            if (btn == null || btn.Tag == null || !_vm.DashboardMutationsEnabled)
+            BeginLayoutGesture(sender as FrameworkElement, e, resize: false);
+        }
+
+        private void DashboardResizeGrip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            BeginLayoutGesture(sender as FrameworkElement, e, resize: true);
+        }
+
+        private void BeginLayoutGesture(FrameworkElement source, MouseButtonEventArgs e, bool resize)
+        {
+            if (source == null || !_vm.IsDashboardEditMode || !_vm.DashboardMutationsEnabled)
                 return;
-            _vm.MoveDashboardBlock(btn.Tag.ToString(), 1);
+            var vm = source.DataContext as DashboardWidgetVm;
+            if (vm == null)
+                return;
+            var panel = FindDashboardGridPanel();
+            if (panel == null)
+                return;
+            var metrics = panel.LastMetrics ?? DashboardGridMetrics.FromAvailableWidth(panel.ActualWidth);
+            _layoutWidget = vm;
+            _layoutOrigin = new DashboardGridRect(vm.GridX, vm.GridY, vm.GridWidth, vm.GridHeight);
+            _layoutPreview = _layoutOrigin;
+            _layoutStart = e.GetPosition(panel);
+            _grabOffsetX = _layoutStart.X - metrics.PixelX(vm.GridX);
+            _grabOffsetY = _layoutStart.Y - metrics.PixelY(vm.GridY);
+            _layoutResize = resize;
+            _layoutArmed = true;
+            _layoutActive = false;
+            _layoutCommitted = false;
+            _layoutCapture = source;
+            _layoutContainer = FindAncestor<ContentPresenter>(source);
+            source.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void DashboardCard_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_layoutArmed || _layoutWidget == null || e.LeftButton != MouseButtonState.Pressed)
+                return;
+            var panel = FindDashboardGridPanel();
+            if (panel == null)
+                return;
+            var pos = e.GetPosition(panel);
+            if (!_layoutActive)
+            {
+                if (Math.Abs(pos.X - _layoutStart.X) < SystemParameters.MinimumHorizontalDragDistance
+                    && Math.Abs(pos.Y - _layoutStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+                    return;
+                _layoutActive = true;
+                if (_layoutContainer != null)
+                    Panel.SetZIndex(_layoutContainer, 100);
+            }
+
+            var metrics = panel.LastMetrics ?? DashboardGridMetrics.FromAvailableWidth(panel.ActualWidth);
+            DashboardGridRect snapped;
+            if (_layoutResize)
+                snapped = metrics.SnapResize(_layoutOrigin.X, _layoutOrigin.Y, pos.X, pos.Y);
+            else
+                snapped = metrics.SnapRect(pos.X - _grabOffsetX, pos.Y - _grabOffsetY, _layoutOrigin.Width, _layoutOrigin.Height);
+
+            if (snapped.Equals(_layoutPreview))
+                return;
+            _layoutPreview = snapped;
+            _vm.PreviewDashboardWidgetRect(_layoutWidget.Id, snapped, _layoutResize);
+        }
+
+        private void DashboardCard_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            CompleteLayoutGesture(commit: true);
+        }
+
+        private void DashboardCard_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (_layoutArmed && !_layoutCommitted)
+                CompleteLayoutGesture(commit: false);
+        }
+
+        private void CompleteLayoutGesture(bool commit)
+        {
+            if (!_layoutArmed)
+                return;
+            var widget = _layoutWidget;
+            var preview = _layoutPreview;
+            var origin = _layoutOrigin;
+            var resize = _layoutResize;
+            var active = _layoutActive;
+            var capture = _layoutCapture;
+            var container = _layoutContainer;
+            _layoutArmed = false;
+            _layoutActive = false;
+            _layoutWidget = null;
+            _layoutCapture = null;
+            _layoutContainer = null;
+            _layoutCommitted = true;
+            if (container != null)
+                Panel.SetZIndex(container, 0);
+            if (capture != null && capture.IsMouseCaptured)
+                capture.ReleaseMouseCapture();
+
+            if (!commit || !active || widget == null || preview.Equals(origin))
+            {
+                _vm.CancelDashboardLayoutPreview();
+                return;
+            }
+
+            string error;
+            if (!_vm.TryCommitDashboardWidgetRect(widget.Id, preview, resize, out error))
+                _vm.CancelDashboardLayoutPreview();
+        }
+
+        private DashboardGridPanel FindDashboardGridPanel()
+        {
+            return FindVisualChild<DashboardGridPanel>(DashboardWidgetsHost);
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null)
+                return null;
+            var count = VisualTreeHelper.GetChildrenCount(parent);
+            for (var i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                var match = child as T ?? FindVisualChild<T>(child);
+                if (match != null)
+                    return match;
+            }
+            return null;
+        }
+
+        private static T FindAncestor<T>(DependencyObject start) where T : DependencyObject
+        {
+            var current = start;
+            while (current != null)
+            {
+                var match = current as T;
+                if (match != null)
+                    return match;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
         }
 
         private void DashboardAdd_Click(object sender, RoutedEventArgs e)

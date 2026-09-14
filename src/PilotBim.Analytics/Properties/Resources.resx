@@ -665,4 +665,10 @@
   <data name="Dashboard_SaveFailed" xml:space="preserve">
     <value>Не удалось сохранить дашборд.</value>
   </data>
+  <data name="Dashboard_Edit" xml:space="preserve">
+    <value>Редактировать</value>
+  </data>
+  <data name="Dashboard_Done" xml:space="preserve">
+    <value>Готово</value>
+  </data>
 </root>

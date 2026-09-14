@@ -47,4 +47,11 @@ namespace PilotBim.Analytics.Models
         public IList<AnalyticsKpiRow> KpiRows { get; set; }
         public IList<DashboardQueryTableRow> TableRows { get; set; }
     }
+
+    internal sealed class DashboardQueryRuntimeCache
+    {
+        public DashboardQueryWidgetRuntimeStatus Status { get; set; }
+        public string Message { get; set; }
+        public DashboardQueryRenderModel Render { get; set; }
+    }
 }

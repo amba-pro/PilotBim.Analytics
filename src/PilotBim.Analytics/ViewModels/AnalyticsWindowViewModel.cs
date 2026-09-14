@@ -183,6 +183,32 @@ namespace PilotBim.Analytics.ViewModels
             get { return _dashboard.MutationsEnabled; }
         }
 
+        public bool IsDashboardEditMode
+        {
+            get { return _dashboard.IsEditMode; }
+        }
+
+        public void SetDashboardEditMode(bool value)
+        {
+            _dashboard.SetEditMode(value);
+            OnPropertyChanged("IsDashboardEditMode");
+        }
+
+        public bool TryCommitDashboardWidgetRect(string id, DashboardGridRect rect, bool resize, out string error)
+        {
+            return _dashboard.TryCommitWidgetRect(id, rect, resize, out error);
+        }
+
+        public void PreviewDashboardWidgetRect(string id, DashboardGridRect rect, bool resize)
+        {
+            _dashboard.PreviewWidgetRect(id, rect, resize);
+        }
+
+        public void CancelDashboardLayoutPreview()
+        {
+            _dashboard.CancelLayoutPreview();
+        }
+
         public ChartOptionItem SelectedChartKind
         {
             get { return _selectedChartKind; }

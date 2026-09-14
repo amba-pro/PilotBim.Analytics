@@ -85,6 +85,8 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal("Количество", Resources.QueryEditor_MeasureCount);
             Assert.Equal("Без группировки", Resources.QueryEditor_GroupByNone);
             Assert.Equal("Сохранить", Resources.QueryEditor_Save);
+            Assert.Equal("Редактировать", Resources.Dashboard_Edit);
+            Assert.Equal("Готово", Resources.Dashboard_Done);
         }
     }
 }

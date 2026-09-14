@@ -224,6 +224,10 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal("query-remarks", vm.TrySave().Id);
             Assert.Equal(original.Layout.Order, vm.TrySave().Layout.Order);
             Assert.Equal(original.Layout.ColumnSpan, vm.TrySave().Layout.ColumnSpan);
+            Assert.Equal(original.Layout.X, vm.TrySave().Layout.X);
+            Assert.Equal(original.Layout.Y, vm.TrySave().Layout.Y);
+            Assert.Equal(original.Layout.Width, vm.TrySave().Layout.Width);
+            Assert.Equal(original.Layout.Height, vm.TrySave().Layout.Height);
             Assert.Equal("Bar", vm.TrySave().Visualization.Type);
             Assert.Equal(2, vm.FilterRows.Count);
             Assert.Equal("Open", vm.FilterRows[0].ValueText);
@@ -341,7 +345,16 @@ namespace PilotBim.Analytics.Tests
                 Id = "query-remarks",
                 Title = "Remarks",
                 ContentKind = DashboardPersistenceV2.ContentQuery,
-                Layout = new DashboardWidgetLayoutDefinition { Order = 4, ColumnSpan = 1, IsVisible = true },
+                Layout = new DashboardWidgetLayoutDefinition
+                {
+                    Order = 4,
+                    ColumnSpan = 1,
+                    IsVisible = true,
+                    X = 3,
+                    Y = 2,
+                    Width = 6,
+                    Height = 3
+                },
                 Query = DashboardQueryPersistence.ToDocument(query),
                 Visualization = new DashboardVisualizationDefinition { Type = "Bar" }
             };

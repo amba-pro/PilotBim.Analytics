@@ -1,9 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using PilotBim.Analytics.Models;
+using PilotBim.Analytics.Services;
 
 namespace PilotBim.Analytics.ViewModels
 {
@@ -16,6 +18,11 @@ namespace PilotBim.Analytics.ViewModels
         private bool _isChart;
         private bool _isKpi;
         private int _columnSpan = 2;
+        private int _gridX;
+        private int _gridY;
+        private int _gridWidth = 6;
+        private int _gridHeight = 3;
+        private bool _isEditMode;
         private DashboardQueryWidgetRuntimeStatus _queryStatus = DashboardQueryWidgetRuntimeStatus.Idle;
         private string _queryStatusText;
         private string _resolvedVisualization;
@@ -50,7 +57,7 @@ namespace PilotBim.Analytics.ViewModels
             Title = queryWidget.Title;
             var layout = queryWidget.Layout ?? new DashboardWidgetLayoutDefinition();
             IsVisible = layout.IsVisible;
-            ColumnSpan = layout.ColumnSpan <= 1 ? 1 : 2;
+            ApplyGrid(layout);
             IsQueryWidget = true;
             IsChart = false;
             IsKpi = false;
@@ -121,7 +128,97 @@ namespace PilotBim.Analytics.ViewModels
 
         public bool IsHalfWidth
         {
-            get { return ColumnSpan == 1; }
+            get { return GridWidth <= 6; }
+        }
+
+        public int GridX
+        {
+            get { return _gridX; }
+            private set
+            {
+                _gridX = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int GridY
+        {
+            get { return _gridY; }
+            private set
+            {
+                _gridY = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int GridWidth
+        {
+            get { return _gridWidth; }
+            private set
+            {
+                _gridWidth = value;
+                OnPropertyChanged();
+                OnPropertyChanged("IsHalfWidth");
+            }
+        }
+
+        public int GridHeight
+        {
+            get { return _gridHeight; }
+            private set
+            {
+                _gridHeight = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsEditMode
+        {
+            get { return _isEditMode; }
+            set
+            {
+                if (_isEditMode == value)
+                    return;
+                _isEditMode = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public void ApplyGrid(DashboardWidgetLayoutDefinition layout)
+        {
+            var rect = DashboardGridLayoutEngine.Clamp(DashboardGridLayoutEngine.FromLayout(layout));
+            GridX = rect.X;
+            GridY = rect.Y;
+            GridWidth = rect.Width;
+            GridHeight = rect.Height;
+            ColumnSpan = rect.Width <= 6 ? 1 : 2;
+            if (layout != null)
+                IsVisible = layout.IsVisible;
+        }
+
+        public DashboardQueryRuntimeCache CaptureQueryRuntime()
+        {
+            if (!IsQueryWidget)
+                return null;
+            return new DashboardQueryRuntimeCache
+            {
+                Status = QueryStatus,
+                Message = QueryStatusText,
+                Render = QueryStatus == DashboardQueryWidgetRuntimeStatus.Success
+                    ? new DashboardQueryRenderModel
+                    {
+                        Status = QueryStatus,
+                        ResolvedVisualization = ResolvedVisualization,
+                        ShowChart = IsChart,
+                        ShowKpi = IsKpi,
+                        ShowTable = ShowQueryTable,
+                        ChartKind = ChartKind,
+                        Points = ChartSeries,
+                        KpiRows = Rows.ToList(),
+                        TableRows = TableRows.ToList()
+                    }
+                    : null
+            };
         }
 
         public AnalyticsChartKind ChartKind

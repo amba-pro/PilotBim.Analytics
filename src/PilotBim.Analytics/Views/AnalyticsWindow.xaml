@@ -185,10 +185,28 @@
                     DisplayMemberPath="DisplayName" />
         </StackPanel>
 
-                <ScrollViewer x:Name="PanelSummary" Grid.Row="2" Visibility="Visible" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="PanelSummary" Grid.Row="2" Visibility="Visible" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
           <StackPanel Margin="0,0,0,8">
             <DockPanel Margin="0,0,0,6">
               <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Width="130" Height="28" Margin="0,0,8,0"
+                        Click="DashboardEditMode_Click"
+                        IsEnabled="{Binding DashboardMutationsEnabled}"
+                        Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0">
+                  <Button.Style>
+                    <Style TargetType="Button">
+                      <Setter Property="Content" Value="{x:Static props:Resources.Dashboard_Edit}" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsDashboardEditMode}" Value="True">
+                          <Setter Property="Content" Value="{x:Static props:Resources.Dashboard_Done}" />
+                          <Setter Property="Background" Value="#1F2A24" />
+                          <Setter Property="Foreground" Value="White" />
+                          <Setter Property="BorderBrush" Value="#1F2A24" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Button.Style>
+                </Button>
                 <Button Content="{x:Static props:Resources.Analytics_AddQueryWidget}" Width="190" Height="28"
                         Click="DashboardAddQuery_Click"
                         IsEnabled="{Binding DashboardMutationsEnabled}"
@@ -215,8 +233,6 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                       </Grid.ColumnDefinitions>
                       <CheckBox Grid.Column="0" IsChecked="{Binding IsVisible, Mode=OneWay}" Tag="{Binding Id}" Click="DashboardVisible_Click" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#1F2A24"
                                 IsEnabled="{Binding MutationsEnabled}"/>
@@ -228,73 +244,101 @@
                       <Button Grid.Column="3" Content="✕" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardRemove_Click"
                               Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}"
                               IsEnabled="{Binding MutationsEnabled}"
-                              Margin="2,0,2,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0" ToolTip="{x:Static props:Resources.Common_Delete}"/>
-                      <Button Grid.Column="4" Content="▲" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardMoveUp_Click" Margin="4,0,2,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0"
-                              IsEnabled="{Binding MutationsEnabled}"/>
-                      <Button Grid.Column="5" Content="▼" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardMoveDown_Click" Margin="2,0,0,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0"
-                              IsEnabled="{Binding MutationsEnabled}"/>
+                              Margin="2,0,0,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0" ToolTip="{x:Static props:Resources.Common_Delete}"/>
                     </Grid>
                   </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <ItemsControl ItemsSource="{Binding DashboardWidgets}" Margin="0,10,0,0">
+            <ItemsControl x:Name="DashboardWidgetsHost" ItemsSource="{Binding DashboardWidgets}" Margin="0,10,0,0"
+                          MinWidth="720" HorizontalAlignment="Stretch">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <WrapPanel Orientation="Horizontal" />
+                  <views:DashboardGridPanel ShowGuides="{Binding DataContext.IsDashboardEditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                  <Setter Property="views:DashboardGridPanel.GridX" Value="{Binding GridX}" />
+                  <Setter Property="views:DashboardGridPanel.GridY" Value="{Binding GridY}" />
+                  <Setter Property="views:DashboardGridPanel.GridWidth" Value="{Binding GridWidth}" />
+                  <Setter Property="views:DashboardGridPanel.GridHeight" Value="{Binding GridHeight}" />
+                </Style>
+              </ItemsControl.ItemContainerStyle>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Border Background="White" BorderBrush="#C8C8C0" BorderThickness="1" CornerRadius="2"
-                          Margin="0,0,10,10" Padding="8" MinHeight="200">
-                    <Border.Style>
-                      <Style TargetType="Border">
-                        <Setter Property="Width" Value="Auto" />
-                        <Setter Property="MinWidth" Value="520" />
-                        <Style.Triggers>
-                          <DataTrigger Binding="{Binding IsHalfWidth}" Value="True">
-                            <Setter Property="Width" Value="420" />
-                            <Setter Property="MinWidth" Value="420" />
-                          </DataTrigger>
-                        </Style.Triggers>
-                      </Style>
-                    </Border.Style>
-                    <StackPanel>
-                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="#1F2A24" Margin="0,0,0,6"/>
-                      <TextBlock Text="{Binding QueryStatusText}" TextWrapping="Wrap" Foreground="#5A645E" Margin="0,0,0,6"
-                                 Visibility="{Binding ShowQueryMessage, Converter={StaticResource BoolToVis}}" />
-                      <DataGrid ItemsSource="{Binding Rows}"
-                                Visibility="{Binding IsKpi, Converter={StaticResource BoolToVis}}"
-                                Style="{StaticResource AnalyticsDataGrid}"
-                                ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
-                                AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260"
-                                Background="White" Foreground="#1F2A24">
-                        <DataGrid.Columns>
-                          <DataGridTextColumn Header="{x:Static props:Resources.Column_Indicator}" Binding="{Binding Label}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-                          <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-                          <DataGridTextColumn Header="{x:Static props:Resources.Column_Details}" Binding="{Binding Detail}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-                        </DataGrid.Columns>
-                      </DataGrid>
-                      <DataGrid ItemsSource="{Binding TableRows}"
-                                Visibility="{Binding ShowQueryTable, Converter={StaticResource BoolToVis}}"
-                                Style="{StaticResource AnalyticsDataGrid}"
-                                ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
-                                AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260"
-                                Background="White" Foreground="#1F2A24">
-                        <DataGrid.Columns>
-                          <DataGridTextColumn Header="{x:Static props:Resources.QueryTable_Category}" Binding="{Binding Category}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-                          <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
-                        </DataGrid.Columns>
-                      </DataGrid>
-                      <views:ChartCanvasControl
-                                Visibility="{Binding IsChart, Converter={StaticResource BoolToVis}}"
-                                ChartKind="{Binding ChartKind}"
-                                Points="{Binding ChartSeries}"
-                                Height="260"
-                                MinHeight="220" />
-                    </StackPanel>
+                          Padding="8">
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                      </Grid.RowDefinitions>
+                      <Border Grid.Row="0" Background="#F4F4F0" Padding="0,0,0,6" Margin="0,0,0,4"
+                              PreviewMouseLeftButtonDown="DashboardCardHeader_PreviewMouseLeftButtonDown"
+                              PreviewMouseMove="DashboardCard_PreviewMouseMove"
+                              PreviewMouseLeftButtonUp="DashboardCard_PreviewMouseLeftButtonUp"
+                              LostMouseCapture="DashboardCard_LostMouseCapture">
+                        <Border.Style>
+                          <Style TargetType="Border">
+                            <Setter Property="Cursor" Value="Arrow" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                <Setter Property="Cursor" Value="SizeAll" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </Border.Style>
+                        <DockPanel>
+                          <TextBlock DockPanel.Dock="Left" Text="⠿" Margin="0,0,8,0" Foreground="#5A645E"
+                                     Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}" />
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="#1F2A24"
+                                     TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                      </Border>
+                      <Grid Grid.Row="1">
+                        <TextBlock Text="{Binding QueryStatusText}" TextWrapping="Wrap" Foreground="#5A645E"
+                                   VerticalAlignment="Top"
+                                   Visibility="{Binding ShowQueryMessage, Converter={StaticResource BoolToVis}}" />
+                        <DataGrid ItemsSource="{Binding Rows}"
+                                  Visibility="{Binding IsKpi, Converter={StaticResource BoolToVis}}"
+                                  Style="{StaticResource AnalyticsDataGrid}"
+                                  ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
+                                  AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260"
+                                  Background="White" Foreground="#1F2A24">
+                          <DataGrid.Columns>
+                            <DataGridTextColumn Header="{x:Static props:Resources.Column_Indicator}" Binding="{Binding Label}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+                            <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+                            <DataGridTextColumn Header="{x:Static props:Resources.Column_Details}" Binding="{Binding Detail}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+                          </DataGrid.Columns>
+                        </DataGrid>
+                        <DataGrid ItemsSource="{Binding TableRows}"
+                                  Visibility="{Binding ShowQueryTable, Converter={StaticResource BoolToVis}}"
+                                  Style="{StaticResource AnalyticsDataGrid}"
+                                  ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
+                                  AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260"
+                                  Background="White" Foreground="#1F2A24">
+                          <DataGrid.Columns>
+                            <DataGridTextColumn Header="{x:Static props:Resources.QueryTable_Category}" Binding="{Binding Category}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+                            <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+                          </DataGrid.Columns>
+                        </DataGrid>
+                        <views:ChartCanvasControl
+                                  Visibility="{Binding IsChart, Converter={StaticResource BoolToVis}}"
+                                  ChartKind="{Binding ChartKind}"
+                                  Points="{Binding ChartSeries}"
+                                  MinHeight="80"
+                                  VerticalAlignment="Stretch" />
+                      </Grid>
+                      <Border Grid.Row="1" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                              Background="#1F2A24" Opacity="0.45" Cursor="SizeNWSE"
+                              Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}"
+                              PreviewMouseLeftButtonDown="DashboardResizeGrip_PreviewMouseLeftButtonDown"
+                              PreviewMouseMove="DashboardCard_PreviewMouseMove"
+                              PreviewMouseLeftButtonUp="DashboardCard_PreviewMouseLeftButtonUp"
+                              LostMouseCapture="DashboardCard_LostMouseCapture" />
+                    </Grid>
                   </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

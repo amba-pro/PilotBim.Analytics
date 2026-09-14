@@ -749,5 +749,7 @@ namespace PilotBim.Analytics.Properties
         public static string Dashboard_UnsupportedVersion { get { return ResourceManager.GetString("Dashboard_UnsupportedVersion", resourceCulture); } }
         public static string Dashboard_ProjectMismatch { get { return ResourceManager.GetString("Dashboard_ProjectMismatch", resourceCulture); } }
         public static string Dashboard_SaveFailed { get { return ResourceManager.GetString("Dashboard_SaveFailed", resourceCulture); } }
+        public static string Dashboard_Edit { get { return ResourceManager.GetString("Dashboard_Edit", resourceCulture); } }
+        public static string Dashboard_Done { get { return ResourceManager.GetString("Dashboard_Done", resourceCulture); } }
     }
 }

@@ -127,10 +127,20 @@ Dispose coordinator; ignore late UI applies via apply generation.
 - Different TypeId full loads: sequential
 - UI thread is not blocked on materialization (`ExecuteAsync` + dispatcher posts)
 
+## Grid lifecycle (DB-10)
+
+Layout edits (drag / resize / hide / show / add / delete) clone the definition, run `DashboardGridLayoutEngine`, save SchemaVersion 3 transactionally, then publish. MouseMove only updates a temporary preview.
+
+Moving or resizing a widget does **not** replace `DashboardQueryCoordinator`, rematerialize TypeIds, or re-run widget queries. Query runtime status is restored across the layout rebuild.
+
+Edit mode: **Редактировать** / **Готово**. Degraded persistence: edit/drag/resize unavailable.
+
+Details: `docs/DASHBOARD_GRID_LAYOUT.md`.
+
 ## Known V1 Limitations
 
 - Enum / User / Reference filter values: stable-key text (no picklists)
-- No dashboard grid / drag / resize (DB-10)
+- Dashboard grid is DB-10 (logical 12-column layout)
 - No dashboard-level filters (DB-12)
 - Auto visualization is a temporary rule (DB-11)
 - Preview is explicit, not live-on-keystroke

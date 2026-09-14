@@ -30,9 +30,11 @@ namespace PilotBim.Analytics.Services
                 return false;
             }
 
-            if (definition.SchemaVersion != DashboardPersistenceV2.SchemaVersion)
+            if (definition.SchemaVersion != DashboardPersistenceV2.SchemaVersion
+                && definition.SchemaVersion != DashboardPersistenceV2.CurrentSchemaVersion)
             {
-                error = "schema version is not " + DashboardPersistenceV2.SchemaVersion;
+                error = "schema version is not " + DashboardPersistenceV2.SchemaVersion
+                    + " or " + DashboardPersistenceV2.CurrentSchemaVersion;
                 return false;
             }
 
@@ -74,22 +76,43 @@ namespace PilotBim.Analytics.Services
                     error = "widget title is required: " + widget.Id;
                     return false;
                 }
-                if (!ValidateLayout(widget.Layout, widget.Id, out error))
+                if (!ValidateLayout(widget.Layout, widget.Id, definition.SchemaVersion, out error))
                     return false;
                 if (!ValidateContent(widget, out error))
                     return false;
             }
 
+            if (definition.SchemaVersion == DashboardPersistenceV2.CurrentSchemaVersion
+                && DashboardGridLayoutEngine.AnyVisibleOverlap(widgets))
+            {
+                error = "visible widgets overlap";
+                return false;
+            }
+
             return true;
         }
 
-        private static bool ValidateLayout(DashboardWidgetLayoutDefinition layout, string widgetId, out string error)
+        private static bool ValidateLayout(
+            DashboardWidgetLayoutDefinition layout,
+            string widgetId,
+            int schemaVersion,
+            out string error)
         {
             error = null;
             if (layout == null)
             {
                 error = "widget layout is required: " + widgetId;
                 return false;
+            }
+            if (schemaVersion == DashboardPersistenceV2.CurrentSchemaVersion)
+            {
+                string gridError;
+                if (!DashboardGridLayoutEngine.TryValidate(DashboardGridLayoutEngine.FromLayout(layout), out gridError))
+                {
+                    error = "widget grid layout is invalid: " + widgetId + " " + gridError;
+                    return false;
+                }
+                return true;
             }
             if (layout.Order < 0)
             {
