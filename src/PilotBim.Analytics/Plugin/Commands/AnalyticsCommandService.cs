@@ -115,6 +115,8 @@ namespace PilotBim.Analytics.Plugin.Commands
                 + " modelSearch=" + (modelSearch != null)
                 + " importedSearch=" + (_importedSearch != null));
 
+            DashboardTypeMaterializerCanary.TryStart(_repository, search);
+
             return new InventoryService(_repository, search, storage, modelSearch);
         }
 
