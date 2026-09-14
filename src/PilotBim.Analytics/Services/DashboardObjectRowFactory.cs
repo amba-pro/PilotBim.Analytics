@@ -12,10 +12,17 @@ namespace PilotBim.Analytics.Services
     internal sealed class DashboardObjectRowFactory
     {
         public int SkippedUnsupportedValues { get; private set; }
+        private readonly List<string> _skippedFieldIds = new List<string>();
+
+        public IReadOnlyList<string> SkippedUnsupportedFieldIds
+        {
+            get { return _skippedFieldIds; }
+        }
 
         public DashboardObjectRow Create(DashboardObjectSource source)
         {
             SkippedUnsupportedValues = 0;
+            _skippedFieldIds.Clear();
             if (source == null || source.Id == Guid.Empty)
                 return null;
 
@@ -53,6 +60,7 @@ namespace PilotBim.Analytics.Services
                     if (!TryMapAttribute(attr, out mapped))
                     {
                         SkippedUnsupportedValues++;
+                        _skippedFieldIds.Add(fieldId);
                         continue;
                     }
                     if (!fields.ContainsKey(fieldId))

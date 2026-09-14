@@ -13,6 +13,26 @@ namespace PilotBim.Analytics.Tests
         private readonly ChartDataService _charts = new ChartDataService();
 
         [Fact]
+        public void Filters_NonEmpty_ReturnsUnsupported()
+        {
+            var filter = new DashboardFilterDefinition(
+                DashboardFieldIds.SystemTypeId,
+                DashboardFilterOperator.Equals,
+                DashboardFilterValue.Integer(1));
+            var query = new DashboardWidgetQuery(
+                DashboardQueryScopeKind.CurrentProject,
+                DashboardFieldIds.SystemTypeId,
+                DashboardQueryMeasure.Count,
+                DashboardQuerySort.ValueDescending,
+                null,
+                null,
+                new[] { filter });
+            var result = _engine.Execute(Types(("A", 1, 1)), query);
+            Assert.Equal(WidgetQueryStatus.UnsupportedQuery, result.Status);
+            Assert.Empty(result.Dataset.Rows);
+        }
+
+        [Fact]
         public void EntityTypeId_NonNull_ReturnsUnsupported()
         {
             var query = new DashboardWidgetQuery(

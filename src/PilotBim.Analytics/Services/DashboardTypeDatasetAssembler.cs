@@ -31,6 +31,7 @@ namespace PilotBim.Analytics.Services
             var seen = new HashSet<Guid>();
             var skipped = 0;
             var fieldValues = 0;
+            var skippedFields = new HashSet<string>(StringComparer.Ordinal);
 
             if (objects != null)
             {
@@ -44,6 +45,11 @@ namespace PilotBim.Analytics.Services
                     if (row == null)
                         continue;
                     skipped += factory.SkippedUnsupportedValues;
+                    if (factory.SkippedUnsupportedFieldIds != null)
+                    {
+                        for (var i = 0; i < factory.SkippedUnsupportedFieldIds.Count; i++)
+                            skippedFields.Add(factory.SkippedUnsupportedFieldIds[i]);
+                    }
                     fieldValues += row.Fields.Count;
                     rows.Add(row);
                 }
@@ -93,7 +99,8 @@ namespace PilotBim.Analytics.Services
                 coverageReason,
                 rows,
                 fieldValues,
-                skipped);
+                skipped,
+                new List<string>(skippedFields));
         }
 
         /// <summary>

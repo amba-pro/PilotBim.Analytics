@@ -170,6 +170,7 @@ namespace PilotBim.Analytics.Tests
 
             Assert.NotNull(row);
             Assert.Equal(1, _factory.SkippedUnsupportedValues);
+            Assert.Contains(DashboardFieldIds.Attribute(4, "blob"), _factory.SkippedUnsupportedFieldIds);
             Assert.True(row.Fields.ContainsKey(DashboardFieldIds.Attribute(4, "ok")));
             Assert.False(row.Fields.ContainsKey(DashboardFieldIds.Attribute(4, "blob")));
         }

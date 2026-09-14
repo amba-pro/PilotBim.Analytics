@@ -283,7 +283,7 @@ Timeout with some rows → **Partial**. Timeout with none → **Failed**. Cancel
 
 `DashboardFieldValue`: `Kind`, `Value` (typed), `StableKey?`, `DisplayText?`
 
-Display text is never identity. Kinds follow DB-1 `DashboardFieldType` (Text, Integer, Number, Boolean, DateTime, Enum, User, Reference, Guid). Unsupported runtime values skip that field and increment `SkippedUnsupportedValues`; the dataset continues.
+Display text is never identity. Kinds follow DB-1 `DashboardFieldType` (Text, Integer, Number, Boolean, DateTime, Enum, User, Reference, Guid). Unsupported runtime values skip that field, increment `SkippedUnsupportedValues`, and record `SkippedUnsupportedFieldIds`. Queries that filter or group a skipped field return `IncompleteData` (DB-5).
 
 `system:createdMonth` is **not** stored (derive later from `system:created`).
 
@@ -395,10 +395,7 @@ The materializer still does **not** run inside the query engine. Multiple widget
 
 Coverage != Complete → `IncompleteData`, empty `WidgetDataset`. Never Success. Never reinterpret as Empty/0.
 
-Field ids come from the DB-1 catalog (`CanGroup`, TypeId ownership). Group identity is `DashboardGroupValue` (stable key / typed value). Missing values share one reserved key; Label is `""`.
+DB-5: object-level AND filters (`Equals` / `NotEquals` / `IsEmpty` / `IsNotEmpty`) run **before** aggregation. Snapshot rejects non-empty Filters.
 
-DB-4 runtime validation: **NOT_REQUIRED** (pure memory).  
-DB-3.1 materializer canary: **STILL_REQUIRED** before UI.
-
-Next: run the DB-3.1 Pilot canary, then DB-5 filters (`Equals` / `NotEquals` / `IsEmpty` / `IsNotEmpty`).
+Next: DB-6 query coordinator + shared TypeId dataset cache (not implemented). Runtime canary remains deferred until V1 is wired.
 

@@ -28,6 +28,9 @@ namespace PilotBim.Analytics.Services
             if (query.EntityTypeId.HasValue)
                 return WidgetQueryResult.Unsupported("entity type id is not executable from snapshot");
 
+            if (query.HasFilters)
+                return WidgetQueryResult.Unsupported("filters are not executable from snapshot");
+
             IReadOnlyList<WidgetDataRow> mapped;
             var dimension = query.DimensionFieldId;
             if (string.IsNullOrWhiteSpace(dimension))

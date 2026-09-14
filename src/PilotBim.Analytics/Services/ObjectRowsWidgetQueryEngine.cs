@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using PilotBim.Analytics.Models;
 
@@ -55,8 +56,18 @@ namespace PilotBim.Analytics.Services
                     return WidgetQueryResult.Invalid("dataset contains a row that does not match type id");
             }
 
+            var filterError = ValidateFilters(catalog, dataset, query);
+            if (filterError != null)
+                return filterError;
+
+            var quality = CheckSkippedFields(dataset, query);
+            if (quality != null)
+                return quality;
+
+            var matched = ApplyFilters(rows, query);
+
             if (string.IsNullOrWhiteSpace(query.DimensionFieldId))
-                return ScalarCount(rows, query);
+                return ScalarCount(matched, query);
 
             DashboardFieldDescriptor descriptor;
             if (!catalog.TryGet(query.DimensionFieldId, out descriptor) || descriptor == null)
@@ -74,7 +85,7 @@ namespace PilotBim.Analytics.Services
             if (!IsExecutableFromObjectRows(descriptor))
                 return WidgetQueryResult.Unsupported("dimension is not executable from object rows: " + descriptor.Id);
 
-            return GroupBy(rows, descriptor.Id, query);
+            return GroupBy(matched, descriptor.Id, query);
         }
 
         private static bool IsExecutableFromObjectRows(DashboardFieldDescriptor descriptor)
@@ -86,6 +97,117 @@ namespace PilotBim.Analytics.Services
             if (descriptor.Id == DashboardFieldIds.SystemCreatedMonth)
                 return false;
             return true;
+        }
+
+        private static WidgetQueryResult ValidateFilters(
+            DashboardFieldCatalog catalog,
+            DashboardTypeDataset dataset,
+            DashboardWidgetQuery query)
+        {
+            if (!query.HasFilters)
+                return null;
+
+            for (var i = 0; i < query.Filters.Count; i++)
+            {
+                var filter = query.Filters[i];
+                if (filter == null || string.IsNullOrWhiteSpace(filter.FieldId))
+                    return WidgetQueryResult.Invalid("filter field id is required");
+
+                DashboardFieldDescriptor descriptor;
+                if (!catalog.TryGet(filter.FieldId, out descriptor) || descriptor == null)
+                    return WidgetQueryResult.Unsupported("unknown filter field: " + filter.FieldId);
+
+                if (!descriptor.Capabilities.CanFilter)
+                    return WidgetQueryResult.Unsupported("field cannot be filtered: " + descriptor.Id);
+
+                if (descriptor.SourceKind == DashboardFieldSourceKind.Attribute
+                    && (!descriptor.ObjectTypeId.HasValue || descriptor.ObjectTypeId.Value != dataset.TypeId))
+                {
+                    return WidgetQueryResult.Unsupported("filter field is not valid for entity type " + dataset.TypeId);
+                }
+
+                if (!IsExecutableFromObjectRows(descriptor))
+                    return WidgetQueryResult.Unsupported("filter field is not executable from object rows: " + descriptor.Id);
+
+                if (filter.Operator != DashboardFilterOperator.Equals
+                    && filter.Operator != DashboardFilterOperator.NotEquals
+                    && filter.Operator != DashboardFilterOperator.IsEmpty
+                    && filter.Operator != DashboardFilterOperator.IsNotEmpty)
+                {
+                    return WidgetQueryResult.Unsupported("unsupported filter operator");
+                }
+
+                if (filter.Operator == DashboardFilterOperator.Equals
+                    || filter.Operator == DashboardFilterOperator.NotEquals)
+                {
+                    if (filter.Value == null || filter.Value.Value == null)
+                        return WidgetQueryResult.Invalid("filter value is required");
+                    if (!DashboardFieldPredicate.AreKindsCompatible(descriptor.FieldType, filter.Value.Kind))
+                        return WidgetQueryResult.Invalid("filter value type does not match field");
+                }
+            }
+
+            return null;
+        }
+
+        private static WidgetQueryResult CheckSkippedFields(DashboardTypeDataset dataset, DashboardWidgetQuery query)
+        {
+            var skipped = dataset.SkippedUnsupportedFieldIds;
+            if (skipped == null || skipped.Count == 0)
+                return null;
+
+            var touched = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            if (query.HasFilters)
+            {
+                for (var i = 0; i < query.Filters.Count; i++)
+                {
+                    if (query.Filters[i] != null && !string.IsNullOrEmpty(query.Filters[i].FieldId))
+                        touched.Add(query.Filters[i].FieldId);
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(query.DimensionFieldId))
+                touched.Add(query.DimensionFieldId);
+
+            if (touched.Count == 0)
+                return null;
+
+            for (var i = 0; i < skipped.Count; i++)
+            {
+                if (skipped[i] != null && touched.Contains(skipped[i]))
+                {
+                    return WidgetQueryResult.IncompleteData(
+                        "field has skipped unsupported values: " + skipped[i]);
+                }
+            }
+
+            return null;
+        }
+
+        private static IReadOnlyList<DashboardObjectRow> ApplyFilters(
+            IReadOnlyList<DashboardObjectRow> rows,
+            DashboardWidgetQuery query)
+        {
+            if (!query.HasFilters)
+                return rows;
+
+            var matched = new List<DashboardObjectRow>();
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                var pass = true;
+                for (var f = 0; f < query.Filters.Count; f++)
+                {
+                    if (!DashboardFieldPredicate.Matches(row, query.Filters[f]))
+                    {
+                        pass = false;
+                        break;
+                    }
+                }
+                if (pass)
+                    matched.Add(row);
+            }
+
+            return matched;
         }
 
         private static WidgetQueryResult ScalarCount(

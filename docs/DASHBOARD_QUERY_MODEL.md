@@ -4,7 +4,7 @@ Runtime/internal contract introduced in DB-2. Not persisted. Not bound to UI.
 
 ## Purpose
 
-Describe a widget as **Scope + optional Dimension + Measure + Sort + Limit**, then execute it against a data source that does **not** live inside the renderer.
+Describe a widget as **Scope + EntityTypeId + Filters + optional Dimension + Measure + Sort + Limit**.
 
 Current executors (same `DashboardWidgetQuery`):
 
@@ -17,16 +17,15 @@ The query **must not** mention `AnalyticsChartSource`.
 
 `DashboardWidgetQuery`
 
-| Member | DB-2 / DB-4 |
+| Member | DB-2 / DB-4 / DB-5 |
 |--------|------|
 | Scope | `CurrentProject` only |
 | EntityTypeId | `int?` — snapshot: null; ObjectRows: required TypeId |
+| Filters | AND list; empty = none. ObjectRows only |
 | DimensionFieldId | null/empty = scalar Count; else a stable field id |
 | Measure | `Count` only |
 | Sort | ValueDescending (default), ValueAscending, LabelAscending, LabelDescending |
 | Limit | null = all; `<= 0` → `InvalidQuery` |
-
-No Filters[] in DB-4.
 
 ## Scope
 
@@ -119,11 +118,57 @@ Pilot SDK calls per query: **0**.
 
 Do not fall back to another dimension or to ChartSource defaults.
 
+## Filters
+
+`DashboardFilterDefinition`: `FieldId`, `Operator`, `Value`.
+
+Operators (V1):
+
+| Operator | Semantics |
+|----------|-----------|
+| Equals | typed semantic equality; missing row is **false** |
+| NotEquals | logical inverse of Equals; **missing row is true** (`Status != A` includes rows without Status) |
+| IsEmpty | missing field, null, empty text, whitespace — same missing definition as DB-4 grouping |
+| IsNotEmpty | complement of IsEmpty |
+
+Multiple filters: **AND** only, in query order. No OR.
+
+`DashboardFilterValue`: `Kind` + primitive `Value` (string / long / double / bool / Guid / stable-key string). **No DisplayText.** Persistence-ready; not serialized in DB-5.
+
+Typed equality:
+
+- Text: `StringComparison.Ordinal`, no case-fold, no trim of non-empty values. Whitespace-only **source** values are missing (IsEmpty), so they do not Equals a non-empty criterion.
+- Integer: numeric equality; `int`/`long`/`short` unify.
+- Number: prefer `decimal` unification when conversion is safe; otherwise IEEE `double` equality. Integer and Number kinds are compatible. No culture `ToString`.
+- Boolean: bool equality.
+- Guid: Guid equality (`D` parse allowed).
+- Enum / User / Reference: **StableKey** (group identity). DisplayText ignored. Same display + different ids → not equal.
+
+DateTime filters: **UnsupportedQuery** (no formatted-string comparison; same as ObjectRows grouping).
+
+Validation: unknown field / wrong TypeId attribute / `CanFilter=false` / DateTime / createdMonth → `UnsupportedQuery`. Equals/NotEquals with null value or incompatible kind → `InvalidQuery`. Unknown operator → `UnsupportedQuery`.
+
+Pipeline (ObjectRows):
+
+complete rows → validate query/filters → reject skipped-field quality → **filter objects** → Count / GroupBy → sort → limit
+
+Never filter visualization buckets.
+
+Scalar + filters + zero matches: **Success, Value=0** (same as empty Complete scalar).
+
+`sum(group.Value) == filtered row count`.
+
+Snapshot: empty Filters → unchanged. Non-empty Filters → `UnsupportedQuery` (no fake aggregate filtering).
+
+### Data quality
+
+DB-3.1 now records `SkippedUnsupportedFieldIds` (tiny extension). If a query **touches** (filter or dimension) a field with skipped unsupported values → `IncompleteData`. Global skip count alone does not fail unrelated fields. IsEmpty still cannot distinguish true absent vs skipped-for-that-field when the field was skipped — those queries are IncompleteData instead of silent missing.
+
 ## ObjectRows-backed Execution
 
 `ObjectRowsWidgetQueryEngine.Execute(dataset, catalog, query)` → `WidgetQueryResult` / `WidgetDataset`.
 
-No Pilot SDK. No materializer call. Does not clone `DashboardObjectRows`. Aggregation memory is proportional to distinct groups.
+No Pilot SDK. No materializer call. Does not clone `DashboardObjectRows`. Filters allocate a list of matching **references**. Aggregation memory is proportional to distinct groups.
 
 ### EntityTypeId
 

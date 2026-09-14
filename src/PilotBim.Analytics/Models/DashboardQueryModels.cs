@@ -67,6 +67,18 @@ namespace PilotBim.Analytics.Models
             DashboardQuerySort sort,
             int? limit,
             int? entityTypeId)
+            : this(scope, dimensionFieldId, measure, sort, limit, entityTypeId, null)
+        {
+        }
+
+        public DashboardWidgetQuery(
+            DashboardQueryScopeKind scope,
+            string dimensionFieldId,
+            DashboardQueryMeasure measure,
+            DashboardQuerySort sort,
+            int? limit,
+            int? entityTypeId,
+            IReadOnlyList<DashboardFilterDefinition> filters)
         {
             Scope = scope;
             DimensionFieldId = dimensionFieldId;
@@ -74,6 +86,7 @@ namespace PilotBim.Analytics.Models
             Sort = sort;
             Limit = limit;
             EntityTypeId = entityTypeId;
+            Filters = filters ?? new DashboardFilterDefinition[0];
         }
 
         public DashboardQueryScopeKind Scope { get; private set; }
@@ -92,6 +105,14 @@ namespace PilotBim.Analytics.Models
         /// ObjectRows: required and must equal the dataset TypeId.
         /// </summary>
         public int? EntityTypeId { get; private set; }
+
+        /// <summary>AND filters. Empty = none. Snapshot: non-empty is UnsupportedQuery.</summary>
+        public IReadOnlyList<DashboardFilterDefinition> Filters { get; private set; }
+
+        public bool HasFilters
+        {
+            get { return Filters != null && Filters.Count > 0; }
+        }
     }
 
     /// <summary>

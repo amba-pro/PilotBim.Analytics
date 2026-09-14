@@ -67,6 +67,29 @@ namespace PilotBim.Analytics.Models
             IReadOnlyList<DashboardObjectRow> rows,
             int fieldValueCount,
             int skippedUnsupportedValues)
+            : this(
+                typeId,
+                expectedCount,
+                loadedUniqueCount,
+                coverage,
+                reason,
+                rows,
+                fieldValueCount,
+                skippedUnsupportedValues,
+                null)
+        {
+        }
+
+        public DashboardTypeDataset(
+            int typeId,
+            long expectedCount,
+            int loadedUniqueCount,
+            DashboardTypeCoverage coverage,
+            string reason,
+            IReadOnlyList<DashboardObjectRow> rows,
+            int fieldValueCount,
+            int skippedUnsupportedValues,
+            IReadOnlyList<string> skippedUnsupportedFieldIds)
         {
             TypeId = typeId;
             ExpectedCount = expectedCount;
@@ -76,6 +99,7 @@ namespace PilotBim.Analytics.Models
             Rows = rows ?? new DashboardObjectRow[0];
             FieldValueCount = fieldValueCount;
             SkippedUnsupportedValues = skippedUnsupportedValues;
+            SkippedUnsupportedFieldIds = skippedUnsupportedFieldIds ?? new string[0];
         }
 
         public int TypeId { get; private set; }
@@ -86,6 +110,7 @@ namespace PilotBim.Analytics.Models
         public IReadOnlyList<DashboardObjectRow> Rows { get; private set; }
         public int FieldValueCount { get; private set; }
         public int SkippedUnsupportedValues { get; private set; }
+        public IReadOnlyList<string> SkippedUnsupportedFieldIds { get; private set; }
     }
 
     /// <summary>

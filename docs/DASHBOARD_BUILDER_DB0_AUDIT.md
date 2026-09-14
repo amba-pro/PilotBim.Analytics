@@ -914,7 +914,41 @@ Dashboard, widgets, snapshot semantics (except shared sort helper + EntityTypeId
 
 ### Next
 
-**RUN_DB3_1_RUNTIME_CANARY** before DB-5 filters. DB-4 cannot prove live Total/SubscribeObjects coverage.
+Runtime canary harness exists (DB-R1); live Pilot execution is deferred until Dashboard Builder V1 is wired. Filters: DB-5.
+
+---
+
+## DB-5 Result
+
+Date: 2026-09-14  
+Status: **OBJECTROWS_FILTERS**  
+Production caller: **none**
+
+### Model
+
+Same `DashboardWidgetQuery` + `Filters[]` (`DashboardFilterDefinition`: FieldId, Operator, typed `DashboardFilterValue`).
+
+Operators: Equals, NotEquals, IsEmpty, IsNotEmpty. AND only.
+
+### Semantics
+
+NotEquals includes missing rows. IsEmpty matches DB-4 missing (absent / null / empty / whitespace). Equality uses StableKey / typed values, never DisplayText. DateTime filters UnsupportedQuery.
+
+### Data quality
+
+Added `SkippedUnsupportedFieldIds` on the dataset (factory/assembler). Queries that touch a skipped field → `IncompleteData`.
+
+### Snapshot
+
+No filters: unchanged. Filters present: `UnsupportedQuery`.
+
+### Pipeline
+
+validate complete dataset → validate filters → quality check → filter rows → Count/GroupBy → sort → limit.
+
+### Next: DB-6
+
+Dashboard Query Coordinator + shared TypeId dataset cache. UI calls `Execute(query)`. Materialize each TypeId once per session. Loading/cancel/refresh later. **Not implemented.**
 
 
 
