@@ -76,5 +76,15 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal("Type", Resources.Inventory_Col_Type);
             Assert.Equal("Index — модели", Resources.Inventory_TabIndexModels);
         }
+
+        [Fact]
+        public void QueryEditor_Keys_MatchExpectedDefaults()
+        {
+            Assert.Equal("Новый виджет", Resources.QueryEditor_WindowTitle);
+            Assert.Equal("Текущий проект", Resources.QueryEditor_ScopeCurrentProject);
+            Assert.Equal("Количество", Resources.QueryEditor_MeasureCount);
+            Assert.Equal("Без группировки", Resources.QueryEditor_GroupByNone);
+            Assert.Equal("Сохранить", Resources.QueryEditor_Save);
+        }
     }
 }

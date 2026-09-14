@@ -678,5 +678,62 @@ namespace PilotBim.Analytics.Properties
         {
             get { return ResourceManager.GetString("Inventory_Col_IsPosition", resourceCulture); }
         }
+
+        public static string QueryEditor_WindowTitle { get { return ResourceManager.GetString("QueryEditor_WindowTitle", resourceCulture); } }
+        public static string QueryEditor_EditTitle { get { return ResourceManager.GetString("QueryEditor_EditTitle", resourceCulture); } }
+        public static string QueryEditor_DataHeader { get { return ResourceManager.GetString("QueryEditor_DataHeader", resourceCulture); } }
+        public static string QueryEditor_PreviewHeader { get { return ResourceManager.GetString("QueryEditor_PreviewHeader", resourceCulture); } }
+        public static string QueryEditor_ScopeLabel { get { return ResourceManager.GetString("QueryEditor_ScopeLabel", resourceCulture); } }
+        public static string QueryEditor_ScopeCurrentProject { get { return ResourceManager.GetString("QueryEditor_ScopeCurrentProject", resourceCulture); } }
+        public static string QueryEditor_TypeLabel { get { return ResourceManager.GetString("QueryEditor_TypeLabel", resourceCulture); } }
+        public static string QueryEditor_TypeChangeHint { get { return ResourceManager.GetString("QueryEditor_TypeChangeHint", resourceCulture); } }
+        public static string QueryEditor_FiltersHeader { get { return ResourceManager.GetString("QueryEditor_FiltersHeader", resourceCulture); } }
+        public static string QueryEditor_AddFilter { get { return ResourceManager.GetString("QueryEditor_AddFilter", resourceCulture); } }
+        public static string QueryEditor_RemoveFilter { get { return ResourceManager.GetString("QueryEditor_RemoveFilter", resourceCulture); } }
+        public static string QueryEditor_MeasureLabel { get { return ResourceManager.GetString("QueryEditor_MeasureLabel", resourceCulture); } }
+        public static string QueryEditor_MeasureCount { get { return ResourceManager.GetString("QueryEditor_MeasureCount", resourceCulture); } }
+        public static string QueryEditor_GroupByLabel { get { return ResourceManager.GetString("QueryEditor_GroupByLabel", resourceCulture); } }
+        public static string QueryEditor_GroupByNone { get { return ResourceManager.GetString("QueryEditor_GroupByNone", resourceCulture); } }
+        public static string QueryEditor_SortLabel { get { return ResourceManager.GetString("QueryEditor_SortLabel", resourceCulture); } }
+        public static string QueryEditor_SortValueDesc { get { return ResourceManager.GetString("QueryEditor_SortValueDesc", resourceCulture); } }
+        public static string QueryEditor_SortValueAsc { get { return ResourceManager.GetString("QueryEditor_SortValueAsc", resourceCulture); } }
+        public static string QueryEditor_SortLabelAsc { get { return ResourceManager.GetString("QueryEditor_SortLabelAsc", resourceCulture); } }
+        public static string QueryEditor_SortLabelDesc { get { return ResourceManager.GetString("QueryEditor_SortLabelDesc", resourceCulture); } }
+        public static string QueryEditor_TopNLabel { get { return ResourceManager.GetString("QueryEditor_TopNLabel", resourceCulture); } }
+        public static string QueryEditor_VisualizationHeader { get { return ResourceManager.GetString("QueryEditor_VisualizationHeader", resourceCulture); } }
+        public static string QueryEditor_VizAuto { get { return ResourceManager.GetString("QueryEditor_VizAuto", resourceCulture); } }
+        public static string QueryEditor_VizKpi { get { return ResourceManager.GetString("QueryEditor_VizKpi", resourceCulture); } }
+        public static string QueryEditor_VizBar { get { return ResourceManager.GetString("QueryEditor_VizBar", resourceCulture); } }
+        public static string QueryEditor_VizHorizontalBar { get { return ResourceManager.GetString("QueryEditor_VizHorizontalBar", resourceCulture); } }
+        public static string QueryEditor_VizPie { get { return ResourceManager.GetString("QueryEditor_VizPie", resourceCulture); } }
+        public static string QueryEditor_VizLine { get { return ResourceManager.GetString("QueryEditor_VizLine", resourceCulture); } }
+        public static string QueryEditor_VizTable { get { return ResourceManager.GetString("QueryEditor_VizTable", resourceCulture); } }
+        public static string QueryEditor_AutoHint { get { return ResourceManager.GetString("QueryEditor_AutoHint", resourceCulture); } }
+        public static string QueryEditor_TitleLabel { get { return ResourceManager.GetString("QueryEditor_TitleLabel", resourceCulture); } }
+        public static string QueryEditor_Save { get { return ResourceManager.GetString("QueryEditor_Save", resourceCulture); } }
+        public static string QueryEditor_PreviewPlaceholder { get { return ResourceManager.GetString("QueryEditor_PreviewPlaceholder", resourceCulture); } }
+        public static string QueryEditor_SummaryType { get { return ResourceManager.GetString("QueryEditor_SummaryType", resourceCulture); } }
+        public static string QueryEditor_SummaryFilters { get { return ResourceManager.GetString("QueryEditor_SummaryFilters", resourceCulture); } }
+        public static string QueryEditor_SummaryMeasure { get { return ResourceManager.GetString("QueryEditor_SummaryMeasure", resourceCulture); } }
+        public static string QueryEditor_SummaryGroup { get { return ResourceManager.GetString("QueryEditor_SummaryGroup", resourceCulture); } }
+        public static string QueryEditor_SummaryViz { get { return ResourceManager.GetString("QueryEditor_SummaryViz", resourceCulture); } }
+        public static string QueryEditor_OpEquals { get { return ResourceManager.GetString("QueryEditor_OpEquals", resourceCulture); } }
+        public static string QueryEditor_OpNotEquals { get { return ResourceManager.GetString("QueryEditor_OpNotEquals", resourceCulture); } }
+        public static string QueryEditor_OpIsEmpty { get { return ResourceManager.GetString("QueryEditor_OpIsEmpty", resourceCulture); } }
+        public static string QueryEditor_OpIsNotEmpty { get { return ResourceManager.GetString("QueryEditor_OpIsNotEmpty", resourceCulture); } }
+        public static string QueryEditor_BoolYes { get { return ResourceManager.GetString("QueryEditor_BoolYes", resourceCulture); } }
+        public static string QueryEditor_BoolNo { get { return ResourceManager.GetString("QueryEditor_BoolNo", resourceCulture); } }
+        public static string QueryEditor_UnavailableType { get { return ResourceManager.GetString("QueryEditor_UnavailableType", resourceCulture); } }
+        public static string QueryEditor_UnavailableField { get { return ResourceManager.GetString("QueryEditor_UnavailableField", resourceCulture); } }
+        public static string QueryEditor_NeedType { get { return ResourceManager.GetString("QueryEditor_NeedType", resourceCulture); } }
+        public static string QueryEditor_NeedTitle { get { return ResourceManager.GetString("QueryEditor_NeedTitle", resourceCulture); } }
+        public static string QueryEditor_NeedEqualsValue { get { return ResourceManager.GetString("QueryEditor_NeedEqualsValue", resourceCulture); } }
+        public static string QueryEditor_InvalidNumber { get { return ResourceManager.GetString("QueryEditor_InvalidNumber", resourceCulture); } }
+        public static string QueryEditor_InvalidGuid { get { return ResourceManager.GetString("QueryEditor_InvalidGuid", resourceCulture); } }
+        public static string QueryEditor_InvalidLimit { get { return ResourceManager.GetString("QueryEditor_InvalidLimit", resourceCulture); } }
+        public static string QueryEditor_InvalidVisualization { get { return ResourceManager.GetString("QueryEditor_InvalidVisualization", resourceCulture); } }
+        public static string QueryEditor_UnavailableMetadata { get { return ResourceManager.GetString("QueryEditor_UnavailableMetadata", resourceCulture); } }
+        public static string QueryEditor_KindMismatch { get { return ResourceManager.GetString("QueryEditor_KindMismatch", resourceCulture); } }
+        public static string QueryEditor_StableKeyHint { get { return ResourceManager.GetString("QueryEditor_StableKeyHint", resourceCulture); } }
     }
 }

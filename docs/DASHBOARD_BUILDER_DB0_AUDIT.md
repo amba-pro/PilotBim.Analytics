@@ -1025,6 +1025,35 @@ Dashboard UI, `DashboardLayoutStore`, presenter, coordinator, Inventory, Pilot S
 
 Widget Editor V2 — user-visible query + visualization configuration against this model.
 
+---
+
+## DB-8 Result
+
+Date: 2026-09-14  
+Status: **QUERY_EDITOR_V2**  
+Production caller: **none** (legacy `DashboardWidgetEditorWindow` unchanged)
+
+### Approach
+
+**NEW_V2_EDITOR** — `DashboardQueryWidgetEditorWindow` + `DashboardQueryWidgetEditorViewModel`. Legacy compact editor left intact.
+
+### V1 scope
+
+Object Type query widgets only. Project overview remains Legacy widgets.
+
+### Metadata
+
+Catalog + type options only. Enum/User/Reference picklists **NOT_AVAILABLE**; Equals uses stable-key text.
+
+### Not in DB-8
+
+Query execution, coordinator, V2 store switch, dashboard rendering, grid.
+
+### Next: DB-9 (not implemented)
+
+Query widget integration + live preview + per-project V2 save + shared TypeId cache on the dashboard.
+
+
 
 
 

@@ -453,4 +453,174 @@
   <data name="Inventory_Col_IsPosition" xml:space="preserve">
     <value>IsPosition</value>
   </data>
+
+  <!-- DB-8 Query widget editor -->
+  <data name="QueryEditor_WindowTitle" xml:space="preserve">
+    <value>Новый виджет</value>
+  </data>
+  <data name="QueryEditor_EditTitle" xml:space="preserve">
+    <value>Виджет</value>
+  </data>
+  <data name="QueryEditor_DataHeader" xml:space="preserve">
+    <value>Данные</value>
+  </data>
+  <data name="QueryEditor_PreviewHeader" xml:space="preserve">
+    <value>Предпросмотр</value>
+  </data>
+  <data name="QueryEditor_ScopeLabel" xml:space="preserve">
+    <value>Область</value>
+  </data>
+  <data name="QueryEditor_ScopeCurrentProject" xml:space="preserve">
+    <value>Текущий проект</value>
+  </data>
+  <data name="QueryEditor_TypeLabel" xml:space="preserve">
+    <value>Тип объектов</value>
+  </data>
+  <data name="QueryEditor_TypeChangeHint" xml:space="preserve">
+    <value>При смене типа объектов группировка и фильтры будут сброшены.</value>
+  </data>
+  <data name="QueryEditor_FiltersHeader" xml:space="preserve">
+    <value>Фильтры</value>
+  </data>
+  <data name="QueryEditor_AddFilter" xml:space="preserve">
+    <value>+ Добавить фильтр</value>
+  </data>
+  <data name="QueryEditor_RemoveFilter" xml:space="preserve">
+    <value>×</value>
+  </data>
+  <data name="QueryEditor_MeasureLabel" xml:space="preserve">
+    <value>Показатель</value>
+  </data>
+  <data name="QueryEditor_MeasureCount" xml:space="preserve">
+    <value>Количество</value>
+  </data>
+  <data name="QueryEditor_GroupByLabel" xml:space="preserve">
+    <value>Группировать по</value>
+  </data>
+  <data name="QueryEditor_GroupByNone" xml:space="preserve">
+    <value>Без группировки</value>
+  </data>
+  <data name="QueryEditor_SortLabel" xml:space="preserve">
+    <value>Сортировка</value>
+  </data>
+  <data name="QueryEditor_SortValueDesc" xml:space="preserve">
+    <value>По значению ↓</value>
+  </data>
+  <data name="QueryEditor_SortValueAsc" xml:space="preserve">
+    <value>По значению ↑</value>
+  </data>
+  <data name="QueryEditor_SortLabelAsc" xml:space="preserve">
+    <value>По названию A→Я</value>
+  </data>
+  <data name="QueryEditor_SortLabelDesc" xml:space="preserve">
+    <value>По названию Я→A</value>
+  </data>
+  <data name="QueryEditor_TopNLabel" xml:space="preserve">
+    <value>Top N</value>
+  </data>
+  <data name="QueryEditor_VisualizationHeader" xml:space="preserve">
+    <value>Визуализация</value>
+  </data>
+  <data name="QueryEditor_VizAuto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="QueryEditor_VizKpi" xml:space="preserve">
+    <value>KPI</value>
+  </data>
+  <data name="QueryEditor_VizBar" xml:space="preserve">
+    <value>Bar</value>
+  </data>
+  <data name="QueryEditor_VizHorizontalBar" xml:space="preserve">
+    <value>Horizontal Bar</value>
+  </data>
+  <data name="QueryEditor_VizPie" xml:space="preserve">
+    <value>Pie</value>
+  </data>
+  <data name="QueryEditor_VizLine" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="QueryEditor_VizTable" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="QueryEditor_AutoHint" xml:space="preserve">
+    <value>Тип визуализации будет выбран автоматически</value>
+  </data>
+  <data name="QueryEditor_TitleLabel" xml:space="preserve">
+    <value>Заголовок</value>
+  </data>
+  <data name="QueryEditor_Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="QueryEditor_PreviewPlaceholder" xml:space="preserve">
+    <value>Предпросмотр данных будет подключён на следующем этапе.</value>
+  </data>
+  <data name="QueryEditor_SummaryType" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="QueryEditor_SummaryFilters" xml:space="preserve">
+    <value>Фильтры</value>
+  </data>
+  <data name="QueryEditor_SummaryMeasure" xml:space="preserve">
+    <value>Показатель</value>
+  </data>
+  <data name="QueryEditor_SummaryGroup" xml:space="preserve">
+    <value>Группировка</value>
+  </data>
+  <data name="QueryEditor_SummaryViz" xml:space="preserve">
+    <value>Визуализация</value>
+  </data>
+  <data name="QueryEditor_OpEquals" xml:space="preserve">
+    <value>Равно</value>
+  </data>
+  <data name="QueryEditor_OpNotEquals" xml:space="preserve">
+    <value>Не равно</value>
+  </data>
+  <data name="QueryEditor_OpIsEmpty" xml:space="preserve">
+    <value>Пусто</value>
+  </data>
+  <data name="QueryEditor_OpIsNotEmpty" xml:space="preserve">
+    <value>Не пусто</value>
+  </data>
+  <data name="QueryEditor_BoolYes" xml:space="preserve">
+    <value>Да</value>
+  </data>
+  <data name="QueryEditor_BoolNo" xml:space="preserve">
+    <value>Нет</value>
+  </data>
+  <data name="QueryEditor_UnavailableType" xml:space="preserve">
+    <value>Недоступный тип ({0})</value>
+  </data>
+  <data name="QueryEditor_UnavailableField" xml:space="preserve">
+    <value>Недоступное поле ({0})</value>
+  </data>
+  <data name="QueryEditor_NeedType" xml:space="preserve">
+    <value>Выберите тип объектов.</value>
+  </data>
+  <data name="QueryEditor_NeedTitle" xml:space="preserve">
+    <value>Укажите заголовок.</value>
+  </data>
+  <data name="QueryEditor_NeedEqualsValue" xml:space="preserve">
+    <value>Укажите значение фильтра.</value>
+  </data>
+  <data name="QueryEditor_InvalidNumber" xml:space="preserve">
+    <value>Некорректное число.</value>
+  </data>
+  <data name="QueryEditor_InvalidGuid" xml:space="preserve">
+    <value>Некорректный идентификатор.</value>
+  </data>
+  <data name="QueryEditor_InvalidLimit" xml:space="preserve">
+    <value>Top N: пусто или целое число больше 0.</value>
+  </data>
+  <data name="QueryEditor_InvalidVisualization" xml:space="preserve">
+    <value>Несовместимая визуализация.</value>
+  </data>
+  <data name="QueryEditor_UnavailableMetadata" xml:space="preserve">
+    <value>Тип или поле недоступны. Исправьте выбор.</value>
+  </data>
+  <data name="QueryEditor_KindMismatch" xml:space="preserve">
+    <value>Тип значения фильтра не совпадает с полем.</value>
+  </data>
+  <data name="QueryEditor_StableKeyHint" xml:space="preserve">
+    <value>Стабильный ключ (не отображаемое имя)</value>
+  </data>
 </root>
