@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using PilotBim.Analytics.Diagnostics;
 using PilotBim.Analytics.Export;
 using PilotBim.Analytics.Models;
 using PilotBim.Analytics.Services;
@@ -33,9 +34,54 @@ namespace PilotBim.Analytics.Views
             _inventory = inventory;
             _projectAnalytics = projectAnalyticsService;
             _csvExporter = analyticsCsvExporter;
-            _vm = new AnalyticsWindowViewModel();
+            _vm = CreateViewModel();
             DataContext = _vm;
             ShowPanel("Summary");
+        }
+
+        private AnalyticsWindowViewModel CreateViewModel()
+        {
+            if (_inventory == null)
+                return new AnalyticsWindowViewModel();
+
+            try
+            {
+                var projectKey = _inventory.GetDatabaseId();
+                if (projectKey == Guid.Empty)
+                    return new AnalyticsWindowViewModel();
+
+                var options = new AnalyticsDashboardRuntimeOptions
+                {
+                    ProjectKey = projectKey,
+                    DefinitionStore = new DashboardDefinitionStore(),
+                    LayoutStore = new DashboardLayoutStore(),
+                    TypeDatasetProvider = _inventory.CreateTypeDatasetProvider(),
+                    PostToUi = action =>
+                    {
+                        if (action == null)
+                            return;
+                        if (Dispatcher.CheckAccess())
+                            action();
+                        else
+                            Dispatcher.BeginInvoke(action);
+                    }
+                };
+                var vm = new AnalyticsWindowViewModel(options);
+                try
+                {
+                    vm.ApplyTypeMetadata(_inventory.DiscoverTypes());
+                }
+                catch (Exception ex)
+                {
+                    AnalyticsLogger.Warning("Dashboard", "type metadata: " + ex.Message);
+                }
+                return vm;
+            }
+            catch (Exception ex)
+            {
+                AnalyticsLogger.Warning("Dashboard", "V2 runtime not attached: " + ex.Message);
+                return new AnalyticsWindowViewModel();
+            }
         }
 
         private void Nav_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -141,6 +187,14 @@ namespace PilotBim.Analytics.Views
 
                 var snapshot = _projectAnalytics.Build(report);
                 _vm.Snapshot = snapshot;
+                try
+                {
+                    _vm.ApplyTypeMetadata(report.Types);
+                }
+                catch (Exception ex)
+                {
+                    AnalyticsLogger.Warning("Dashboard", "scan metadata: " + ex.Message);
+                }
                 _vm.ProgressText = report.Cancelled
                     ? "Отменено. Показаны частичные данные."
                     : "Готово. Объектов: " + report.ObjectsFound + ", статус: " + report.FinalStatus;
@@ -160,7 +214,7 @@ namespace PilotBim.Analytics.Views
         private void DashboardVisible_Click(object sender, RoutedEventArgs e)
         {
             var box = sender as CheckBox;
-            if (box == null || box.Tag == null)
+            if (box == null || box.Tag == null || !_vm.DashboardMutationsEnabled)
                 return;
             _vm.SetDashboardBlockVisible(box.Tag.ToString(), box.IsChecked == true);
         }
@@ -168,7 +222,7 @@ namespace PilotBim.Analytics.Views
         private void DashboardMoveUp_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
-            if (btn == null || btn.Tag == null)
+            if (btn == null || btn.Tag == null || !_vm.DashboardMutationsEnabled)
                 return;
             _vm.MoveDashboardBlock(btn.Tag.ToString(), -1);
         }
@@ -176,13 +230,15 @@ namespace PilotBim.Analytics.Views
         private void DashboardMoveDown_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
-            if (btn == null || btn.Tag == null)
+            if (btn == null || btn.Tag == null || !_vm.DashboardMutationsEnabled)
                 return;
             _vm.MoveDashboardBlock(btn.Tag.ToString(), 1);
         }
 
         private void DashboardAdd_Click(object sender, RoutedEventArgs e)
         {
+            if (!_vm.DashboardMutationsEnabled)
+                return;
             var dlg = new DashboardWidgetEditorWindow(
                 _vm.ChartSourceOptions,
                 _vm.ChartKindOptions,
@@ -196,12 +252,24 @@ namespace PilotBim.Analytics.Views
                 _vm.AddDashboardWidget(dlg.Result);
         }
 
+        private void DashboardAddQuery_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_vm.DashboardMutationsEnabled)
+                return;
+            OpenQueryEditor(null);
+        }
+
         private void DashboardEdit_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
-            if (btn == null || btn.Tag == null)
+            if (btn == null || btn.Tag == null || !_vm.DashboardMutationsEnabled)
                 return;
             var id = btn.Tag.ToString();
+            if (_vm.IsQueryWidget(id))
+            {
+                OpenQueryEditor(_vm.GetWidgetDefinition(id));
+                return;
+            }
             var existing = _vm.GetWidgetState(id);
             if (existing == null)
                 return;
@@ -218,10 +286,30 @@ namespace PilotBim.Analytics.Views
                 _vm.UpdateDashboardWidget(id, dlg.Result);
         }
 
+        private void OpenQueryEditor(DashboardWidgetDefinition existing)
+        {
+            var editorVm = _vm.CreateQueryEditor(existing);
+            var dlg = new DashboardQueryWidgetEditorWindow(editorVm, existing != null)
+            {
+                Owner = this
+            };
+            if (dlg.ShowDialog() != true || dlg.Result == null)
+                return;
+            string error;
+            if (!_vm.TrySaveQueryWidget(dlg.Result, out error))
+            {
+                MessageBox.Show(
+                    string.IsNullOrWhiteSpace(error) ? UiResources.Dashboard_SaveFailed : error,
+                    "PilotBim.Analytics",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
         private void DashboardRemove_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
-            if (btn == null || btn.Tag == null)
+            if (btn == null || btn.Tag == null || !_vm.DashboardMutationsEnabled)
                 return;
             var confirm = MessageBox.Show(
                 "Удалить виджет с дашборда?",
@@ -292,6 +380,7 @@ namespace PilotBim.Analytics.Views
 
         protected override void OnClosed(EventArgs e)
         {
+            _vm.DisposeDashboard();
             _scanSession.Dispose();
             base.OnClosed(e);
         }

@@ -31,11 +31,17 @@ namespace PilotBim.Analytics.ViewModels
         private readonly AnalyticsDashboardPresenter _dashboard;
 
         public AnalyticsWindowViewModel()
+            : this(null)
+        {
+        }
+
+        internal AnalyticsWindowViewModel(AnalyticsDashboardRuntimeOptions dashboardRuntime)
         {
             _scanCompare = new AnalyticsScanComparePresenter(name => OnPropertyChanged(name));
             _dashboard = new AnalyticsDashboardPresenter(
                 name => OnPropertyChanged(name),
-                BuildDashboardContent);
+                BuildDashboardContent,
+                dashboardRuntime);
 
             Navigation = new ObservableCollection<NavItem>
             {
@@ -160,6 +166,21 @@ namespace PilotBim.Analytics.ViewModels
         public ObservableCollection<DashboardWidgetVm> DashboardWidgets
         {
             get { return _dashboard.DashboardWidgets; }
+        }
+
+        public string DashboardWarning
+        {
+            get { return _dashboard.DashboardWarning; }
+        }
+
+        public bool HasDashboardWarning
+        {
+            get { return !string.IsNullOrEmpty(_dashboard.DashboardWarning); }
+        }
+
+        public bool DashboardMutationsEnabled
+        {
+            get { return _dashboard.MutationsEnabled; }
         }
 
         public ChartOptionItem SelectedChartKind
@@ -514,6 +535,48 @@ namespace PilotBim.Analytics.ViewModels
         public DashboardWidgetState GetWidgetState(string id)
         {
             return _dashboard.GetWidgetState(id);
+        }
+
+        public bool IsQueryWidget(string id)
+        {
+            return _dashboard.IsQueryWidget(id);
+        }
+
+        public DashboardQueryWidgetEditorViewModel CreateQueryEditor(DashboardWidgetDefinition existing)
+        {
+            var editor = new DashboardQueryWidgetEditorViewModel(
+                _dashboard.Catalog,
+                _dashboard.TypeOptions,
+                existing);
+            editor.AttachSession(_dashboard.Coordinator, action => _dashboard.InvokeOnUi(action));
+            return editor;
+        }
+
+        public bool TrySaveQueryWidget(DashboardWidgetDefinition widget, out string error)
+        {
+            return _dashboard.TrySaveQueryWidget(widget, out error);
+        }
+
+        public DashboardWidgetDefinition GetWidgetDefinition(string id)
+        {
+            return _dashboard.GetWidgetDefinition(id);
+        }
+
+        public void ApplyTypeMetadata(IEnumerable<TypeInventoryRecord> types)
+        {
+            var catalog = new PilotFieldCatalogBuilder().Build(types);
+            var options = DashboardObjectTypeOption.FromInventory(types);
+            _dashboard.ReplaceDataSession(_snapshot, catalog, options);
+        }
+
+        public void DisposeDashboard()
+        {
+            _dashboard.Dispose();
+        }
+
+        internal AnalyticsDashboardPresenter DashboardPresenter
+        {
+            get { return _dashboard; }
         }
 
         private void ApplyBimModelFilter()

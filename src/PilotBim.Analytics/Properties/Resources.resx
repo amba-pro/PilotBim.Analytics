@@ -623,4 +623,46 @@
   <data name="QueryEditor_StableKeyHint" xml:space="preserve">
     <value>Стабильный ключ (не отображаемое имя)</value>
   </data>
+  <data name="Analytics_AddQueryWidget" xml:space="preserve">
+    <value>+ Аналитический виджет</value>
+  </data>
+  <data name="QueryEditor_Preview" xml:space="preserve">
+    <value>Предпросмотр</value>
+  </data>
+  <data name="QueryEditor_PreviewIdle" xml:space="preserve">
+    <value>Настройте виджет и нажмите Предпросмотр</value>
+  </data>
+  <data name="QueryWidget_Loading" xml:space="preserve">
+    <value>Загрузка данных...</value>
+  </data>
+  <data name="QueryWidget_Empty" xml:space="preserve">
+    <value>Нет данных</value>
+  </data>
+  <data name="QueryWidget_Incomplete" xml:space="preserve">
+    <value>Не удалось получить полный набор данных</value>
+  </data>
+  <data name="QueryWidget_Unsupported" xml:space="preserve">
+    <value>Эта комбинация пока не поддерживается</value>
+  </data>
+  <data name="QueryWidget_Invalid" xml:space="preserve">
+    <value>Конфигурация виджета недоступна</value>
+  </data>
+  <data name="QueryWidget_Error" xml:space="preserve">
+    <value>Не удалось загрузить данные</value>
+  </data>
+  <data name="QueryTable_Category" xml:space="preserve">
+    <value>Категория</value>
+  </data>
+  <data name="Dashboard_Corrupt" xml:space="preserve">
+    <value>Конфигурация дашборда повреждена. Изменения отключены.</value>
+  </data>
+  <data name="Dashboard_UnsupportedVersion" xml:space="preserve">
+    <value>Конфигурация создана более новой версией плагина. Изменения отключены.</value>
+  </data>
+  <data name="Dashboard_ProjectMismatch" xml:space="preserve">
+    <value>Конфигурация дашборда относится к другому проекту. Изменения отключены.</value>
+  </data>
+  <data name="Dashboard_SaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить дашборд.</value>
+  </data>
 </root>

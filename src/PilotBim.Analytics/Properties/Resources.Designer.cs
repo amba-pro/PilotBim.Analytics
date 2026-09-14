@@ -712,6 +712,8 @@ namespace PilotBim.Analytics.Properties
         public static string QueryEditor_TitleLabel { get { return ResourceManager.GetString("QueryEditor_TitleLabel", resourceCulture); } }
         public static string QueryEditor_Save { get { return ResourceManager.GetString("QueryEditor_Save", resourceCulture); } }
         public static string QueryEditor_PreviewPlaceholder { get { return ResourceManager.GetString("QueryEditor_PreviewPlaceholder", resourceCulture); } }
+        public static string QueryEditor_PreviewIdle { get { return ResourceManager.GetString("QueryEditor_PreviewIdle", resourceCulture); } }
+        public static string QueryEditor_Preview { get { return ResourceManager.GetString("QueryEditor_Preview", resourceCulture); } }
         public static string QueryEditor_SummaryType { get { return ResourceManager.GetString("QueryEditor_SummaryType", resourceCulture); } }
         public static string QueryEditor_SummaryFilters { get { return ResourceManager.GetString("QueryEditor_SummaryFilters", resourceCulture); } }
         public static string QueryEditor_SummaryMeasure { get { return ResourceManager.GetString("QueryEditor_SummaryMeasure", resourceCulture); } }
@@ -735,5 +737,17 @@ namespace PilotBim.Analytics.Properties
         public static string QueryEditor_UnavailableMetadata { get { return ResourceManager.GetString("QueryEditor_UnavailableMetadata", resourceCulture); } }
         public static string QueryEditor_KindMismatch { get { return ResourceManager.GetString("QueryEditor_KindMismatch", resourceCulture); } }
         public static string QueryEditor_StableKeyHint { get { return ResourceManager.GetString("QueryEditor_StableKeyHint", resourceCulture); } }
+        public static string Analytics_AddQueryWidget { get { return ResourceManager.GetString("Analytics_AddQueryWidget", resourceCulture); } }
+        public static string QueryWidget_Loading { get { return ResourceManager.GetString("QueryWidget_Loading", resourceCulture); } }
+        public static string QueryWidget_Empty { get { return ResourceManager.GetString("QueryWidget_Empty", resourceCulture); } }
+        public static string QueryWidget_Incomplete { get { return ResourceManager.GetString("QueryWidget_Incomplete", resourceCulture); } }
+        public static string QueryWidget_Unsupported { get { return ResourceManager.GetString("QueryWidget_Unsupported", resourceCulture); } }
+        public static string QueryWidget_Invalid { get { return ResourceManager.GetString("QueryWidget_Invalid", resourceCulture); } }
+        public static string QueryWidget_Error { get { return ResourceManager.GetString("QueryWidget_Error", resourceCulture); } }
+        public static string QueryTable_Category { get { return ResourceManager.GetString("QueryTable_Category", resourceCulture); } }
+        public static string Dashboard_Corrupt { get { return ResourceManager.GetString("Dashboard_Corrupt", resourceCulture); } }
+        public static string Dashboard_UnsupportedVersion { get { return ResourceManager.GetString("Dashboard_UnsupportedVersion", resourceCulture); } }
+        public static string Dashboard_ProjectMismatch { get { return ResourceManager.GetString("Dashboard_ProjectMismatch", resourceCulture); } }
+        public static string Dashboard_SaveFailed { get { return ResourceManager.GetString("Dashboard_SaveFailed", resourceCulture); } }
     }
 }

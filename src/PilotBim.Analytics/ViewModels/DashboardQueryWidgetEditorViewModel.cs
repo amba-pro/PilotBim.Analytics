@@ -5,6 +5,9 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using PilotBim.Analytics.Diagnostics;
 using PilotBim.Analytics.Models;
 using PilotBim.Analytics.Properties;
 using PilotBim.Analytics.Services;
@@ -12,7 +15,7 @@ using PilotBim.Analytics.Services;
 namespace PilotBim.Analytics.ViewModels
 {
     /// <summary>
-    /// Query-widget editor state. Metadata only: no SDK, store, or query execution.
+    /// Query-widget editor. Metadata + explicit Preview execution. Does not persist.
     /// </summary>
     internal sealed class DashboardQueryWidgetEditorViewModel : INotifyPropertyChanged
     {
@@ -28,6 +31,16 @@ namespace PilotBim.Analytics.ViewModels
         private DashboardFieldOption _selectedDimension;
         private DashboardEditorChoice _selectedSort;
         private DashboardEditorChoice _selectedVisualization;
+        private DashboardQueryCoordinator _coordinator;
+        private Action<Action> _postToUi;
+        private int _previewGeneration;
+        private DashboardQueryWidgetRuntimeStatus _previewStatus = DashboardQueryWidgetRuntimeStatus.Idle;
+        private string _previewMessage;
+        private bool _previewShowChart;
+        private bool _previewShowKpi;
+        private bool _previewShowTable;
+        private AnalyticsChartKind _previewChartKind = AnalyticsChartKind.VerticalBar;
+        private IList<ChartSeriesPoint> _previewPoints = new List<ChartSeriesPoint>();
 
         public DashboardQueryWidgetEditorViewModel(
             DashboardFieldCatalog catalog,
@@ -75,6 +88,13 @@ namespace PilotBim.Analytics.ViewModels
                 SelectedVisualization = FindVisualization("Auto");
                 RefreshGeneratedTitle();
             }
+
+            PreviewKpiRows = new ObservableCollection<AnalyticsKpiRow>();
+            PreviewTableRows = new ObservableCollection<DashboardQueryTableRow>();
+            SetPreview(
+                DashboardQueryWidgetRuntimeStatus.Idle,
+                Resources.QueryEditor_PreviewIdle,
+                null);
 
             Revalidate();
         }
@@ -205,6 +225,92 @@ namespace PilotBim.Analytics.ViewModels
         public string ValidationMessage { get; private set; }
         public string SummaryText { get; private set; }
 
+        public DashboardQueryWidgetRuntimeStatus PreviewStatus
+        {
+            get { return _previewStatus; }
+            private set
+            {
+                _previewStatus = value;
+                Raise();
+                Raise("PreviewShowMessage");
+            }
+        }
+
+        public string PreviewMessage
+        {
+            get { return _previewMessage; }
+            private set
+            {
+                _previewMessage = value;
+                Raise();
+            }
+        }
+
+        public bool PreviewShowMessage
+        {
+            get { return PreviewStatus != DashboardQueryWidgetRuntimeStatus.Success; }
+        }
+
+        public bool PreviewShowChart
+        {
+            get { return _previewShowChart; }
+            private set
+            {
+                _previewShowChart = value;
+                Raise();
+            }
+        }
+
+        public bool PreviewShowKpi
+        {
+            get { return _previewShowKpi; }
+            private set
+            {
+                _previewShowKpi = value;
+                Raise();
+            }
+        }
+
+        public bool PreviewShowTable
+        {
+            get { return _previewShowTable; }
+            private set
+            {
+                _previewShowTable = value;
+                Raise();
+            }
+        }
+
+        public AnalyticsChartKind PreviewChartKind
+        {
+            get { return _previewChartKind; }
+            private set
+            {
+                _previewChartKind = value;
+                Raise();
+            }
+        }
+
+        public IList<ChartSeriesPoint> PreviewPoints
+        {
+            get { return _previewPoints; }
+            private set
+            {
+                _previewPoints = value ?? new List<ChartSeriesPoint>();
+                Raise();
+            }
+        }
+
+        public ObservableCollection<AnalyticsKpiRow> PreviewKpiRows { get; private set; }
+        public ObservableCollection<DashboardQueryTableRow> PreviewTableRows { get; private set; }
+        public int PreviewGeneration { get { return Volatile.Read(ref _previewGeneration); } }
+
+        public void AttachSession(DashboardQueryCoordinator coordinator, Action<Action> postToUi)
+        {
+            _coordinator = coordinator;
+            _postToUi = postToUi ?? (action => { if (action != null) action(); });
+        }
+
         public void AddFilter()
         {
             var row = new DashboardQueryFilterRowViewModel(this);
@@ -278,6 +384,156 @@ namespace PilotBim.Analytics.ViewModels
                     Type = _selectedVisualization != null ? _selectedVisualization.Id : "Auto"
                 }
             };
+        }
+
+        internal async Task RunPreviewAsync()
+        {
+            var generation = Interlocked.Increment(ref _previewGeneration);
+            PostPreview(() => SetPreview(
+                DashboardQueryWidgetRuntimeStatus.Loading,
+                Resources.QueryWidget_Loading,
+                null));
+
+            string validation;
+            if (!TryValidate(out validation))
+            {
+                if (generation != Volatile.Read(ref _previewGeneration))
+                    return;
+                PostPreview(() => SetPreview(
+                    DashboardQueryWidgetRuntimeStatus.Invalid,
+                    validation ?? Resources.QueryWidget_Invalid,
+                    null));
+                return;
+            }
+
+            var candidate = TrySave();
+            if (candidate == null)
+            {
+                if (generation != Volatile.Read(ref _previewGeneration))
+                    return;
+                PostPreview(() => SetPreview(
+                    DashboardQueryWidgetRuntimeStatus.Invalid,
+                    Resources.QueryWidget_Invalid,
+                    null));
+                return;
+            }
+
+            if (_coordinator == null)
+            {
+                if (generation != Volatile.Read(ref _previewGeneration))
+                    return;
+                PostPreview(() => SetPreview(
+                    DashboardQueryWidgetRuntimeStatus.Error,
+                    Resources.QueryWidget_Error,
+                    null));
+                return;
+            }
+
+            WidgetQueryResult result;
+            try
+            {
+                DashboardWidgetQuery query;
+                string error;
+                if (!DashboardQueryPersistence.TryToQuery(candidate.Query, out query, out error))
+                    result = WidgetQueryResult.Invalid(error);
+                else
+                    result = await _coordinator.ExecuteAsync(query, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                AnalyticsLogger.Error("DashboardQuery", "Preview", ex);
+                result = null;
+            }
+
+            if (generation != Volatile.Read(ref _previewGeneration))
+                return;
+
+            var captured = result;
+            var capturedCandidate = candidate;
+            PostPreview(() => ApplyPreviewResult(capturedCandidate, captured, generation));
+        }
+
+        private void ApplyPreviewResult(DashboardWidgetDefinition candidate, WidgetQueryResult result, int generation)
+        {
+            if (generation != Volatile.Read(ref _previewGeneration))
+                return;
+            if (result == null)
+            {
+                SetPreview(DashboardQueryWidgetRuntimeStatus.Error, Resources.QueryWidget_Error, null);
+                return;
+            }
+
+            switch (result.Status)
+            {
+                case WidgetQueryStatus.Success:
+                    var hasDimension = candidate.Query != null && !string.IsNullOrWhiteSpace(candidate.Query.DimensionFieldId);
+                    var viz = candidate.Visualization != null ? candidate.Visualization.Type : "Auto";
+                    var render = DashboardWidgetDatasetAdapter.TryRender(result.Dataset, viz, hasDimension);
+                    if (render.Status != DashboardQueryWidgetRuntimeStatus.Success)
+                        SetPreview(render.Status, render.Message ?? Resources.QueryWidget_Invalid, null);
+                    else
+                        SetPreview(DashboardQueryWidgetRuntimeStatus.Success, null, render);
+                    break;
+                case WidgetQueryStatus.Empty:
+                    SetPreview(DashboardQueryWidgetRuntimeStatus.Empty, Resources.QueryWidget_Empty, null);
+                    break;
+                case WidgetQueryStatus.IncompleteData:
+                    SetPreview(DashboardQueryWidgetRuntimeStatus.Incomplete, Resources.QueryWidget_Incomplete, null);
+                    break;
+                case WidgetQueryStatus.UnsupportedQuery:
+                    SetPreview(DashboardQueryWidgetRuntimeStatus.Unsupported, Resources.QueryWidget_Unsupported, null);
+                    break;
+                case WidgetQueryStatus.InvalidQuery:
+                    SetPreview(DashboardQueryWidgetRuntimeStatus.Invalid, Resources.QueryWidget_Invalid, null);
+                    break;
+                default:
+                    SetPreview(DashboardQueryWidgetRuntimeStatus.Error, Resources.QueryWidget_Error, null);
+                    break;
+            }
+        }
+
+        private void SetPreview(
+            DashboardQueryWidgetRuntimeStatus status,
+            string message,
+            DashboardQueryRenderModel render)
+        {
+            PreviewStatus = status;
+            PreviewMessage = message ?? string.Empty;
+            var success = status == DashboardQueryWidgetRuntimeStatus.Success && render != null;
+            PreviewShowChart = success && render.ShowChart;
+            PreviewShowKpi = success && render.ShowKpi;
+            PreviewShowTable = success && render.ShowTable;
+            PreviewPoints = success && render.ShowChart ? render.Points : new List<ChartSeriesPoint>();
+            if (success && render.ShowChart)
+                PreviewChartKind = render.ChartKind;
+
+            PreviewKpiRows.Clear();
+            if (success && render.ShowKpi && render.KpiRows != null)
+            {
+                foreach (var row in render.KpiRows)
+                    PreviewKpiRows.Add(row);
+            }
+
+            PreviewTableRows.Clear();
+            if (success && render.ShowTable && render.TableRows != null)
+            {
+                foreach (var row in render.TableRows)
+                    PreviewTableRows.Add(row);
+            }
+        }
+
+        private void PostPreview(Action action)
+        {
+            if (action == null)
+                return;
+            if (_postToUi != null)
+                _postToUi(action);
+            else
+                action();
         }
 
         internal static bool IsObjectRowsExecutable(DashboardFieldDescriptor descriptor)
@@ -632,8 +888,6 @@ namespace PilotBim.Analytics.ViewModels
             sb.AppendLine(Resources.QueryEditor_SummaryMeasure + ": " + Resources.QueryEditor_MeasureCount);
             sb.AppendLine(Resources.QueryEditor_SummaryGroup + ": " + (_selectedDimension != null ? _selectedDimension.Label : Resources.QueryEditor_GroupByNone));
             sb.AppendLine(Resources.QueryEditor_SummaryViz + ": " + (_selectedVisualization != null ? _selectedVisualization.Title : "Auto"));
-            sb.AppendLine();
-            sb.Append(Resources.QueryEditor_PreviewPlaceholder);
             return sb.ToString();
         }
 

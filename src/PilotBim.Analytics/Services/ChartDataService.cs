@@ -151,6 +151,24 @@ namespace PilotBim.Analytics.Services
             }).ToList();
         }
 
+        internal IList<ChartSeriesPoint> FromWidgetRows(IReadOnlyList<WidgetDataRow> rows)
+        {
+            if (rows == null || rows.Count == 0)
+                return new List<ChartSeriesPoint>();
+
+            var items = new List<Tuple<string, double, string>>(rows.Count);
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                items.Add(Tuple.Create(
+                    row.Label ?? string.Empty,
+                    (double)row.Value,
+                    row.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+
+            return ToSeries(items);
+        }
+
         private static List<ChartSeriesPoint> ToSeries(IEnumerable<Tuple<string, double, string>> items)
         {
             var list = items?.ToList() ?? new List<Tuple<string, double, string>>();

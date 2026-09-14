@@ -1049,9 +1049,35 @@ Catalog + type options only. Enum/User/Reference picklists **NOT_AVAILABLE**; Eq
 
 Query execution, coordinator, V2 store switch, dashboard rendering, grid.
 
-### Next: DB-9 (not implemented)
+### Next: DB-10 (not implemented)
 
-Query widget integration + live preview + per-project V2 save + shared TypeId cache on the dashboard.
+Dashboard Grid + drag / resize. Do not implement in DB-9.
+
+## DB-9 Result
+
+Date: 2026-09-14  
+Status: **QUERY_WIDGETS_E2E**  
+Runtime validation: **REQUIRED**, not executed
+
+### Owner
+
+`AnalyticsDashboardPresenter` — V2 definition, field catalog, coordinator session.
+
+### V2 activation
+
+Missing V2: in-memory V1 migration, no write on open. First explicit mutation writes per-project `dashboard.json`. Corrupt / future / mismatch: degraded, no overwrite.
+
+### Query widgets
+
+Create / edit / delete / persist / reload. Explicit Preview. Sequential distinct-Type loads. Same-Type cache = 1 materialization per session.
+
+### Preserved
+
+Legacy KPI / BIM / Responsible / Chart + specialized chart sources. Legacy editor. Inventory.
+
+### Next: DB-10 (not implemented)
+
+12-column logical grid, X/Y/W/H, drag, resize, collision/reflow, migrate Order/ColumnSpan.
 
 
 

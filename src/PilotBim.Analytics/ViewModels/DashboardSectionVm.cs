@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -15,6 +16,10 @@ namespace PilotBim.Analytics.ViewModels
         private bool _isChart;
         private bool _isKpi;
         private int _columnSpan = 2;
+        private DashboardQueryWidgetRuntimeStatus _queryStatus = DashboardQueryWidgetRuntimeStatus.Idle;
+        private string _queryStatusText;
+        private string _resolvedVisualization;
+        private bool _showQueryTable;
 
         public DashboardWidgetVm(DashboardWidgetState state)
         {
@@ -28,16 +33,37 @@ namespace PilotBim.Analytics.ViewModels
             TopN = state.TopN;
             IsChart = state.WidgetKind == DashboardWidgetKinds.Chart;
             IsKpi = !IsChart;
+            IsQueryWidget = false;
             Rows = new ObservableCollection<AnalyticsKpiRow>();
+            TableRows = new ObservableCollection<DashboardQueryTableRow>();
             AnalyticsChartKind parsed;
             if (EnumTryParseChart(state.ChartKind, out parsed))
                 ChartKind = parsed;
+        }
+
+        public DashboardWidgetVm(DashboardWidgetDefinition queryWidget)
+        {
+            if (queryWidget == null)
+                throw new ArgumentNullException("queryWidget");
+            Id = queryWidget.Id;
+            WidgetKind = DashboardPersistenceV2.ContentQuery;
+            Title = queryWidget.Title;
+            var layout = queryWidget.Layout ?? new DashboardWidgetLayoutDefinition();
+            IsVisible = layout.IsVisible;
+            ColumnSpan = layout.ColumnSpan <= 1 ? 1 : 2;
+            IsQueryWidget = true;
+            IsChart = false;
+            IsKpi = false;
+            Rows = new ObservableCollection<AnalyticsKpiRow>();
+            TableRows = new ObservableCollection<DashboardQueryTableRow>();
+            QueryStatus = DashboardQueryWidgetRuntimeStatus.Idle;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         public string Id { get; private set; }
         public string WidgetKind { get; private set; }
+        public bool IsQueryWidget { get; private set; }
         public string ChartSource { get; set; }
         public string ChartKindName { get; set; }
         public int TopN { get; set; }
@@ -119,6 +145,96 @@ namespace PilotBim.Analytics.ViewModels
         }
 
         public ObservableCollection<AnalyticsKpiRow> Rows { get; private set; }
+        public ObservableCollection<DashboardQueryTableRow> TableRows { get; private set; }
+
+        public DashboardQueryWidgetRuntimeStatus QueryStatus
+        {
+            get { return _queryStatus; }
+            private set
+            {
+                _queryStatus = value;
+                OnPropertyChanged();
+                OnPropertyChanged("ShowQueryMessage");
+            }
+        }
+
+        public string QueryStatusText
+        {
+            get { return _queryStatusText; }
+            private set
+            {
+                _queryStatusText = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string ResolvedVisualization
+        {
+            get { return _resolvedVisualization; }
+            private set
+            {
+                _resolvedVisualization = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool ShowQueryTable
+        {
+            get { return _showQueryTable; }
+            private set
+            {
+                _showQueryTable = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool ShowQueryMessage
+        {
+            get { return IsQueryWidget && QueryStatus != DashboardQueryWidgetRuntimeStatus.Success; }
+        }
+
+        public void ApplyQueryRuntime(
+            DashboardQueryWidgetRuntimeStatus status,
+            string message,
+            DashboardQueryRenderModel render)
+        {
+            if (status == DashboardQueryWidgetRuntimeStatus.Success && render != null
+                && render.Status != DashboardQueryWidgetRuntimeStatus.Success)
+            {
+                status = render.Status;
+                if (string.IsNullOrEmpty(message))
+                    message = render.Message;
+            }
+
+            QueryStatus = status;
+            QueryStatusText = message ?? string.Empty;
+            ResolvedVisualization = render != null ? render.ResolvedVisualization : null;
+
+            var success = status == DashboardQueryWidgetRuntimeStatus.Success && render != null;
+            IsChart = success && render.ShowChart;
+            IsKpi = success && render.ShowKpi;
+            ShowQueryTable = success && render.ShowTable;
+
+            ChartSeries = success && render.ShowChart
+                ? (render.Points ?? new List<ChartSeriesPoint>())
+                : new List<ChartSeriesPoint>();
+            if (success && render.ShowChart)
+                ChartKind = render.ChartKind;
+
+            Rows.Clear();
+            if (success && render.ShowKpi && render.KpiRows != null)
+            {
+                foreach (var row in render.KpiRows)
+                    Rows.Add(row);
+            }
+
+            TableRows.Clear();
+            if (success && render.ShowTable && render.TableRows != null)
+            {
+                foreach (var row in render.TableRows)
+                    TableRows.Add(row);
+            }
+        }
 
         public void ApplyState(DashboardWidgetState state)
         {
@@ -161,8 +277,10 @@ namespace PilotBim.Analytics.ViewModels
             Id = id;
             Title = title;
             WidgetKind = widgetKind;
-            CanDelete = widgetKind == DashboardWidgetKinds.Chart;
-            CanEdit = widgetKind == DashboardWidgetKinds.Chart;
+            var query = widgetKind == DashboardPersistenceV2.ContentQuery;
+            CanDelete = widgetKind == DashboardWidgetKinds.Chart || query;
+            CanEdit = widgetKind == DashboardWidgetKinds.Chart || query;
+            MutationsEnabled = true;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -171,6 +289,7 @@ namespace PilotBim.Analytics.ViewModels
         public string WidgetKind { get; private set; }
         public bool CanDelete { get; private set; }
         public bool CanEdit { get; private set; }
+        public bool MutationsEnabled { get; set; }
 
         public string Title
         {

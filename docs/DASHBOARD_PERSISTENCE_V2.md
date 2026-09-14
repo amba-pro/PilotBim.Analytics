@@ -1,6 +1,6 @@
 # Dashboard Persistence V2
 
-Internal definition store introduced in DB-7. Not wired to the current dashboard UI. Not a MEF export.
+Internal definition store introduced in DB-7. Wired into the live dashboard in **DB-9**. Not a MEF export.
 
 ## Purpose
 
@@ -8,9 +8,17 @@ Persist a versioned dashboard:
 
 Dashboard → Widgets → Layout + (Legacy content **or** Query + Visualization)
 
-so DB-8 Widget Editor can edit the **final** model without inventing a second query language and without converting specialized widgets into fake generic queries.
+Runtime source of truth after DB-9 is `DashboardDefinition`. `DashboardLayoutStore` / `dashboard-layout.json` remain the V1 migration/rollback source only.
 
-Current user-facing dashboard still uses `DashboardLayoutStore` / `dashboard-layout.json`.
+## Production integration (DB-9)
+
+`AnalyticsDashboardPresenter` loads V2 with `IObjectsRepository.GetDatabaseId()`.
+
+- Missing V2: in-memory V1 migration, **no write on open**
+- First explicit mutation: atomic V2 save
+- Corrupt / UnsupportedVersion / ProjectMismatch: degraded read-only, **file not overwritten**
+
+See `docs/DASHBOARD_DB9_INTEGRATION.md`.
 
 ## Project Scoping
 

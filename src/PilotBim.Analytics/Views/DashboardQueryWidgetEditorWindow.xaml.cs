@@ -32,6 +32,11 @@ namespace PilotBim.Analytics.Views
             _vm.RemoveFilter(row);
         }
 
+        private void Preview_Click(object sender, RoutedEventArgs e)
+        {
+            var ignored = _vm.RunPreviewAsync();
+        }
+
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             Result = _vm.TrySave();

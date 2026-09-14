@@ -188,12 +188,23 @@
                 <ScrollViewer x:Name="PanelSummary" Grid.Row="2" Visibility="Visible" VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="0,0,0,8">
             <DockPanel Margin="0,0,0,6">
-              <Button DockPanel.Dock="Right" Content="{x:Static props:Resources.Analytics_AddWidget}" Width="100" Height="28"
-                      Click="DashboardAdd_Click"
-                      Background="#1F2A24" Foreground="White" BorderBrush="#1F2A24" />
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="{x:Static props:Resources.Analytics_AddQueryWidget}" Width="190" Height="28"
+                        Click="DashboardAddQuery_Click"
+                        IsEnabled="{Binding DashboardMutationsEnabled}"
+                        Background="#1F2A24" Foreground="White" BorderBrush="#1F2A24" />
+                <Button Content="{x:Static props:Resources.Analytics_AddWidget}" Width="100" Height="28" Margin="8,0,0,0"
+                        Click="DashboardAdd_Click"
+                        IsEnabled="{Binding DashboardMutationsEnabled}"
+                        Background="#1F2A24" Foreground="White" BorderBrush="#1F2A24" />
+              </StackPanel>
               <TextBlock Text="{x:Static props:Resources.Analytics_DashboardBuilder}" FontWeight="SemiBold" Foreground="#1F2A24"
                          VerticalAlignment="Center" />
             </DockPanel>
+            <Border Background="#FFF4D6" BorderBrush="#E0C36A" BorderThickness="1" CornerRadius="2" Padding="8,6" Margin="0,0,0,8"
+                    Visibility="{Binding HasDashboardWarning, Converter={StaticResource BoolToVis}}">
+              <TextBlock Text="{Binding DashboardWarning}" TextWrapping="Wrap" Foreground="#1F2A24" />
+            </Border>
             <ItemsControl ItemsSource="{Binding DashboardLayoutItems}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -207,16 +218,21 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                       </Grid.ColumnDefinitions>
-                      <CheckBox Grid.Column="0" IsChecked="{Binding IsVisible, Mode=OneWay}" Tag="{Binding Id}" Click="DashboardVisible_Click" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#1F2A24"/>
+                      <CheckBox Grid.Column="0" IsChecked="{Binding IsVisible, Mode=OneWay}" Tag="{Binding Id}" Click="DashboardVisible_Click" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#1F2A24"
+                                IsEnabled="{Binding MutationsEnabled}"/>
                       <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" Foreground="#1F2A24"/>
                       <Button Grid.Column="2" Content="⚙" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardEdit_Click"
                               Visibility="{Binding CanEdit, Converter={StaticResource BoolToVis}}"
+                              IsEnabled="{Binding MutationsEnabled}"
                               Margin="4,0,2,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0" ToolTip="{x:Static props:Resources.Common_Configure}"/>
                       <Button Grid.Column="3" Content="✕" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardRemove_Click"
                               Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}"
+                              IsEnabled="{Binding MutationsEnabled}"
                               Margin="2,0,2,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0" ToolTip="{x:Static props:Resources.Common_Delete}"/>
-                      <Button Grid.Column="4" Content="▲" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardMoveUp_Click" Margin="4,0,2,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0"/>
-                      <Button Grid.Column="5" Content="▼" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardMoveDown_Click" Margin="2,0,0,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0"/>
+                      <Button Grid.Column="4" Content="▲" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardMoveUp_Click" Margin="4,0,2,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0"
+                              IsEnabled="{Binding MutationsEnabled}"/>
+                      <Button Grid.Column="5" Content="▼" Width="28" Height="24" Tag="{Binding Id}" Click="DashboardMoveDown_Click" Margin="2,0,0,0" Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0"
+                              IsEnabled="{Binding MutationsEnabled}"/>
                     </Grid>
                   </Border>
                 </DataTemplate>
@@ -247,6 +263,8 @@
                     </Border.Style>
                     <StackPanel>
                       <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="#1F2A24" Margin="0,0,0,6"/>
+                      <TextBlock Text="{Binding QueryStatusText}" TextWrapping="Wrap" Foreground="#5A645E" Margin="0,0,0,6"
+                                 Visibility="{Binding ShowQueryMessage, Converter={StaticResource BoolToVis}}" />
                       <DataGrid ItemsSource="{Binding Rows}"
                                 Visibility="{Binding IsKpi, Converter={StaticResource BoolToVis}}"
                                 Style="{StaticResource AnalyticsDataGrid}"
@@ -257,6 +275,17 @@
                           <DataGridTextColumn Header="{x:Static props:Resources.Column_Indicator}" Binding="{Binding Label}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
                           <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
                           <DataGridTextColumn Header="{x:Static props:Resources.Column_Details}" Binding="{Binding Detail}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+                        </DataGrid.Columns>
+                      </DataGrid>
+                      <DataGrid ItemsSource="{Binding TableRows}"
+                                Visibility="{Binding ShowQueryTable, Converter={StaticResource BoolToVis}}"
+                                Style="{StaticResource AnalyticsDataGrid}"
+                                ColumnHeaderStyle="{StaticResource AnalyticsDataGridColumnHeader}"
+                                AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260"
+                                Background="White" Foreground="#1F2A24">
+                        <DataGrid.Columns>
+                          <DataGridTextColumn Header="{x:Static props:Resources.QueryTable_Category}" Binding="{Binding Category}" Width="2*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
+                          <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource AnalyticsDataGridCell}" />
                         </DataGrid.Columns>
                       </DataGrid>
                       <views:ChartCanvasControl

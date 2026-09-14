@@ -10,22 +10,64 @@ namespace PilotBim.Analytics.Services
 {
     internal sealed class DashboardLayoutStore
     {
-        private static string PathFile
+        private readonly string _filePath;
+
+        public DashboardLayoutStore()
+            : this(DefaultPath)
+        {
+        }
+
+        internal DashboardLayoutStore(string filePath)
+        {
+            _filePath = string.IsNullOrWhiteSpace(filePath) ? DefaultPath : filePath;
+        }
+
+        internal static string DefaultPath
         {
             get
             {
-                return System.IO.Path.Combine(
+                return Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "PilotBim.Analytics",
                     "dashboard-layout.json");
             }
         }
 
+        internal string FilePath
+        {
+            get { return _filePath; }
+        }
+
+        /// <summary>
+        /// Read V1 if present. Never writes. Missing or unreadable → null.
+        /// </summary>
+        public DashboardLayoutState TryLoad()
+        {
+            try
+            {
+                if (!File.Exists(_filePath))
+                    return null;
+                using (var stream = File.OpenRead(_filePath))
+                {
+                    var ser = new DataContractJsonSerializer(typeof(DashboardLayoutState));
+                    var loaded = ser.ReadObject(stream) as DashboardLayoutState;
+                    if (loaded != null)
+                        return Normalize(loaded);
+                }
+            }
+            catch (Exception ex)
+            {
+                AnalyticsLogger.Warning("dashboard-layout-tryload", ex.Message);
+            }
+
+            return null;
+        }
+
         public DashboardLayoutState LoadOrDefault()
         {
             try
             {
-                var path = PathFile;
+                var path = _filePath;
                 if (File.Exists(path))
                 {
                     using (var stream = File.OpenRead(path))
@@ -53,8 +95,8 @@ namespace PilotBim.Analytics.Services
                 return;
             try
             {
-                var path = PathFile;
-                Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+                var path = _filePath;
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
                 var tmp = path + ".tmp";
                 var normalized = Normalize(state);
                 using (var stream = File.Create(tmp))

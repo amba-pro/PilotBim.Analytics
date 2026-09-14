@@ -1,6 +1,6 @@
 # Dashboard Widget Editor V2
 
-Internal Query-widget editor introduced in DB-8. Not wired into the live dashboard. Does not execute queries.
+Internal Query-widget editor introduced in DB-8. Wired into the live dashboard in **DB-9**.
 
 ## Purpose
 
@@ -10,7 +10,15 @@ Scope + Object Type + Filters + Count + Group By + Sort + Top N + Visualization 
 
 and produce a DB-7 `DashboardWidgetDefinition` (`ContentKind = Query`).
 
-Live preview and `DashboardQueryCoordinator` belong to **DB-9**.
+## Preview (DB-9)
+
+Real query execution is **user-initiated** (`Предпросмотр`). Opening the editor does not materialize a TypeId.
+
+Flow: `TrySave` candidate → `coordinator.ExecuteAsync` → preview runtime state → existing renderer adapter.
+
+Preview does not persist. Cancel leaves the dashboard unchanged. A generation counter drops late Preview #1 if Preview #2 has started.
+
+Idle copy: «Настройте виджет и нажмите Предпросмотр».
 
 ## User Flow
 
@@ -134,14 +142,14 @@ Not edited by this UI. Mixed dashboards remain valid at the persistence layer.
 
 ## No Query Execution in DB-8
 
-No `ExecuteAsync`, materializer, snapshot/object-rows engines, or SDK callbacks. Right-hand panel is a configuration summary plus the DB-9 preview placeholder. No invented counts.
+DB-8 shipped without `ExecuteAsync`. DB-9 connects Preview and dashboard tiles to `DashboardQueryCoordinator`.
 
-## DB-9 Integration Contract
+## DB-9 Integration
 
-Dashboard host should:
+See `docs/DASHBOARD_DB9_INTEGRATION.md`. The dashboard host:
 
-1. Build catalog + type options from the current scan/inventory.
-2. Open this editor for create/edit of Query widgets only.
-3. On Save, insert/replace the widget in a V2 `DashboardDefinition` and persist per `GetDatabaseId()`.
-4. Build a session `DashboardQueryCoordinator` and `ExecuteAsync` for preview and dashboard tiles.
-5. Keep Legacy widgets on the existing renderer/path.
+1. Builds catalog + type options from inventory metadata (`DiscoverTypes` / scan report).
+2. Opens this editor for create/edit of Query widgets only.
+3. On Save, inserts/replaces the widget in V2 and persists per `GetDatabaseId()`.
+4. Uses one session `DashboardQueryCoordinator` for Preview and tiles.
+5. Keeps Legacy widgets on the existing renderer/path.

@@ -351,6 +351,24 @@ namespace PilotBim.Analytics.Services
             });
         }
 
+        internal Guid GetDatabaseId()
+        {
+            return _repository.GetDatabaseId();
+        }
+
+        internal IDashboardTypeDatasetProvider CreateTypeDatasetProvider()
+        {
+            return new DashboardTypeDatasetProvider(_repository, _search);
+        }
+
+        /// <summary>
+        /// Type metadata only. Does not materialize object rows.
+        /// </summary>
+        internal IList<TypeInventoryRecord> DiscoverTypes()
+        {
+            return new TypeDiscoveryService(_repository).DiscoverTypes();
+        }
+
         public IDataObject GetRootObject()
         {
             try

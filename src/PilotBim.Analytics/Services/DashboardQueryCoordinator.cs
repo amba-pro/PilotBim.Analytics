@@ -11,7 +11,7 @@ namespace PilotBim.Analytics.Services
 {
     /// <summary>
     /// One dashboard data session: snapshot + catalog + per-TypeId dataset cache.
-    /// Routes queries; materializes each TypeId at most once; unused by current UI.
+    /// Routes queries; materializes each TypeId at most once. Owned by AnalyticsDashboardPresenter.
     /// </summary>
     internal sealed class DashboardQueryCoordinator : IDisposable
     {
