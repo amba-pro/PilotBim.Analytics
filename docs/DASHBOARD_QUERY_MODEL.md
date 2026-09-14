@@ -11,6 +11,8 @@ Current executors (same `DashboardWidgetQuery`):
 - `SnapshotWidgetQueryEngine` over `ProjectAnalyticsSnapshot`
 - `ObjectRowsWidgetQueryEngine` over a complete `DashboardTypeDataset` + field catalog
 
+Session orchestrator (DB-6): `DashboardQueryCoordinator.ExecuteAsync(query)` routes and shares TypeId materialization. See **Coordinator Execution** and `docs/DASHBOARD_QUERY_COORDINATOR.md`.
+
 The query **must not** mention `AnalyticsChartSource`.
 
 ## Query Definition
@@ -244,16 +246,27 @@ Shared `WidgetQueryPresentation` (same as snapshot): ValueDescending default; ti
 
 Group O(N), sort O(K log K). Pilot SDK calls: 0. Additional materialization: 0. Catalog is not rebuilt per row.
 
-### Future router (not implemented)
+## Coordinator Execution
+
+DB-6. Internal. Unused by current UI.
+
+`DashboardQueryCoordinator` owns one session (`ProjectAnalyticsSnapshot` + `DashboardFieldCatalog` + per-TypeId `Task<DashboardTypeDataset>` cache).
+
+Routing (deliberately simple — not chart type / labels / `WidgetKind`):
 
 ```
-if query needs a type-scoped / attribute field
-    → ObjectRowsWidgetQueryEngine (complete TypeId dataset)
-if query is a snapshot-executable project aggregate
-    → SnapshotWidgetQueryEngine
+if query.EntityTypeId == null
+    → SnapshotWidgetQueryEngine (0 materializer calls)
+if query.EntityTypeId != null
+    → session TypeId cache (miss: one Task.Run around Materialize)
+    → ObjectRowsWidgetQueryEngine
 ```
 
-Do not invent a second query language. A `DashboardQueryCoordinator` is optional later when UI wiring exists.
+Invariant: one TypeId = at most one materialization attempt per coordinator instance, including concurrent widgets. Partial/Failed/faulted tasks stay cached until Dispose. Refresh = dispose + new coordinator.
+
+Caller `CancellationToken` is ignored in V1; session Dispose cancels shared loads. `ExecuteAsync` after Dispose throws `ObjectDisposedException`.
+
+Do not invent a second query language. Widget Editor should call only `ExecuteAsync`.
 
 ### Conceptual queries (IDs, not Russian titles)
 

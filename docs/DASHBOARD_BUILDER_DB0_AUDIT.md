@@ -948,7 +948,45 @@ validate complete dataset → validate filters → quality check → filter rows
 
 ### Next: DB-6
 
-Dashboard Query Coordinator + shared TypeId dataset cache. UI calls `Execute(query)`. Materialize each TypeId once per session. Loading/cancel/refresh later. **Not implemented.**
+Implemented — see **DB-6 Result** below.
+
+---
+
+## DB-6 Result
+
+Date: 2026-09-14  
+Status: **QUERY_COORDINATOR**  
+Production caller: **none** (UI unchanged)
+
+### Coordinator
+
+`DashboardQueryCoordinator` — internal, `IDisposable`, one session.
+
+API: `Task<WidgetQueryResult> ExecuteAsync(DashboardWidgetQuery query, CancellationToken cancellationToken)`
+
+Routing: `EntityTypeId == null` → Snapshot engine; non-null → Type dataset cache → ObjectRows engine.
+
+Seam: internal `IDashboardTypeDatasetProvider` / `DashboardTypeDatasetProvider` (one production adapter around `DashboardTypeDatasetMaterializer`). No MEF. No public API.
+
+Cache: TypeId → `Task<DashboardTypeDataset>`, instance-only, lazy, coalesced under a short lock. Complete/Partial/Failed/faulted cached. No query-result cache. No static cache.
+
+Cancellation: session CTS on Dispose. Caller token **ignored** in V1 (must not cancel shared load). After Dispose: `ObjectDisposedException`. No sync wait on Dispose.
+
+Threading: snapshot `Task.FromResult`; TypeId miss one `Task.Run` (materializer is blocking). UI must not block.
+
+### Behavior unchanged
+
+Dashboard, widgets, UI, persistence, Inventory, Snapshot engine, ObjectRows engine, DB-R1 canary: **unchanged**.
+
+### Architecture proof
+
+- A: project types widget → Snapshot, 0 materializations
+- B: two widgets same TypeId, different filter/dimension → 1 materialization, 2 in-memory executes
+- C: TypeId 100 and 200 → 2 materializations
+
+### Next: DB-7 (not implemented)
+
+Versioned Widget Definition + Dashboard Persistence V2. Persist generic Query + Visualization before Widget Editor. Migrate `dashboard-layout.json`. Not another backend engine.
 
 
 
