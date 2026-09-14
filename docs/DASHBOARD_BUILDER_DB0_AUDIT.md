@@ -643,7 +643,15 @@ From `AttributeInventoryRecord.ValueType` strings (`AttributeType.ToString()`), 
 | `system:created` | created | DateTime | Created / month aggregates |
 | `system:objectState` | objectState | Enum | ObjectStateInfo.State (lifecycle) |
 
-Not included as system fields: UserState card status (attribute-typed), ModifiedDate (not exposed), Responsible (OrgUnit attributes).
+Not included as raw IDataObject-only fields in DB-1: UserState card status, ModifiedDate, Responsible.
+
+DB-2 added snapshot-backed semantic system fields (still no ObjectRows):
+
+| Id | Source | Type | Backing |
+|----|--------|------|---------|
+| `system:createdMonth` | createdMonth | Text | `ObjectsByCreatedMonth.Period` |
+| `system:userState` | userState | Enum | `ObjectsByUserState.StateId` |
+| `system:responsible` | responsible | User | `ObjectsByResponsible.OrgUnitId` |
 
 ### Custom attributes
 
@@ -678,4 +686,86 @@ Catalog builds from normalized `TypeInventoryRecord` / attribute shells already 
 **Scope:** Count + single dimension presets only; no UI persistence change required in same commit if adapter-only.  
 **Tests:** PURE_UNIT for each ChartSource → dataset shape; TopN; empty snapshot.  
 **Do not implement in DB-1.**
+
+---
+
+## DB-2 Implementation Result
+
+Date: 2026-09-14  
+Status: **COMPLETE**
+
+### Query contract
+
+Internal `DashboardWidgetQuery`: Scope, DimensionFieldId, Measure, Sort, Limit.  
+Independent of `AnalyticsChartSource`.
+
+### Supported
+
+- Scope: `CurrentProject`
+- Measure: `Count` (`long`)
+- Dimensions (snapshot): `system:typeId`, `system:creatorId`, `system:createdMonth`, `system:userState`, `system:responsible`
+- Sort: Value/Label Asc/Desc; tie-break Key then Label (Ordinal)
+- Limit: null = all; ≤0 invalid
+
+### Dataset
+
+`WidgetDataRow` Key | Label | Value. No renderer types.
+
+### Status
+
+Success / Empty / UnsupportedQuery / InvalidQuery. No silent fallback.
+
+### Snapshot mapping
+
+| Field ID | Snapshot | Key | Label | Value |
+|----------|----------|-----|-------|-------|
+| (none) | sum `ObjectsByType.Count` | `""` | `""` | total |
+| `system:typeId` | ObjectsByType | TypeId | TypeName | Count |
+| `system:creatorId` | ObjectsByCreator | CreatorId | DisplayName | SampledCount |
+| `system:createdMonth` | ObjectsByCreatedMonth | Period | Period | Count |
+| `system:userState` | ObjectsByUserState | StateId `D` | StateTitle | Count |
+| `system:responsible` | ObjectsByResponsible | OrgUnitId | DisplayName | SampledCount |
+
+Null/whitespace labels → `""`.
+
+### ChartSource parity
+
+| Source | Classification | Notes |
+|--------|----------------|-------|
+| Types | EXACT_GENERIC_MATCH | `system:typeId` |
+| Creators | EXACT_GENERIC_MATCH | sampled counts are snapshot fact, not chart special-case |
+| UserStates | EXACT_GENERIC_MATCH | `system:userState` |
+| Responsible | EXACT_GENERIC_MATCH | `system:responsible` added to catalog (decision A) |
+| CreatedMonth | PARTIAL_MATCH | same counts; Chart keeps period order, engine uses query Sort |
+| StateSemantic | SPECIALIZED_KEEP_EXISTING | OPEN/CLOSED inference |
+| IfcTypes | SPECIALIZED_KEEP_EXISTING | BIM elements + optional extra `ifcRows`/model filter |
+| BimModels | SPECIALIZED_KEEP_EXISTING | ElementCount, not Pilot objects |
+| Remarks | SPECIALIZED_KEEP_EXISTING | remark-type subset, not all `system:typeId` |
+
+### ChartDataService migration (not done)
+
+**Option B:** later adapt exact-match sources through the query engine; keep ChartDataService for specialized charts until ObjectRows.
+
+### Performance
+
+0 SDK calls, 0 scans per widget. Sort O(n log n) on aggregate rows.
+
+### Catalog delta
+
+Added `system:createdMonth`, `system:userState`, `system:responsible` (semantic snapshot fields, not new SDK).
+
+### Limitations
+
+- No filters, no attributes, no ObjectRows, no UI/persistence
+- Creator/responsible counts may be sampled
+- Scalar Count uses type totals only
+
+### Tests
+
+Contract + parity for exact-match sources. ChartDataService production use **unchanged**.
+
+### Next: DB-3
+
+**Normalized DashboardObjectRows foundation** — snapshot presets cannot GroupBy arbitrary attributes. See Recommended DB-3 in the DB-2 report.
+
 

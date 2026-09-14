@@ -14,7 +14,7 @@ namespace PilotBim.Analytics.Tests
             var builder = new PilotFieldCatalogBuilder();
             var catalog = builder.Build(Enumerable.Empty<TypeInventoryRecord>());
 
-            Assert.Equal(6, catalog.Count);
+            Assert.Equal(9, catalog.Count);
             Assert.True(catalog.Fields.All(f => f.SourceKind == DashboardFieldSourceKind.System));
             Assert.Equal(0, builder.SkippedEmptyAttributeNames);
             Assert.Equal(0, builder.SkippedDuplicateIds);
@@ -24,7 +24,7 @@ namespace PilotBim.Analytics.Tests
         public void Build_NullReport_ContainsOnlySystemFields()
         {
             var catalog = new PilotFieldCatalogBuilder().Build((ProjectInventoryReport)null);
-            Assert.Equal(6, catalog.Count);
+            Assert.Equal(9, catalog.Count);
         }
 
         [Fact]
@@ -136,9 +136,12 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal(DashboardFieldIds.SystemCreatorId, ids[3]);
             Assert.Equal(DashboardFieldIds.SystemCreated, ids[4]);
             Assert.Equal(DashboardFieldIds.SystemObjectState, ids[5]);
-            Assert.Equal("attribute:10:m", ids[6]);
-            Assert.Equal("attribute:20:a", ids[7]);
-            Assert.Equal("attribute:20:z", ids[8]);
+            Assert.Equal(DashboardFieldIds.SystemCreatedMonth, ids[6]);
+            Assert.Equal(DashboardFieldIds.SystemUserState, ids[7]);
+            Assert.Equal(DashboardFieldIds.SystemResponsible, ids[8]);
+            Assert.Equal("attribute:10:m", ids[9]);
+            Assert.Equal("attribute:20:a", ids[10]);
+            Assert.Equal("attribute:20:z", ids[11]);
         }
 
         [Fact]
@@ -231,7 +234,7 @@ namespace PilotBim.Analytics.Tests
                 Type(2, Attr("b", "B", "String"))
             });
             var for1 = catalog.ForObjectType(1);
-            Assert.Equal(6, for1.Count(f => f.SourceKind == DashboardFieldSourceKind.System));
+            Assert.Equal(9, for1.Count(f => f.SourceKind == DashboardFieldSourceKind.System));
             Assert.Contains(for1, f => f.Id == "attribute:1:a");
             Assert.DoesNotContain(for1, f => f.Id == "attribute:2:b");
         }

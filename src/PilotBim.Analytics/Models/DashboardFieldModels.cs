@@ -99,6 +99,9 @@ namespace PilotBim.Analytics.Models
         public const string SystemCreatorId = "system:creatorId";
         public const string SystemCreated = "system:created";
         public const string SystemObjectState = "system:objectState";
+        public const string SystemCreatedMonth = "system:createdMonth";
+        public const string SystemUserState = "system:userState";
+        public const string SystemResponsible = "system:responsible";
 
         public static string System(string key)
         {

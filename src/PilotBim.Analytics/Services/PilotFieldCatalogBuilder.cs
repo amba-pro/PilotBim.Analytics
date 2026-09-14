@@ -124,6 +124,28 @@ namespace PilotBim.Analytics.Services
                 "Object State",
                 DashboardFieldType.Enum,
                 filter: true, group: true, sort: true);
+
+            // Snapshot-backed semantic dimensions (aggregates, not raw IDataObject properties).
+            yield return SystemField(
+                DashboardFieldIds.SystemCreatedMonth,
+                "createdMonth",
+                "Created month",
+                DashboardFieldType.Text,
+                filter: true, group: true, sort: true);
+
+            yield return SystemField(
+                DashboardFieldIds.SystemUserState,
+                "userState",
+                "User state",
+                DashboardFieldType.Enum,
+                filter: true, group: true, sort: true);
+
+            yield return SystemField(
+                DashboardFieldIds.SystemResponsible,
+                "responsible",
+                "Responsible",
+                DashboardFieldType.User,
+                filter: true, group: true, sort: true);
         }
 
         private static DashboardFieldDescriptor SystemField(
