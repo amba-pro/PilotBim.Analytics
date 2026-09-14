@@ -564,3 +564,118 @@ Stable Ids already used (good precedent):
 `HorizontalBar`, `VerticalBar`, `Pie`, `Line`
 
 These should map to FieldDescriptor/Measure presets in DB-2, not be replaced casually.
+
+---
+
+## DB-1 Implementation Result
+
+Date: 2026-09-14  
+Status: **COMPLETE**  
+Commit message: `Dashboard DB-1: add semantic field catalog`
+
+### Chosen field model
+
+Internal types in `Models/DashboardFieldModels.cs`:
+
+- `DashboardFieldDescriptor` — Id, DisplayName, FieldType, SourceKind, ObjectTypeId?, SourceName, Capabilities
+- `DashboardFieldType` — Text, Integer, Number, Boolean, DateTime, Enum, User, Reference, Guid, Unknown
+- `DashboardFieldSourceKind` — System | Attribute
+- `DashboardFieldCapabilities` — CanFilter / CanGroup / CanSort (**no CanAggregate** — query engine not present)
+- `DashboardFieldCatalog` — immutable list + Ordinal Id lookup + `ForObjectType`
+- `DashboardFieldIds` — centralized id factory
+
+Builder: `Services/PilotFieldCatalogBuilder` — input `ProjectInventoryReport` or `IEnumerable<TypeInventoryRecord>`; **no Pilot SDK calls**.
+
+### Identity format
+
+| Kind | Format | Example |
+|------|--------|---------|
+| System | `system:{key}` | `system:created` |
+| Attribute | `attribute:{typeId}:{attributeName}` | `attribute:10:resp` |
+
+DisplayName is never part of Id.
+
+### Evidence — type identity
+
+- SDK: `IType.Id` → **`System.Int32`** (reflected from Ascon.Pilot.SDK)
+- Code: `TypeInventoryRecord.TypeId = type.Id` (`TypeDiscoveryService`)
+
+### Evidence — attribute identity
+
+- SDK `IAttribute` properties: Name, Title, Type, … — **no Guid / stronger key**
+- Runtime values keyed by Name: `obj.Attributes.ContainsKey(attr.Name)` (`AttributeDiscoveryService.ProfileObject`)
+- Inventory stores `AttributeId = attr.Name`
+
+**Stronger-than-Name identity:** **NO**
+
+**Name uniqueness within one type:** expected unique (dictionary key); if metadata duplicates Name, catalog **retains first**, skips later (`SkippedDuplicateIds`).
+
+**Attribute Name stability:** **BEST_AVAILABLE_BUT_RENAME_SENSITIVE** — rename breaks persisted query ids later; migrations must account for this.
+
+### Collision policy
+
+**Retain first / skip later** (deterministic). Counted on builder (`SkippedDuplicateIds`, `SkippedEmptyAttributeNames`). No silent Dictionary overwrite of unequal metadata.
+
+### Field-type mapping
+
+From `AttributeInventoryRecord.ValueType` strings (`AttributeType.ToString()`), without referencing SDK assembly in the builder:
+
+| ValueType | DashboardFieldType |
+|-----------|-------------------|
+| String, Numerator | Text |
+| Integer | Integer |
+| Double, Decimal | Number |
+| Boolean | Boolean |
+| DateTime | DateTime |
+| UserState | Enum |
+| OrgUnit | User |
+| ElementBook | Reference |
+| Array, Inherited, other/null | Unknown (capabilities all false) |
+
+### System fields included
+
+| Id | Source | Type | Backing |
+|----|--------|------|---------|
+| `system:objectId` | objectId | Guid | `IDataObject.Id` |
+| `system:typeId` | typeId | Integer | Type.Id / ObjectsByType |
+| `system:parentId` | parentId | Guid | `IDataObject.ParentId` |
+| `system:creatorId` | creatorId | Integer | Creator / ObjectsByCreator |
+| `system:created` | created | DateTime | Created / month aggregates |
+| `system:objectState` | objectState | Enum | ObjectStateInfo.State (lifecycle) |
+
+Not included as system fields: UserState card status (attribute-typed), ModifiedDate (not exposed), Responsible (OrgUnit attributes).
+
+### Custom attributes
+
+- Skip null/whitespace Name
+- Display: Title → Name → `(unnamed)`
+- Same Name on different TypeIds → distinct Ids
+- Deterministic order: system fixed order, then TypeId, then Name (Ordinal)
+
+### Why no direct per-widget SDK
+
+Catalog builds from normalized `TypeInventoryRecord` / attribute shells already produced by inventory. Pure unit tests; no new SDK lifetime; preserves **one scan ≠ per widget** invariant.
+
+### Tests
+
+`PilotFieldCatalogBuilderTests` — 15 facts. Suite **138 → 153 PASS**.
+
+### Limitations
+
+- Attribute ids rename-sensitive
+- Catalog not wired into UI (by design)
+- No ObjectRows / query engine yet
+- System field DisplayNames are English technical labels (no UI / no resx expansion)
+
+### Next recommended DB-2
+
+**Title:** Snapshot-backed widget query contracts for existing chart sources  
+
+**Goal:** Introduce `WidgetQueryDefinition` + pure `WidgetQueryEngine` that maps existing `AnalyticsChartSource` presets to `WidgetDataset` (Category|Value) from `ProjectAnalyticsSnapshot`, without ObjectRows or SDK.  
+
+**Input:** Snapshot + optional field catalog ids for presets.  
+**Output:** WidgetDataset.  
+**Scope:** Count + single dimension presets only; no UI persistence change required in same commit if adapter-only.  
+**Tests:** PURE_UNIT for each ChartSource → dataset shape; TopN; empty snapshot.  
+**Do not implement in DB-1.**
+
