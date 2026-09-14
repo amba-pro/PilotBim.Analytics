@@ -306,7 +306,9 @@ DB-3.1 materializer canary remains **YES** before UI integration.
 
 ## Persistence Considerations
 
-Do **not** write this model into `dashboard-layout.json` until ids and statuses stabilize. Attribute ids remain rename-sensitive.
+DB-7 persists this query as `DashboardWidgetQueryDocument` (kind + invariant filter strings) in the per-project V2 file. See `docs/DASHBOARD_PERSISTENCE_V2.md`.
+
+Do **not** write this model into `dashboard-layout.json`. Attribute ids remain rename-sensitive and database-specific (`ProjectKey` = `GetDatabaseId()`).
 
 ## Examples
 

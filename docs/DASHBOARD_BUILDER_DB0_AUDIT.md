@@ -988,6 +988,44 @@ Dashboard, widgets, UI, persistence, Inventory, Snapshot engine, ObjectRows engi
 
 Versioned Widget Definition + Dashboard Persistence V2. Persist generic Query + Visualization before Widget Editor. Migrate `dashboard-layout.json`. Not another backend engine.
 
+---
+
+## DB-7 Result
+
+Date: 2026-09-14  
+Status: **PERSISTENCE_V2**  
+Production caller: **none** (UI still uses `DashboardLayoutStore`)
+
+### Project identity
+
+`IObjectsRepository.GetDatabaseId()` → `Guid` (**CONFIRMED_STABLE**). Canonical `D` folder name.
+
+### Storage
+
+Per-project: `%LOCALAPPDATA%\PilotBim.Analytics\Dashboards\<guid-D>\dashboard.json`  
+Legacy global `dashboard-layout.json` **unchanged** (already the V1 backup).
+
+### Model
+
+`SchemaVersion = 2`. Dashboard id `"default"`. Widgets: Legacy **xor** (Query + Visualization). Layout: Order, ColumnSpan, IsVisible. Filters: kind + invariant string (no boxed `object`).
+
+### Migration
+
+Pure `DashboardDefinitionV2Migrator`. Lossless Legacy widgets. Deterministic ids. **No write on load.**
+
+### Safety
+
+Missing / corrupt / unsupported / mismatch: do not overwrite. Atomic temp + `File.Replace`. Whole document rejected if invalid.
+
+### Behavior unchanged
+
+Dashboard UI, `DashboardLayoutStore`, presenter, coordinator, Inventory, Pilot SDK usage: **unchanged**.
+
+### Next: DB-8 (not implemented)
+
+Widget Editor V2 — user-visible query + visualization configuration against this model.
+
+
 
 
 
