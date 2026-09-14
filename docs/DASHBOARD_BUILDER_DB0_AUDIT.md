@@ -768,4 +768,73 @@ Contract + parity for exact-match sources. ChartDataService production use **unc
 
 **Normalized DashboardObjectRows foundation** — snapshot presets cannot GroupBy arbitrary attributes. See Recommended DB-3 in the DB-2 report.
 
+---
+
+## DB-3 Implementation Result
+
+Date: 2026-09-14  
+Status: **BLOCKED_DB3_FULL_COVERAGE**  
+Production code: **none** (docs only)
+
+### Full-stream evidence
+
+**FULL_OBJECT_STREAM: NO**
+
+Search path loads `SearchByType(typeId, SampleLimit)` then `SubscribeObjects` those IDs (`PilotObjectSampler.SampleType`, `ObjectSamplingCoordinator.SampleAllTypes`).  
+`ISearchResult.Total` is stored as `TypeInventoryRecord.ObjectCount` — count only.
+
+Hierarchy fallback (`HierarchyWalkSampler.Walk`) uses visitBudget 2000 / 25000 / 100000 and keeps `bucket.Samples.Count < SampleLimit`. `Truncated` is a first-class result.
+
+Creator aggregation is a **separate budgeted** sample (500 / 5000 / 50000).
+
+Inventory explicitly notes: `"Attribute profiling uses sampled objects only."`
+
+### Sample-stream evidence
+
+| Stream | Cap |
+|--------|-----|
+| SampleAllTypes | SampleLimit = ScanMode (50 / 200 / 10000) |
+| Walk Samples | same SampleLimit per type |
+| CreatorAggregationService | global object budget |
+| RemarkAnalyticsService | 10 / 30 / 100 per remark type |
+| `_historySampleBuffer` / `_systemFieldSampleBuffer` / `_documentSampleBuffer` | 5 / 20 / 20 |
+
+### Coverage invariant
+
+**Not satisfiable** without a new full materialization. Rows were **not** built from samples.
+
+### Object-row / value model
+
+Not added.
+
+### System field / custom attribute coverage
+
+System fields and `obj.Attributes` exist on **loaded samples only**. Completing the project would require SubscribeObjects on remaining IDs = extra SDK load. **Not done.**
+
+### Ownership / lifecycle / timeout / dedup
+
+N/A — no collector.
+
+### Memory / performance
+
+UNCHANGED. No additional scan. No per-widget SDK.
+
+### Tests
+
+Unchanged **178 PASS**. No fake row tests against samples.
+
+### Limitations
+
+See `docs/DASHBOARD_OBJECT_ROWS.md`.
+
+### Next
+
+Architectural fork (not implemented):
+
+- **DB-3.1** explicit once-per-refresh full object materialization (product cost), then ObjectRows + coverage metadata; **or**
+- Stay on **DB-2 snapshot widgets** for preset dimensions until that cost is accepted.
+
+Recommended immediate product path: do **not** start an ObjectRows query engine (would have nothing complete to query).
+
+
 
