@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace PilotBim.Analytics.Models
 {
     /// <summary>
-    /// Query scope. DB-2 executes CurrentProject only.
+    /// Query scope. DB-2/DB-4 execute CurrentProject only.
     /// </summary>
     internal enum DashboardQueryScopeKind
     {
@@ -12,7 +12,7 @@ namespace PilotBim.Analytics.Models
     }
 
     /// <summary>
-    /// Aggregation. DB-2 executes Count only.
+    /// Aggregation. DB-2/DB-4 execute Count only.
     /// </summary>
     internal enum DashboardQueryMeasure
     {
@@ -35,12 +35,18 @@ namespace PilotBim.Analytics.Models
         Success = 0,
         Empty = 1,
         UnsupportedQuery = 2,
-        InvalidQuery = 3
+        InvalidQuery = 3,
+        /// <summary>
+        /// Query is valid and executable, but the ObjectRows dataset is not Complete.
+        /// Never used as a stand-in for Empty. Contains no analytical numbers.
+        /// Snapshot executor does not emit this status.
+        /// </summary>
+        IncompleteData = 4
     }
 
     /// <summary>
-    /// Generic widget query. Independent of ChartSource. Future ObjectRows engines
-    /// should consume the same shape.
+    /// Generic widget query. Independent of ChartSource. Snapshot and ObjectRows
+    /// executors consume the same shape.
     /// </summary>
     internal sealed class DashboardWidgetQuery
     {
@@ -50,17 +56,29 @@ namespace PilotBim.Analytics.Models
             DashboardQueryMeasure measure,
             DashboardQuerySort sort,
             int? limit)
+            : this(scope, dimensionFieldId, measure, sort, limit, null)
+        {
+        }
+
+        public DashboardWidgetQuery(
+            DashboardQueryScopeKind scope,
+            string dimensionFieldId,
+            DashboardQueryMeasure measure,
+            DashboardQuerySort sort,
+            int? limit,
+            int? entityTypeId)
         {
             Scope = scope;
             DimensionFieldId = dimensionFieldId;
             Measure = measure;
             Sort = sort;
             Limit = limit;
+            EntityTypeId = entityTypeId;
         }
 
         public DashboardQueryScopeKind Scope { get; private set; }
 
-        /// <summary>Stable field id, or null/empty for a scalar Count over the snapshot.</summary>
+        /// <summary>Stable field id, or null/empty for a scalar Count.</summary>
         public string DimensionFieldId { get; private set; }
 
         public DashboardQueryMeasure Measure { get; private set; }
@@ -68,6 +86,12 @@ namespace PilotBim.Analytics.Models
 
         /// <summary>Null = unlimited. Non-positive is INVALID_QUERY at execution.</summary>
         public int? Limit { get; private set; }
+
+        /// <summary>
+        /// Pilot type id. Snapshot: null = project-wide; non-null = UnsupportedQuery.
+        /// ObjectRows: required and must equal the dataset TypeId.
+        /// </summary>
+        public int? EntityTypeId { get; private set; }
     }
 
     /// <summary>
@@ -130,6 +154,15 @@ namespace PilotBim.Analytics.Models
         public static WidgetQueryResult Invalid(string reason)
         {
             return new WidgetQueryResult(WidgetQueryStatus.InvalidQuery, new WidgetDataset(null), reason);
+        }
+
+        /// <summary>
+        /// Valid query, supported executor, but dataset Coverage is not Complete.
+        /// Dataset rows are empty — callers must not treat this as Count=0.
+        /// </summary>
+        public static WidgetQueryResult IncompleteData(string reason)
+        {
+            return new WidgetQueryResult(WidgetQueryStatus.IncompleteData, new WidgetDataset(null), reason);
         }
     }
 }

@@ -1,7 +1,8 @@
 # Dashboard Object Rows
 
 Status: **DB-3 BLOCKED_DB3_FULL_COVERAGE** (whole-project stream)  
-**DB-3.1: complete TypeId dataset materializer added** (unused by dashboard UI)  
+**DB-3.1: complete TypeId dataset materializer**  
+**DB-4: ObjectRows widget query engine (not wired to UI)**  
 Date: 2026-09-14
 
 ## Purpose
@@ -378,13 +379,26 @@ If `LoadedUniqueCount < Total` with a successful wait, treat as possible silent 
 - Completeness of `Total` vs actually loadable objects is NeedsRuntime
 - Materializer is **not** called from `AnalyticsDashboardPresenter` / widget editor / `ChartDataService` / snapshot engine
 
-### DB-4 recommendation (not implemented)
+### DB-4 query engine (implemented)
 
-ObjectRows-backed widget query engine:
+`ObjectRowsWidgetQueryEngine` consumes a **Complete** `DashboardTypeDataset` plus the field catalog. Same `DashboardWidgetQuery` as DB-2, with required `EntityTypeId`. Partial/Failed → `IncompleteData` (no numbers). Filters are DB-5. Not wired to dashboard UI.
 
-- same DB-2 query contract
-- plus `EntityTypeId` + CurrentProject + Count + one arbitrary Dimension
-- input: **Complete** `DashboardTypeDataset` only
-- **reject** if `Coverage != Complete`
-- filters later (DB-5)
+## DB-4 Query Integration
+
+Status: **implemented, not wired to dashboard**  
+Date: 2026-09-14
+
+PATH A: snapshot aggregates (unchanged).  
+PATH B: complete TypeId dataset → `ObjectRowsWidgetQueryEngine` → `WidgetDataset`.
+
+The materializer still does **not** run inside the query engine. Multiple widgets must share one TypeId dataset owned by a future session.
+
+Coverage != Complete → `IncompleteData`, empty `WidgetDataset`. Never Success. Never reinterpret as Empty/0.
+
+Field ids come from the DB-1 catalog (`CanGroup`, TypeId ownership). Group identity is `DashboardGroupValue` (stable key / typed value). Missing values share one reserved key; Label is `""`.
+
+DB-4 runtime validation: **NOT_REQUIRED** (pure memory).  
+DB-3.1 materializer canary: **STILL_REQUIRED** before UI.
+
+Next: run the DB-3.1 Pilot canary, then DB-5 filters (`Equals` / `NotEquals` / `IsEmpty` / `IsNotEmpty`).
 

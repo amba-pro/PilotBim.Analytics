@@ -883,7 +883,38 @@ No presenter, editor, persistence, or query-engine call.
 
 ### Next: DB-4
 
-ObjectRows widget query engine on **Complete** datasets only; reject Partial. Same DB-2 contract + EntityTypeId + Count + one Dimension. Filters = later. **Not implemented in 3.1.**
+ObjectRows widget query engine on **Complete** datasets only; reject Partial. Same DB-2 contract + EntityTypeId + Count + one Dimension. Filters = later.
+
+---
+
+## DB-4 Result
+
+Date: 2026-09-14  
+Status: **OBJECTROWS_QUERY_ENGINE**  
+Production caller: **none**
+
+### Contract
+
+Same `DashboardWidgetQuery` as DB-2.
+
+Added: `int? EntityTypeId`. Snapshot: null OK; non-null `UnsupportedQuery`. ObjectRows: required, must match dataset TypeId.
+
+Added status: `IncompleteData` — valid query, supported executor, Coverage != Complete. Empty numbers. Snapshot does not emit it.
+
+### Executor
+
+`ObjectRowsWidgetQueryEngine` — concrete class, no interface, no SDK, no materializer.
+
+Input: `DashboardTypeDataset` + `DashboardFieldCatalog` + `DashboardWidgetQuery`  
+Output: `WidgetQueryResult` / `WidgetDataset`
+
+### Behavior unchanged
+
+Dashboard, widgets, snapshot semantics (except shared sort helper + EntityTypeId rejection), materializer, Inventory, UI, persistence: **unchanged**.
+
+### Next
+
+**RUN_DB3_1_RUNTIME_CANARY** before DB-5 filters. DB-4 cannot prove live Total/SubscribeObjects coverage.
 
 
 

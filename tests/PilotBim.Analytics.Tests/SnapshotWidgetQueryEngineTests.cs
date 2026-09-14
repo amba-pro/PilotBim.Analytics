@@ -13,6 +13,21 @@ namespace PilotBim.Analytics.Tests
         private readonly ChartDataService _charts = new ChartDataService();
 
         [Fact]
+        public void EntityTypeId_NonNull_ReturnsUnsupported()
+        {
+            var query = new DashboardWidgetQuery(
+                DashboardQueryScopeKind.CurrentProject,
+                DashboardFieldIds.SystemTypeId,
+                DashboardQueryMeasure.Count,
+                DashboardQuerySort.ValueDescending,
+                null,
+                12);
+            var result = _engine.Execute(Types(("A", 1, 1)), query);
+            Assert.Equal(WidgetQueryStatus.UnsupportedQuery, result.Status);
+            Assert.Empty(result.Dataset.Rows);
+        }
+
+        [Fact]
         public void CountByType_Succeeds()
         {
             var snapshot = Types(("Door", 10, 1), ("Window", 3, 2));

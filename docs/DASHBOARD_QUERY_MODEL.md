@@ -6,8 +6,10 @@ Runtime/internal contract introduced in DB-2. Not persisted. Not bound to UI.
 
 Describe a widget as **Scope + optional Dimension + Measure + Sort + Limit**, then execute it against a data source that does **not** live inside the renderer.
 
-Current executor: `SnapshotWidgetQueryEngine` over `ProjectAnalyticsSnapshot`.  
-Future executor: ObjectRows over the same query type.
+Current executors (same `DashboardWidgetQuery`):
+
+- `SnapshotWidgetQueryEngine` over `ProjectAnalyticsSnapshot`
+- `ObjectRowsWidgetQueryEngine` over a complete `DashboardTypeDataset` + field catalog
 
 The query **must not** mention `AnalyticsChartSource`.
 
@@ -15,15 +17,16 @@ The query **must not** mention `AnalyticsChartSource`.
 
 `DashboardWidgetQuery`
 
-| Member | DB-2 |
+| Member | DB-2 / DB-4 |
 |--------|------|
 | Scope | `CurrentProject` only |
+| EntityTypeId | `int?` — snapshot: null; ObjectRows: required TypeId |
 | DimensionFieldId | null/empty = scalar Count; else a stable field id |
 | Measure | `Count` only |
 | Sort | ValueDescending (default), ValueAscending, LabelAscending, LabelDescending |
 | Limit | null = all; `<= 0` → `InvalidQuery` |
 
-No Filters[] in DB-2.
+No Filters[] in DB-4.
 
 ## Scope
 
@@ -91,10 +94,11 @@ Empty/null source labels → Key/Label `""` (renderer may localize later). Not `
 
 | Status | When |
 |--------|------|
-| Success | ≥1 row after mapping |
-| Empty | snapshot null/empty source, or mapped zero rows |
-| UnsupportedQuery | dimension/scope/measure not executable from snapshot |
-| InvalidQuery | null query, or Limit ≤ 0 |
+| Success | ≥1 row after mapping (ObjectRows scalar Count of 0 is Success with Value=0) |
+| Empty | snapshot null/empty source, or mapped zero rows (ObjectRows GroupBy on an empty Complete dataset) |
+| UnsupportedQuery | dimension/scope/measure not executable from this engine |
+| InvalidQuery | null query, Limit ≤ 0, ObjectRows missing/mismatched EntityTypeId, malformed Complete metadata |
+| IncompleteData | ObjectRows only: query is valid and supported, but `Coverage != Complete`. **No analytical numbers.** Not Empty. Snapshot never emits this. |
 
 Ordinary unsupported combinations do not throw.
 
@@ -115,16 +119,132 @@ Pilot SDK calls per query: **0**.
 
 Do not fall back to another dimension or to ChartSource defaults.
 
-## Future ObjectRows Execution
+## ObjectRows-backed Execution
 
-The same `DashboardWidgetQuery` should execute against object-level rows:
+`ObjectRowsWidgetQueryEngine.Execute(dataset, catalog, query)` → `WidgetQueryResult` / `WidgetDataset`.
 
-- Scope still CurrentProject (later other scopes filter rows first)
-- DimensionFieldId indexes a column / field catalog id
-- Measure Count = row count per group
-- Sort/Limit unchanged
+No Pilot SDK. No materializer call. Does not clone `DashboardObjectRows`. Aggregation memory is proportional to distinct groups.
 
-Snapshot engine is a **capability-limited** implementation, not a different query language.
+### EntityTypeId
+
+Required. Must equal `DashboardTypeDataset.TypeId`. Mismatch or null → `InvalidQuery`. Identity is the integer TypeId, never the type title.
+
+Snapshot executor: `EntityTypeId == null` remains project-wide; non-null → `UnsupportedQuery`.
+
+### Complete dataset requirement
+
+Checked **before** aggregation, using `dataset.Coverage` only (not by inspecting rows to guess).
+
+| Coverage | Result |
+|----------|--------|
+| Complete | proceed |
+| Partial | `IncompleteData`, empty dataset |
+| Failed | `IncompleteData`, empty dataset |
+
+Complete metadata must match (`ExpectedCount == LoadedUniqueCount == Rows.Count`). Row `TypeId` must match the dataset. Otherwise `InvalidQuery`.
+
+### Field validation
+
+Catalog is required (no hidden global catalog).
+
+1. Descriptor must exist → else `UnsupportedQuery`
+2. Attribute descriptors must belong to this TypeId → else `UnsupportedQuery`
+3. `CanGroup == true` → else `UnsupportedQuery`
+4. Executable from object rows: not `DateTime`, not `Unknown`, not `system:createdMonth` (no hidden month buckets)
+
+Absence of a field on every row does **not** mean the dimension id is invalid.
+
+### Group identity
+
+`DashboardGroupValue` maps `DashboardFieldValue` → `(Key, Label)`. Display text never controls identity when `StableKey` / typed value exists.
+
+| Kind | Key | Label |
+|------|-----|-------|
+| Text | exact string, `StringComparer.Ordinal`. Empty/whitespace → missing. No case-fold, no trim of non-empty values. | same as key |
+| Integer | invariant numeric string | DisplayText if non-empty, else key |
+| Number | invariant `"R"` format (not culture `ToString`) | DisplayText if non-empty, else key |
+| Boolean | `"1"` / `"0"` | DisplayText if non-empty, else key |
+| Guid | `"D"` format | DisplayText if non-empty, else key |
+| Enum | `StableKey` (else Guid/text fallback) | first non-empty DisplayText wins |
+| User / Reference | `StableKey` (person/org/element id) | first non-empty DisplayText wins |
+
+Same stable ID + different display → **one** bucket. Different IDs + same display → **two** buckets.
+
+Raw `DateTime` grouping is **UnsupportedQuery**. Use `system:createdMonth` on the snapshot engine, or a later bucket function. ObjectRows does not invent monthly buckets and does not store `createdMonth` on rows.
+
+### Missing bucket
+
+Missing field, null value, empty text, whitespace → one reserved bucket.
+
+- Key = `DashboardGroupValue.MissingKey` (`"\u0001missing"`) — not a user-facing string
+- Label = `""`
+
+UI may later render `(не задано)`. DB-4 does not.
+
+For single-dimension Count: `sum(group.Value) == Rows.Count` (including missing).
+
+### Unsupported DB-3.1 values
+
+Skipped values are **absent** on the row (global `SkippedUnsupportedValues` only). DB-4 cannot prove per-field skip vs true missing. Policy: they join the **missing** bucket. Mapped groups stay accurate. Dimension queries are **not** failed solely because the dataset skip counter is > 0. Completeness of “missing vs unreadable” is **not** distinguished.
+
+### Scalar Count
+
+Dimension null. One row: Key `""`, Label `""`, Value = `Rows.Count`. Empty Complete type → Success with `0` (defined count), not IncompleteData.
+
+### Sort / limit
+
+Shared `WidgetQueryPresentation` (same as snapshot): ValueDescending default; ties Key then Label, `StringComparer.Ordinal`. Limit after sort. null = all; ≤0 Invalid; oversize = all.
+
+### Performance
+
+Group O(N), sort O(K log K). Pilot SDK calls: 0. Additional materialization: 0. Catalog is not rebuilt per row.
+
+### Future router (not implemented)
+
+```
+if query needs a type-scoped / attribute field
+    → ObjectRowsWidgetQueryEngine (complete TypeId dataset)
+if query is a snapshot-executable project aggregate
+    → SnapshotWidgetQueryEngine
+```
+
+Do not invent a second query language. A `DashboardQueryCoordinator` is optional later when UI wiring exists.
+
+### Conceptual queries (IDs, not Russian titles)
+
+Example 1 — remarks by type:
+
+```
+EntityTypeId=12
+Dimension=attribute:12:RemarkType
+Measure=Count
+→ WidgetDataRow Key="Coordination" Label="Coordination" Value=42
+  WidgetDataRow Key="Attributes"   Label="Attributes"   Value=17
+  …
+```
+
+Example 2 — documents by creator:
+
+```
+EntityTypeId=34
+Dimension=system:creatorId
+Measure=Count
+→ WidgetDataRow Key="7" Label="" (or first display if present) Value=…
+```
+
+Example 3 — custom enum attribute:
+
+```
+EntityTypeId=77
+Dimension=attribute:77:Status
+Measure=Count
+→ WidgetDataRow Key="<stable enum id>" Label="<first display>" Value=…
+```
+
+### Runtime
+
+DB-4 is pure in-memory: **PILOT_RUNTIME_VALIDATION_REQUIRED = NO**.  
+DB-3.1 materializer canary remains **YES** before UI integration.
 
 ## Persistence Considerations
 
@@ -148,9 +268,10 @@ Sort=ValueDescending
 Limit=12
 ```
 
-Unsupported (needs ObjectRows):
+Unsupported on snapshot (needs ObjectRows + EntityTypeId):
 
 ```
+EntityTypeId=12
 Dimension=attribute:12:RemarkType
-→ UnsupportedQuery
+Measure=Count
 ```

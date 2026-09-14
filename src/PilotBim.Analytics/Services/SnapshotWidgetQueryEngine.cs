@@ -25,6 +25,9 @@ namespace PilotBim.Analytics.Services
             if (query.Measure != DashboardQueryMeasure.Count)
                 return WidgetQueryResult.Unsupported("measure is not executable from snapshot");
 
+            if (query.EntityTypeId.HasValue)
+                return WidgetQueryResult.Unsupported("entity type id is not executable from snapshot");
+
             IReadOnlyList<WidgetDataRow> mapped;
             var dimension = query.DimensionFieldId;
             if (string.IsNullOrWhiteSpace(dimension))
@@ -39,15 +42,7 @@ namespace PilotBim.Analytics.Services
             if (mapped == null || mapped.Count == 0)
                 return WidgetQueryResult.Empty("no rows for query");
 
-            var sorted = SortRows(mapped, query.Sort);
-            if (query.Limit.HasValue && query.Limit.Value < sorted.Count)
-            {
-                var limited = new List<WidgetDataRow>(query.Limit.Value);
-                for (var i = 0; i < query.Limit.Value; i++)
-                    limited.Add(sorted[i]);
-                sorted = limited;
-            }
-
+            var sorted = WidgetQueryPresentation.SortAndLimit(mapped, query.Sort, query.Limit);
             return WidgetQueryResult.Success(sorted);
         }
 
@@ -64,46 +59,6 @@ namespace PilotBim.Analytics.Services
             }
 
             return new[] { new WidgetDataRow(string.Empty, string.Empty, total) };
-        }
-
-        private static IReadOnlyList<WidgetDataRow> SortRows(
-            IReadOnlyList<WidgetDataRow> rows,
-            DashboardQuerySort sort)
-        {
-            var copy = new List<WidgetDataRow>(rows.Count);
-            for (var i = 0; i < rows.Count; i++)
-                copy.Add(rows[i]);
-
-            copy.Sort((a, b) => Compare(a, b, sort));
-            return copy;
-        }
-
-        private static int Compare(WidgetDataRow a, WidgetDataRow b, DashboardQuerySort sort)
-        {
-            int primary;
-            switch (sort)
-            {
-                case DashboardQuerySort.ValueAscending:
-                    primary = a.Value.CompareTo(b.Value);
-                    break;
-                case DashboardQuerySort.LabelAscending:
-                    primary = string.Compare(a.Label, b.Label, StringComparison.Ordinal);
-                    break;
-                case DashboardQuerySort.LabelDescending:
-                    primary = string.Compare(b.Label, a.Label, StringComparison.Ordinal);
-                    break;
-                default:
-                    primary = b.Value.CompareTo(a.Value);
-                    break;
-            }
-
-            if (primary != 0)
-                return primary;
-
-            var byKey = string.Compare(a.Key, b.Key, StringComparison.Ordinal);
-            if (byKey != 0)
-                return byKey;
-            return string.Compare(a.Label, b.Label, StringComparison.Ordinal);
         }
     }
 
