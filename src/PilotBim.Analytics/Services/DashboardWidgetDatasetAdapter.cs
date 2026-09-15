@@ -1,28 +1,24 @@
+using System;
 using System.Collections.Generic;
-using System.Globalization;
 using PilotBim.Analytics.Models;
 using PilotBim.Analytics.Properties;
 
 namespace PilotBim.Analytics.Services
 {
     /// <summary>
-    /// Converts <see cref="WidgetDataset"/> + visualization into existing WPF chart/KPI/table models.
-    /// TEMPORARY_V1_AUTO_RULE: scalar → KPI; grouped row count ≥ 6 → HorizontalBar; else Bar. Never auto-Pie.
+    /// Converts <see cref="WidgetDataset"/> + visualization into WPF chart/KPI/table models.
+    /// Auto is resolved at runtime and never written back.
     /// </summary>
     internal static class DashboardWidgetDatasetAdapter
     {
-        public const int AutoHorizontalBarMinRows = 6;
+        public const int PieComfortableMaxSlices = 8;
 
         public static string ResolveVisualization(string requested, bool hasDimension, int rowCount)
         {
             var type = string.IsNullOrWhiteSpace(requested) ? "Auto" : requested.Trim();
-            if (!string.Equals(type, "Auto", System.StringComparison.Ordinal))
+            if (!string.Equals(type, "Auto", StringComparison.Ordinal))
                 return type;
-            if (!hasDimension)
-                return "Kpi";
-            if (rowCount >= AutoHorizontalBarMinRows)
-                return "HorizontalBar";
-            return "Bar";
+            return DashboardVisualizationRecommendationService.Recommend(hasDimension, rowCount);
         }
 
         public static DashboardQueryRenderModel TryRender(
@@ -33,28 +29,42 @@ namespace PilotBim.Analytics.Services
             var rows = dataset != null && dataset.Rows != null
                 ? dataset.Rows
                 : (IReadOnlyList<WidgetDataRow>)new WidgetDataRow[0];
-            var resolved = ResolveVisualization(visualization, hasDimension, rows.Count);
+            var requested = string.IsNullOrWhiteSpace(visualization) ? "Auto" : visualization.Trim();
 
-            if (string.Equals(resolved, "Line", System.StringComparison.Ordinal))
-                return Unsupported(resolved, Resources.QueryWidget_Unsupported);
+            if (string.Equals(requested, "Line", StringComparison.Ordinal)
+                || (!string.Equals(requested, "Auto", StringComparison.Ordinal)
+                    && !DashboardVisualizationCompatibility.IsAllowed(requested, hasDimension)))
+                return UnsupportedOrInvalid(requested);
 
-            if (string.Equals(resolved, "Kpi", System.StringComparison.Ordinal))
-                return RenderKpi(rows, resolved);
+            var resolved = ResolveVisualization(requested, hasDimension, rows.Count);
 
-            if (string.Equals(resolved, "Table", System.StringComparison.Ordinal))
-                return RenderTable(rows, resolved);
+            if (string.Equals(resolved, "Kpi", StringComparison.Ordinal))
+                return RenderKpi(rows, resolved, hasDimension);
 
-            if (string.Equals(resolved, "Bar", System.StringComparison.Ordinal)
-                || string.Equals(resolved, "HorizontalBar", System.StringComparison.Ordinal)
-                || string.Equals(resolved, "Pie", System.StringComparison.Ordinal))
+            if (string.Equals(resolved, "Table", StringComparison.Ordinal))
+                return RenderTable(rows, resolved, hasDimension);
+
+            if (string.Equals(resolved, "Bar", StringComparison.Ordinal)
+                || string.Equals(resolved, "HorizontalBar", StringComparison.Ordinal)
+                || string.Equals(resolved, "Pie", StringComparison.Ordinal))
                 return RenderChart(rows, resolved);
 
             return Invalid(resolved, Resources.QueryWidget_Invalid);
         }
 
-        private static DashboardQueryRenderModel RenderKpi(IReadOnlyList<WidgetDataRow> rows, string resolved)
+        private static DashboardQueryRenderModel UnsupportedOrInvalid(string requested)
         {
-            if (rows == null || rows.Count != 1)
+            if (string.Equals(requested, "Line", StringComparison.Ordinal))
+                return Unsupported("Line", Resources.QueryWidget_Unsupported);
+            return Invalid(requested, Resources.QueryWidget_Invalid);
+        }
+
+        private static DashboardQueryRenderModel RenderKpi(
+            IReadOnlyList<WidgetDataRow> rows,
+            string resolved,
+            bool hasDimension)
+        {
+            if (hasDimension || rows == null || rows.Count != 1)
                 return Invalid(resolved, Resources.QueryWidget_Invalid);
 
             var row = rows[0];
@@ -68,14 +78,17 @@ namespace PilotBim.Analytics.Services
                     new AnalyticsKpiRow
                     {
                         Label = string.Empty,
-                        Value = FormatValue(row.Value),
+                        Value = DashboardVisualizationFormat.Count(row.Value),
                         Detail = string.Empty
                     }
                 }
             };
         }
 
-        private static DashboardQueryRenderModel RenderTable(IReadOnlyList<WidgetDataRow> rows, string resolved)
+        private static DashboardQueryRenderModel RenderTable(
+            IReadOnlyList<WidgetDataRow> rows,
+            string resolved,
+            bool hasDimension)
         {
             var table = new List<DashboardQueryTableRow>();
             if (rows != null)
@@ -83,7 +96,10 @@ namespace PilotBim.Analytics.Services
                 for (var i = 0; i < rows.Count; i++)
                 {
                     var row = rows[i];
-                    table.Add(new DashboardQueryTableRow(row.Label, FormatValue(row.Value)));
+                    var category = hasDimension
+                        ? DashboardVisualizationFormat.DisplayLabel(row.Label)
+                        : Resources.QueryTable_Indicator;
+                    table.Add(new DashboardQueryTableRow(category, DashboardVisualizationFormat.Count(row.Value)));
                 }
             }
 
@@ -92,6 +108,7 @@ namespace PilotBim.Analytics.Services
                 Status = DashboardQueryWidgetRuntimeStatus.Success,
                 ResolvedVisualization = resolved,
                 ShowTable = true,
+                TableIsScalar = !hasDimension,
                 TableRows = table
             };
         }
@@ -99,12 +116,16 @@ namespace PilotBim.Analytics.Services
         private static DashboardQueryRenderModel RenderChart(IReadOnlyList<WidgetDataRow> rows, string resolved)
         {
             AnalyticsChartKind kind;
-            if (string.Equals(resolved, "Pie", System.StringComparison.Ordinal))
+            if (string.Equals(resolved, "Pie", StringComparison.Ordinal))
                 kind = AnalyticsChartKind.Pie;
-            else if (string.Equals(resolved, "HorizontalBar", System.StringComparison.Ordinal))
+            else if (string.Equals(resolved, "HorizontalBar", StringComparison.Ordinal))
                 kind = AnalyticsChartKind.HorizontalBar;
             else
                 kind = AnalyticsChartKind.VerticalBar;
+
+            string warning = null;
+            if (kind == AnalyticsChartKind.Pie && rows != null && rows.Count > PieComfortableMaxSlices)
+                warning = Resources.QueryViz_PieTooMany;
 
             var charts = new ChartDataService();
             return new DashboardQueryRenderModel
@@ -113,7 +134,8 @@ namespace PilotBim.Analytics.Services
                 ResolvedVisualization = resolved,
                 ShowChart = true,
                 ChartKind = kind,
-                Points = charts.FromWidgetRows(rows)
+                Points = charts.FromWidgetRows(rows),
+                Warning = warning
             };
         }
 
@@ -135,11 +157,6 @@ namespace PilotBim.Analytics.Services
                 ResolvedVisualization = resolved,
                 Message = message
             };
-        }
-
-        private static string FormatValue(long value)
-        {
-            return value.ToString(CultureInfo.InvariantCulture);
         }
     }
 }

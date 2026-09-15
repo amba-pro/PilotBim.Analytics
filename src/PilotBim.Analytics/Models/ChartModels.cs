@@ -44,6 +44,8 @@ namespace PilotBim.Analytics.Models
         public double PieSweepDegrees { get; set; }
         public double LineX { get; set; }
         public double LineY { get; set; }
+        /// <summary>Value / max in 0..1. ChartCanvasControl uses this with ActualWidth/ActualHeight. Not pixels.</summary>
+        public double ValueRatio { get; set; }
     }
 
     public sealed class ChartBarRow

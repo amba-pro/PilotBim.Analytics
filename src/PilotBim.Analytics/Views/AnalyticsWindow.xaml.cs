@@ -298,7 +298,7 @@ namespace PilotBim.Analytics.Views
             var metrics = panel.LastMetrics ?? DashboardGridMetrics.FromAvailableWidth(panel.ActualWidth);
             DashboardGridRect snapped;
             if (_layoutResize)
-                snapped = metrics.SnapResize(_layoutOrigin.X, _layoutOrigin.Y, pos.X, pos.Y);
+                snapped = metrics.SnapResize(_layoutOrigin.X, _layoutOrigin.Y, pos.X, pos.Y, _layoutWidget.MinGridWidth, _layoutWidget.MinGridHeight);
             else
                 snapped = metrics.SnapRect(pos.X - _grabOffsetX, pos.Y - _grabOffsetY, _layoutOrigin.Width, _layoutOrigin.Height);
 

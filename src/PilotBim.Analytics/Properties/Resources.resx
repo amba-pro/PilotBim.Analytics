@@ -671,4 +671,25 @@
   <data name="Dashboard_Done" xml:space="preserve">
     <value>Готово</value>
   </data>
+  <data name="QueryViz_NotSet" xml:space="preserve">
+    <value>Не задано</value>
+  </data>
+  <data name="QueryViz_NoChartData" xml:space="preserve">
+    <value>Нет данных</value>
+  </data>
+  <data name="QueryViz_AllZero" xml:space="preserve">
+    <value>Все значения равны 0</value>
+  </data>
+  <data name="QueryViz_PieTooMany" xml:space="preserve">
+    <value>Слишком много категорий для круговой диаграммы</value>
+  </data>
+  <data name="QueryEditor_AutoResolved" xml:space="preserve">
+    <value>Авто → {0}</value>
+  </data>
+  <data name="QueryTable_Count" xml:space="preserve">
+    <value>Количество</value>
+  </data>
+  <data name="QueryTable_Indicator" xml:space="preserve">
+    <value>Показатель</value>
+  </data>
 </root>

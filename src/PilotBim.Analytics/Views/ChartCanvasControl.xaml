@@ -3,6 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="White">
   <Border BorderBrush="#C8CECB" BorderThickness="1" Background="White" CornerRadius="2">
-    <Canvas x:Name="DrawSurface" MinHeight="280" ClipToBounds="True" />
+    <ScrollViewer x:Name="ChartScroll"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  SizeChanged="ChartScroll_SizeChanged">
+      <Canvas x:Name="DrawSurface" ClipToBounds="True" />
+    </ScrollViewer>
   </Border>
 </UserControl>

@@ -475,6 +475,7 @@ namespace PilotBim.Analytics.ViewModels
                     var layout = existing.Layout;
                     copy.Widgets[index] = widget;
                     widget.Layout = layout;
+                    DashboardVisualizationConstraints.ExpandToMin(copy, widget);
                     _queryRuntime.Remove(widget.Id);
                 }
                 else
@@ -484,6 +485,7 @@ namespace PilotBim.Analytics.ViewModels
                     widget.Layout.IsVisible = true;
                     copy.Widgets.Add(widget);
                     DashboardGridLayoutEngine.PlaceNew(copy, widget);
+                    DashboardVisualizationConstraints.ExpandToMin(copy, widget);
                 }
                 return true;
             }, out error);
@@ -504,10 +506,7 @@ namespace PilotBim.Analytics.ViewModels
         {
             return TryMutate(copy =>
             {
-                if (resize)
-                    DashboardGridLayoutEngine.Resize(copy, id, rect);
-                else
-                    DashboardGridLayoutEngine.Move(copy, id, rect);
+                ApplyLayoutOp(copy, id, rect, resize);
                 return FindWidget(copy, id) != null;
             }, out error, refreshQueries: false);
         }
@@ -519,16 +518,23 @@ namespace PilotBim.Analytics.ViewModels
             var copy = DashboardDefinitionCopy.Clone(_definition);
             if (copy == null)
                 return;
-            if (resize)
-                DashboardGridLayoutEngine.Resize(copy, id, rect);
-            else
-                DashboardGridLayoutEngine.Move(copy, id, rect);
+            ApplyLayoutOp(copy, id, rect, resize);
             foreach (var vm in DashboardWidgets)
             {
                 var widget = FindWidget(copy, vm.Id);
                 if (widget != null)
                     vm.ApplyGrid(widget.Layout);
             }
+        }
+
+        private static void ApplyLayoutOp(DashboardDefinition copy, string id, DashboardGridRect rect, bool resize)
+        {
+            var widget = FindWidget(copy, id);
+            var limits = DashboardVisualizationConstraints.ForWidget(widget);
+            if (resize)
+                DashboardGridLayoutEngine.Resize(copy, id, rect, limits.MinWidth, limits.MinHeight);
+            else
+                DashboardGridLayoutEngine.Move(copy, id, rect);
         }
 
         public void CancelLayoutPreview()
@@ -947,6 +953,7 @@ namespace PilotBim.Analytics.ViewModels
                         vm = new DashboardWidgetVm(state);
                     }
                     vm.ApplyGrid(widget.Layout);
+                    vm.ApplySizeLimits(DashboardVisualizationConstraints.ForWidget(widget));
                     vm.IsEditMode = IsEditMode;
                     DashboardQueryRuntimeCache cache;
                     if (captured.TryGetValue(vm.Id, out cache) && cache != null)

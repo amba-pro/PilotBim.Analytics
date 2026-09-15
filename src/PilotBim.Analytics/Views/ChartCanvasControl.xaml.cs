@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using PilotBim.Analytics.Models;
+using PilotBim.Analytics.Services;
+using UiResources = PilotBim.Analytics.Properties.Resources;
 
 namespace PilotBim.Analytics.Views
 {
@@ -30,6 +30,7 @@ namespace PilotBim.Analytics.Views
         {
             InitializeComponent();
             SizeChanged += (s, e) => Redraw();
+            Loaded += (s, e) => Redraw();
         }
 
         public AnalyticsChartKind ChartKind
@@ -51,46 +52,78 @@ namespace PilotBim.Analytics.Views
                 ctrl.Redraw();
         }
 
+        private void ChartScroll_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            Redraw();
+        }
+
         private void Redraw()
         {
-            if (DrawSurface == null)
+            if (DrawSurface == null || ChartScroll == null)
                 return;
 
             DrawSurface.Children.Clear();
             var points = Points;
+            var viewportW = ViewportWidth();
+            var viewportH = ViewportHeight();
+            DrawSurface.Width = viewportW;
+
             if (points == null || points.Count == 0)
             {
-                DrawEmpty();
+                DrawSurface.Height = viewportH;
+                DrawMessage(UiResources.QueryViz_NoChartData);
                 return;
             }
-
-            var w = Math.Max(DrawSurface.ActualWidth, 40);
-            var h = Math.Max(DrawSurface.ActualHeight, 40);
 
             switch (ChartKind)
             {
                 case AnalyticsChartKind.Pie:
-                    DrawPie(points, w, h);
+                    DrawSurface.Height = viewportH;
+                    DrawPie(points, viewportW, viewportH);
                     break;
                 case AnalyticsChartKind.Line:
-                    DrawLine(points, w, h);
+                    DrawSurface.Height = viewportH;
+                    DrawLine(points, viewportW, viewportH);
                     break;
                 case AnalyticsChartKind.VerticalBar:
-                    DrawColumns(points, w, h);
+                    DrawSurface.Height = viewportH;
+                    DrawColumns(points, viewportW, viewportH);
                     break;
                 default:
-                    DrawHorizontal(points, w, h);
+                    DrawHorizontal(points, viewportW, viewportH);
                     break;
             }
         }
 
-        private void DrawEmpty()
+        private double ViewportWidth()
+        {
+            var w = ChartScroll.ViewportWidth;
+            if (w <= 1)
+                w = ActualWidth;
+            if (double.IsNaN(w) || w < 40)
+                w = 40;
+            return w;
+        }
+
+        private double ViewportHeight()
+        {
+            var h = ChartScroll.ViewportHeight;
+            if (h <= 1)
+                h = ActualHeight;
+            if (double.IsNaN(h) || h < 40)
+                h = 40;
+            return h;
+        }
+
+        private void DrawMessage(string text)
         {
             var tb = new TextBlock
             {
-                Text = "Нет данных — выполните «Обновить» или выберите другой источник",
+                Text = text ?? string.Empty,
                 Foreground = new SolidColorBrush(Color.FromRgb(0x44, 0x44, 0x44)),
                 FontSize = 13,
+                TextWrapping = TextWrapping.Wrap,
+                Width = Math.Max(40, DrawSurface.Width - 24),
                 Margin = new Thickness(12)
             };
             DrawSurface.Children.Add(tb);
@@ -98,63 +131,83 @@ namespace PilotBim.Analytics.Views
 
         private void DrawHorizontal(IList<ChartSeriesPoint> points, double w, double h)
         {
-            double labelW = 160;
-            double valueW = 64;
-            double rowH = Math.Max(22, Math.Min(36, (h - 16) / Math.Max(points.Count, 1)));
-            double barMax = Math.Max(40, w - labelW - valueW - 36);
-            double y = 8;
+            var labelW = Math.Max(80, Math.Min(220, w * 0.32));
+            var valueW = 72;
+            var rowH = 28.0;
+            var contentH = Math.Max(h, 16 + rowH * points.Count);
+            DrawSurface.Height = contentH;
+            var barMax = Math.Max(24, w - labelW - valueW - 36);
+            var y = 8.0;
+            var max = MaxCount(points);
 
-            foreach (var p in points)
+            for (var i = 0; i < points.Count; i++)
             {
+                var p = points[i];
+                var display = DashboardVisualizationFormat.DisplayLabel(p.Label);
+                var tooltip = display + ": " + (p.ValueDisplay ?? string.Empty);
+
                 var label = new TextBlock
                 {
-                    Text = p.Label ?? "?",
+                    Text = display,
                     Width = labelW,
                     TextTrimming = TextTrimming.CharacterEllipsis,
-                    ToolTip = p.Label,
+                    ToolTip = tooltip,
                     Foreground = BrushesDark(),
                     FontSize = 12,
                     VerticalAlignment = VerticalAlignment.Center
                 };
                 Canvas.SetLeft(label, 8);
-                Canvas.SetTop(label, y + 2);
+                Canvas.SetTop(label, y + 4);
                 DrawSurface.Children.Add(label);
 
                 var track = new Rectangle
                 {
                     Width = barMax,
-                    Height = rowH - 8,
+                    Height = rowH - 10,
                     Fill = new SolidColorBrush(Color.FromRgb(0xE8, 0xEC, 0xE9)),
                     RadiusX = 2,
                     RadiusY = 2
                 };
                 Canvas.SetLeft(track, 8 + labelW + 8);
-                Canvas.SetTop(track, y + 4);
+                Canvas.SetTop(track, y + 5);
                 DrawSurface.Children.Add(track);
 
-                var fillW = Math.Max(2, p.BarWidth > 0 ? p.BarWidth / 420.0 * barMax : 2);
-                var bar = new Rectangle
+                var geo = DashboardChartGeometry.HorizontalBar(
+                    i,
+                    CountOf(p),
+                    max,
+                    8 + labelW + 8,
+                    barMax,
+                    y + 5,
+                    rowH - 10);
+                var fillW = geo.IsFiniteNonNegative ? geo.Width : 0;
+                if (fillW > 0)
                 {
-                    Width = fillW,
-                    Height = rowH - 8,
-                    Fill = BrushFromHex(p.ColorHex),
-                    RadiusX = 2,
-                    RadiusY = 2
-                };
-                Canvas.SetLeft(bar, 8 + labelW + 8);
-                Canvas.SetTop(bar, y + 4);
-                DrawSurface.Children.Add(bar);
+                    var bar = new Rectangle
+                    {
+                        Width = fillW,
+                        Height = rowH - 10,
+                        Fill = BrushFromHex(p.ColorHex),
+                        RadiusX = 2,
+                        RadiusY = 2,
+                        ToolTip = tooltip
+                    };
+                    Canvas.SetLeft(bar, 8 + labelW + 8);
+                    Canvas.SetTop(bar, y + 5);
+                    DrawSurface.Children.Add(bar);
+                }
 
                 var val = new TextBlock
                 {
-                    Text = p.ValueDisplay ?? p.Value.ToString("0", CultureInfo.InvariantCulture),
+                    Text = p.ValueDisplay ?? string.Empty,
                     Foreground = BrushesDark(),
                     FontSize = 12,
                     Width = valueW,
-                    TextAlignment = TextAlignment.Right
+                    TextAlignment = TextAlignment.Right,
+                    ToolTip = tooltip
                 };
-                Canvas.SetLeft(val, w - valueW - 8);
-                Canvas.SetTop(val, y + 2);
+                Canvas.SetLeft(val, Math.Max(8, w - valueW - 8));
+                Canvas.SetTop(val, y + 4);
                 DrawSurface.Children.Add(val);
 
                 y += rowH;
@@ -163,11 +216,9 @@ namespace PilotBim.Analytics.Views
 
         private void DrawColumns(IList<ChartSeriesPoint> points, double w, double h)
         {
-            double padL = 28, padR = 12, padT = 16, padB = 48;
-            double plotW = Math.Max(40, w - padL - padR);
-            double plotH = Math.Max(40, h - padT - padB);
-            double gap = 6;
-            double colW = Math.Max(8, (plotW - gap * (points.Count + 1)) / points.Count);
+            double padL = 20, padR = 12, padT = 12, padB = 44;
+            var plotW = Math.Max(24, w - padL - padR);
+            var plotH = Math.Max(24, h - padT - padB);
 
             var axis = new Line
             {
@@ -180,36 +231,49 @@ namespace PilotBim.Analytics.Views
             };
             DrawSurface.Children.Add(axis);
 
-            for (int i = 0; i < points.Count; i++)
+            var max = MaxCount(points);
+            for (var i = 0; i < points.Count; i++)
             {
                 var p = points[i];
-                double colH = Math.Max(2, p.ColumnHeight > 0 ? p.ColumnHeight / 220.0 * plotH : 2);
-                double x = padL + gap + i * (colW + gap);
-                double y = padT + plotH - colH;
+                var geo = DashboardChartGeometry.VerticalBar(
+                    i,
+                    points.Count,
+                    CountOf(p),
+                    max,
+                    padL,
+                    padT,
+                    plotW,
+                    plotH);
+                var display = DashboardVisualizationFormat.DisplayLabel(p.Label);
+                var tooltip = display + ": " + (p.ValueDisplay ?? string.Empty);
 
-                var rect = new Rectangle
+                if (geo.Height > 0 && geo.IsFiniteNonNegative)
                 {
-                    Width = colW,
-                    Height = colH,
-                    Fill = BrushFromHex(p.ColorHex),
-                    RadiusX = 2,
-                    RadiusY = 2,
-                    ToolTip = (p.Label ?? "?") + ": " + (p.ValueDisplay ?? "")
-                };
-                Canvas.SetLeft(rect, x);
-                Canvas.SetTop(rect, y);
-                DrawSurface.Children.Add(rect);
+                    var rect = new Rectangle
+                    {
+                        Width = geo.Width,
+                        Height = geo.Height,
+                        Fill = BrushFromHex(p.ColorHex),
+                        RadiusX = 2,
+                        RadiusY = 2,
+                        ToolTip = tooltip
+                    };
+                    Canvas.SetLeft(rect, geo.X);
+                    Canvas.SetTop(rect, geo.Y);
+                    DrawSurface.Children.Add(rect);
+                }
 
                 var lbl = new TextBlock
                 {
-                    Text = Truncate(p.Label, 10),
+                    Text = display,
                     FontSize = 10,
                     Foreground = BrushesDark(),
-                    Width = colW + 8,
+                    Width = geo.Width + 8,
                     TextAlignment = TextAlignment.Center,
-                    ToolTip = p.Label
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    ToolTip = tooltip
                 };
-                Canvas.SetLeft(lbl, x - 4);
+                Canvas.SetLeft(lbl, geo.X - 4);
                 Canvas.SetTop(lbl, padT + plotH + 4);
                 DrawSurface.Children.Add(lbl);
             }
@@ -218,8 +282,8 @@ namespace PilotBim.Analytics.Views
         private void DrawLine(IList<ChartSeriesPoint> points, double w, double h)
         {
             double padL = 36, padR = 16, padT = 16, padB = 40;
-            double plotW = Math.Max(40, w - padL - padR);
-            double plotH = Math.Max(40, h - padT - padB);
+            var plotW = Math.Max(40, w - padL - padR);
+            var plotH = Math.Max(40, h - padT - padB);
 
             var axis = new Line
             {
@@ -238,20 +302,22 @@ namespace PilotBim.Analytics.Views
                 StrokeThickness = 2.5
             };
 
-            for (int i = 0; i < points.Count; i++)
+            for (var i = 0; i < points.Count; i++)
             {
                 var p = points[i];
-                double x = padL + (points.Count == 1 ? plotW / 2 : i * (plotW / Math.Max(points.Count - 1, 1)));
-                double yNorm = p.LineY > 0 ? p.LineY / 220.0 : 0;
-                double y = padT + plotH - Math.Max(0, Math.Min(1, yNorm)) * plotH;
+                var x = padL + (points.Count == 1 ? plotW / 2 : i * (plotW / Math.Max(points.Count - 1, 1)));
+                var ratio = RatioOf(p);
+                var y = padT + plotH - Math.Max(0, Math.Min(1, ratio)) * plotH;
                 poly.Points.Add(new Point(x, y));
+                var display = DashboardVisualizationFormat.DisplayLabel(p.Label);
+                var tooltip = display + ": " + (p.ValueDisplay ?? string.Empty);
 
                 var dot = new Ellipse
                 {
                     Width = 8,
                     Height = 8,
                     Fill = BrushFromHex(p.ColorHex),
-                    ToolTip = (p.Label ?? "?") + ": " + (p.ValueDisplay ?? "")
+                    ToolTip = tooltip
                 };
                 Canvas.SetLeft(dot, x - 4);
                 Canvas.SetTop(dot, y - 4);
@@ -259,12 +325,15 @@ namespace PilotBim.Analytics.Views
 
                 var lbl = new TextBlock
                 {
-                    Text = Truncate(p.Label, 8),
+                    Text = display,
                     FontSize = 10,
                     Foreground = BrushesDark(),
-                    ToolTip = p.Label
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Width = 72,
+                    TextAlignment = TextAlignment.Center,
+                    ToolTip = tooltip
                 };
-                Canvas.SetLeft(lbl, x - 20);
+                Canvas.SetLeft(lbl, x - 36);
                 Canvas.SetTop(lbl, padT + plotH + 6);
                 DrawSurface.Children.Add(lbl);
             }
@@ -274,77 +343,122 @@ namespace PilotBim.Analytics.Views
 
         private void DrawPie(IList<ChartSeriesPoint> points, double w, double h)
         {
-            double size = Math.Min(w, h) - 24;
-            if (size < 80)
-                size = 80;
-            double cx = w / 2;
-            double cy = (h - 40) / 2 + 8;
-            double r = size / 2;
+            var total = 0.0;
+            for (var i = 0; i < points.Count; i++)
+            {
+                if (points[i].Value > 0)
+                    total += points[i].Value;
+            }
+            if (total <= 0)
+            {
+                DrawMessage(UiResources.QueryViz_AllZero);
+                return;
+            }
+
+            var legendW = w >= 360 ? Math.Min(200, w * 0.38) : 0;
+            var box = Math.Min(w - legendW - 24, h - 24);
+            if (box < 32)
+                box = Math.Max(24, Math.Min(w, h) - 16);
+            var cx = legendW > 0 ? 12 + box / 2 : w / 2;
+            var cy = h / 2;
+            var r = box / 2;
 
             foreach (var p in points)
             {
                 if (p.PieSweepDegrees <= 0.05)
                     continue;
-
+                var display = DashboardVisualizationFormat.DisplayLabel(p.Label);
+                var tooltip = display + ": " + (p.ValueDisplay ?? string.Empty)
+                    + " (" + p.SharePercent.ToString("0.0") + "%)";
                 var path = new Path
                 {
                     Fill = BrushFromHex(p.ColorHex),
                     Stroke = Brushes.White,
                     StrokeThickness = 1.5,
-                    ToolTip = (p.Label ?? "?") + ": " + (p.ValueDisplay ?? "")
-                        + " (" + p.SharePercent.ToString("0.0") + "%)",
+                    ToolTip = tooltip,
                     Data = BuildPieSlice(cx, cy, r, p.PieStartDegrees, p.PieSweepDegrees)
                 };
                 DrawSurface.Children.Add(path);
             }
 
-            // Legend under pie
-            double lx = 12;
-            double ly = Math.Min(h - 28, cy + r + 12);
-            int shown = 0;
+            if (legendW > 0)
+                DrawLegendColumn(points, w - legendW + 4, 8, legendW - 12, h - 16);
+            else
+                DrawLegendWrap(points, 8, Math.Min(h - 8, cy + r + 8), w - 16);
+        }
+
+        private void DrawLegendColumn(IList<ChartSeriesPoint> points, double x, double y, double width, double height)
+        {
+            var rowH = 18.0;
+            var needed = 8 + points.Count * rowH;
+            if (needed > DrawSurface.Height)
+                DrawSurface.Height = needed;
             foreach (var p in points)
             {
-                if (shown >= 8)
-                    break;
-                var swatch = new Rectangle
-                {
-                    Width = 10,
-                    Height = 10,
-                    Fill = BrushFromHex(p.ColorHex)
-                };
-                Canvas.SetLeft(swatch, lx);
-                Canvas.SetTop(swatch, ly);
-                DrawSurface.Children.Add(swatch);
-
-                var tb = new TextBlock
-                {
-                    Text = Truncate(p.Label, 18) + " " + (p.ValueDisplay ?? ""),
-                    FontSize = 11,
-                    Foreground = BrushesDark()
-                };
-                Canvas.SetLeft(tb, lx + 14);
-                Canvas.SetTop(tb, ly - 2);
-                DrawSurface.Children.Add(tb);
-                lx += 160;
-                if (lx > w - 140)
-                {
-                    lx = 12;
-                    ly += 16;
-                }
-                shown++;
+                DrawLegendItem(p, x, y, width);
+                y += rowH;
             }
+        }
+
+        private void DrawLegendWrap(IList<ChartSeriesPoint> points, double x0, double y, double maxW)
+        {
+            var x = x0;
+            var rowH = 18.0;
+            foreach (var p in points)
+            {
+                if (x > x0 && x + 150 > x0 + maxW)
+                {
+                    x = x0;
+                    y += rowH;
+                }
+                DrawLegendItem(p, x, y, 150);
+                x += 160;
+            }
+            if (y + rowH > DrawSurface.Height)
+                DrawSurface.Height = y + rowH + 8;
+        }
+
+        private void DrawLegendItem(ChartSeriesPoint p, double x, double y, double width)
+        {
+            var display = DashboardVisualizationFormat.DisplayLabel(p.Label);
+            var tooltip = display + ": " + (p.ValueDisplay ?? string.Empty);
+            var swatch = new Rectangle
+            {
+                Width = 10,
+                Height = 10,
+                Fill = BrushFromHex(p.ColorHex),
+                ToolTip = tooltip
+            };
+            Canvas.SetLeft(swatch, x);
+            Canvas.SetTop(swatch, y);
+            DrawSurface.Children.Add(swatch);
+
+            var tb = new TextBlock
+            {
+                Text = display + " " + (p.ValueDisplay ?? string.Empty),
+                FontSize = 11,
+                Foreground = BrushesDark(),
+                Width = Math.Max(40, width - 16),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = tooltip
+            };
+            Canvas.SetLeft(tb, x + 14);
+            Canvas.SetTop(tb, y - 3);
+            DrawSurface.Children.Add(tb);
         }
 
         private static Geometry BuildPieSlice(double cx, double cy, double r, double startDeg, double sweepDeg)
         {
+            if (r <= 0)
+                return Geometry.Empty;
             if (sweepDeg >= 359.9)
                 return new EllipseGeometry(new Point(cx, cy), r, r);
 
-            double startRad = startDeg * Math.PI / 180.0;
-            double endRad = (startDeg + sweepDeg) * Math.PI / 180.0;
+            var startRad = startDeg * Math.PI / 180.0;
+            var endRad = (startDeg + sweepDeg) * Math.PI / 180.0;
             var start = new Point(cx + r * Math.Cos(startRad), cy + r * Math.Sin(startRad));
             var end = new Point(cx + r * Math.Cos(endRad), cy + r * Math.Sin(endRad));
-            bool large = sweepDeg > 180;
+            var large = sweepDeg > 180;
 
             var fig = new PathFigure { StartPoint = new Point(cx, cy), IsClosed = true };
             fig.Segments.Add(new LineSegment(start, true));
@@ -352,6 +466,50 @@ namespace PilotBim.Analytics.Views
             var geo = new PathGeometry();
             geo.Figures.Add(fig);
             return geo;
+        }
+
+        private static long MaxCount(IList<ChartSeriesPoint> points)
+        {
+            long max = 0;
+            if (points == null)
+                return 0;
+            for (var i = 0; i < points.Count; i++)
+            {
+                var value = CountOf(points[i]);
+                if (value > max)
+                    max = value;
+            }
+            return max;
+        }
+
+        private static long CountOf(ChartSeriesPoint point)
+        {
+            if (point == null)
+                return 0;
+            var value = point.Value;
+            if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value))
+                return 0;
+            if (value >= long.MaxValue)
+                return long.MaxValue;
+            return (long)value;
+        }
+
+        private static double RatioOf(ChartSeriesPoint point)
+        {
+            var ratio = point.ValueRatio;
+            // Legacy ChartDataService points may only have pixel BarWidth/ColumnHeight.
+            // Dashboard Query charts set ValueRatio. Charts-tab list bars still use 420px Width.
+            if (ratio <= 0 && point.BarWidth > 0)
+                ratio = point.BarWidth / 420.0;
+            else if (ratio <= 0 && point.ColumnHeight > 0)
+                ratio = point.ColumnHeight / 220.0;
+            else if (ratio <= 0 && point.LineY > 0)
+                ratio = point.LineY / 220.0;
+            if (double.IsNaN(ratio) || double.IsInfinity(ratio) || ratio < 0)
+                return 0;
+            if (ratio > 1)
+                return 1;
+            return ratio;
         }
 
         private static Brush BrushesDark()
@@ -371,13 +529,6 @@ namespace PilotBim.Analytics.Views
             {
                 return new SolidColorBrush(Color.FromRgb(0x3A, 0x7D, 0x5C));
             }
-        }
-
-        private static string Truncate(string text, int max)
-        {
-            if (string.IsNullOrEmpty(text) || text.Length <= max)
-                return text ?? "";
-            return text.Substring(0, max - 1) + "…";
         }
     }
 }

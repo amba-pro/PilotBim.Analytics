@@ -88,5 +88,18 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal("Редактировать", Resources.Dashboard_Edit);
             Assert.Equal("Готово", Resources.Dashboard_Done);
         }
+
+        [Fact]
+        public void QueryVisualization_Keys_MatchExpectedDefaults()
+        {
+            Assert.Equal("Не задано", Resources.QueryViz_NotSet);
+            Assert.Equal("Нет данных", Resources.QueryViz_NoChartData);
+            Assert.Equal("Все значения равны 0", Resources.QueryViz_AllZero);
+            Assert.Equal("Слишком много категорий для круговой диаграммы", Resources.QueryViz_PieTooMany);
+            Assert.Equal("Авто → {0}", Resources.QueryEditor_AutoResolved);
+            Assert.Equal("Количество", Resources.QueryTable_Count);
+            Assert.Equal("Показатель", Resources.QueryTable_Indicator);
+            Assert.Equal("Категория", Resources.QueryTable_Category);
+        }
     }
 }

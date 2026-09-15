@@ -102,7 +102,11 @@ Edit Query: same Id, same layout. Edit Legacy: `DashboardWidgetEditorWindow`.
 
 `DashboardWidgetDatasetAdapter` maps `WidgetDataset` + visualization onto existing `ChartCanvasControl` / KPI / table models. No SDK in the chart control.
 
-**TEMPORARY_V1_AUTO_RULE:** Dimension null → KPI; grouped row count ≥ 6 → HorizontalBar; else Bar. Never auto-Pie. Persisted Line without an ordered dimension → Unsupported (not a fabricated axis).
+Preview and dashboard use the same adapter.
+
+**Auto (DB-11):** `DashboardVisualizationRecommendationService` — scalar → KPI; grouped 1–5 → Bar; 6–15 → HorizontalBar; ≥16 → Table. Never auto-Pie or auto-Line. Persisted type stays `Auto`. Persisted Line without an ordered dimension → Unsupported (not a fabricated axis).
+
+Charts size from WPF layout (`ValueRatio` × available size). See `docs/DASHBOARD_VISUALIZATION_V1.md`.
 
 ## Error States
 
@@ -142,7 +146,7 @@ Details: `docs/DASHBOARD_GRID_LAYOUT.md`.
 - Enum / User / Reference filter values: stable-key text (no picklists)
 - Dashboard grid is DB-10 (logical 12-column layout)
 - No dashboard-level filters (DB-12)
-- Auto visualization is a temporary rule (DB-11)
+- Auto visualization is `DashboardVisualizationRecommendationService` (DB-11)
 - Preview is explicit, not live-on-keystroke
 
 ## Runtime Validation Required

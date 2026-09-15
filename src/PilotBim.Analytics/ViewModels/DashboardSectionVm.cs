@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using PilotBim.Analytics.Models;
+using PilotBim.Analytics.Properties;
 using PilotBim.Analytics.Services;
 
 namespace PilotBim.Analytics.ViewModels
@@ -27,6 +28,10 @@ namespace PilotBim.Analytics.ViewModels
         private string _queryStatusText;
         private string _resolvedVisualization;
         private bool _showQueryTable;
+        private bool _tableIsScalar;
+        private string _queryWarning;
+        private int _minGridWidth = DashboardGridLayoutEngine.MinWidth;
+        private int _minGridHeight = DashboardGridLayoutEngine.MinHeight;
 
         public DashboardWidgetVm(DashboardWidgetState state)
         {
@@ -112,6 +117,9 @@ namespace PilotBim.Analytics.ViewModels
             {
                 _isKpi = value;
                 OnPropertyChanged();
+                OnPropertyChanged("ShowLegacyKpiGrid");
+                OnPropertyChanged("ShowQueryKpiCard");
+                OnPropertyChanged("KpiDisplayValue");
             }
         }
 
@@ -212,6 +220,8 @@ namespace PilotBim.Analytics.ViewModels
                         ShowChart = IsChart,
                         ShowKpi = IsKpi,
                         ShowTable = ShowQueryTable,
+                        TableIsScalar = _tableIsScalar,
+                        Warning = QueryWarningText,
                         ChartKind = ChartKind,
                         Points = ChartSeries,
                         KpiRows = Rows.ToList(),
@@ -282,7 +292,76 @@ namespace PilotBim.Analytics.ViewModels
             {
                 _showQueryTable = value;
                 OnPropertyChanged();
+                OnPropertyChanged("ShowQueryTableScalar");
+                OnPropertyChanged("ShowQueryTableGrouped");
             }
+        }
+
+        public bool ShowLegacyKpiGrid
+        {
+            get { return !IsQueryWidget && IsKpi; }
+        }
+
+        public bool ShowQueryKpiCard
+        {
+            get { return IsQueryWidget && IsKpi; }
+        }
+
+        public string KpiDisplayValue
+        {
+            get { return Rows != null && Rows.Count > 0 ? Rows[0].Value : string.Empty; }
+        }
+
+        public bool ShowQueryTableScalar
+        {
+            get { return ShowQueryTable && _tableIsScalar; }
+        }
+
+        public bool ShowQueryTableGrouped
+        {
+            get { return ShowQueryTable && !_tableIsScalar; }
+        }
+
+        public string QueryWarningText
+        {
+            get { return _queryWarning; }
+            private set
+            {
+                _queryWarning = value;
+                OnPropertyChanged();
+                OnPropertyChanged("ShowQueryWarning");
+            }
+        }
+
+        public bool ShowQueryWarning
+        {
+            get { return !string.IsNullOrEmpty(_queryWarning); }
+        }
+
+        public int MinGridWidth
+        {
+            get { return _minGridWidth; }
+            private set
+            {
+                _minGridWidth = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int MinGridHeight
+        {
+            get { return _minGridHeight; }
+            private set
+            {
+                _minGridHeight = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public void ApplySizeLimits(DashboardVisualizationConstraints.Size limits)
+        {
+            MinGridWidth = limits.MinWidth;
+            MinGridHeight = limits.MinHeight;
         }
 
         public bool ShowQueryMessage
@@ -306,6 +385,10 @@ namespace PilotBim.Analytics.ViewModels
             QueryStatus = status;
             QueryStatusText = message ?? string.Empty;
             ResolvedVisualization = render != null ? render.ResolvedVisualization : null;
+            QueryWarningText = render != null ? render.Warning : null;
+            _tableIsScalar = render != null && render.TableIsScalar;
+            OnPropertyChanged("ShowQueryTableScalar");
+            OnPropertyChanged("ShowQueryTableGrouped");
 
             var success = status == DashboardQueryWidgetRuntimeStatus.Success && render != null;
             IsChart = success && render.ShowChart;
@@ -324,6 +407,7 @@ namespace PilotBim.Analytics.ViewModels
                 foreach (var row in render.KpiRows)
                     Rows.Add(row);
             }
+            OnPropertyChanged("KpiDisplayValue");
 
             TableRows.Clear();
             if (success && render.ShowTable && render.TableRows != null)

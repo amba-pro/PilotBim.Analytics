@@ -1075,9 +1075,9 @@ Create / edit / delete / persist / reload. Explicit Preview. Sequential distinct
 
 Legacy KPI / BIM / Responsible / Chart + specialized chart sources. Legacy editor. Inventory.
 
-### Next: DB-11 (not implemented)
+### Next: DB-11 (implemented)
 
-Visualization System V1 polish: Auto recommendation, responsive charts, KPI/Bar/Pie/Table labels, remove remaining fixed 420/220 assumptions.
+See **DB-11 Result**. Visualization System V1 polish.
 
 ## DB-10 Result
 
@@ -1101,9 +1101,35 @@ SchemaVersion 3. V2 remains migration input. V1 → V2 → V3 in memory, no writ
 
 Layout edits do not re-run queries, rematerialize TypeIds, or replace `DashboardQueryCoordinator`.
 
-### Next: DB-11 (not implemented)
+## DB-11 Result
 
-Visualization System V1 polish. No new query semantics.
+Date: 2026-09-15  
+Status: **VISUALIZATION_V1**  
+Runtime validation: **REQUIRED**, not executed
+
+### Visualization
+
+Responsive KPI / Bar / HorizontalBar / Pie / Table inside DB-10 cards. `ChartCanvasControl` uses measured WPF size + `ValueRatio`. No persisted pixels.
+
+### Auto
+
+Deterministic recommendation: scalar → KPI; grouped 1–5 Bar; 6–15 HorizontalBar; ≥16 Table. Never Pie or Line. Persisted `Auto` stays Auto.
+
+### Constraints
+
+Visualization-aware grid mins (KPI 3×2, charts/table 4×3). Engine remains generic. Expand-on-viz-change + clamp-on-resize.
+
+### TD-08
+
+Dashboard chart 420×220 layout drift **FIXED_IN_DB_11**. Charts-tab 420px list bars remain by design.
+
+### Preserved
+
+Query semantics, filters, coordinator, materializer, Legacy specialized charts.
+
+### Next: DB-12 (not implemented)
+
+Dashboard-level filters bound to selected compatible Query widgets. Do not implement in DB-11.
 
 
 

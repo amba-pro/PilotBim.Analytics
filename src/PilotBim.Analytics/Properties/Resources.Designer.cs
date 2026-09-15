@@ -751,5 +751,12 @@ namespace PilotBim.Analytics.Properties
         public static string Dashboard_SaveFailed { get { return ResourceManager.GetString("Dashboard_SaveFailed", resourceCulture); } }
         public static string Dashboard_Edit { get { return ResourceManager.GetString("Dashboard_Edit", resourceCulture); } }
         public static string Dashboard_Done { get { return ResourceManager.GetString("Dashboard_Done", resourceCulture); } }
+        public static string QueryViz_NotSet { get { return ResourceManager.GetString("QueryViz_NotSet", resourceCulture); } }
+        public static string QueryViz_NoChartData { get { return ResourceManager.GetString("QueryViz_NoChartData", resourceCulture); } }
+        public static string QueryViz_AllZero { get { return ResourceManager.GetString("QueryViz_AllZero", resourceCulture); } }
+        public static string QueryViz_PieTooMany { get { return ResourceManager.GetString("QueryViz_PieTooMany", resourceCulture); } }
+        public static string QueryEditor_AutoResolved { get { return ResourceManager.GetString("QueryEditor_AutoResolved", resourceCulture); } }
+        public static string QueryTable_Count { get { return ResourceManager.GetString("QueryTable_Count", resourceCulture); } }
+        public static string QueryTable_Indicator { get { return ResourceManager.GetString("QueryTable_Indicator", resourceCulture); } }
     }
 }

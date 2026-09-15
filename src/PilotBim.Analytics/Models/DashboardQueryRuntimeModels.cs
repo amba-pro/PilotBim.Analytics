@@ -42,6 +42,8 @@ namespace PilotBim.Analytics.Models
         public bool ShowChart { get; set; }
         public bool ShowKpi { get; set; }
         public bool ShowTable { get; set; }
+        public bool TableIsScalar { get; set; }
+        public string Warning { get; set; }
         public AnalyticsChartKind ChartKind { get; set; }
         public IList<ChartSeriesPoint> Points { get; set; }
         public IList<AnalyticsKpiRow> KpiRows { get; set; }

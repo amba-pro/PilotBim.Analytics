@@ -33,7 +33,8 @@ Invariant: `X + Width <= 12`.
 
 Move/resize/placement use `Clamp`:
 
-- min width 3, min height 2
+- default min width 3, min height 2
+- visualization-aware mins supplied by the caller (see below)
 - max width 12, max height 24
 - X is shifted left if needed so the rect stays in 12 columns
 
@@ -49,7 +50,22 @@ Available only in Dashboard Edit mode (`Редактировать` → `Гот�
 
 ## Resize
 
-Edit mode shows a bottom-right grip. Resize snaps to grid columns and rows, then uses the same clamp and collision policy as move.
+Edit mode shows a bottom-right grip. Resize snaps to grid columns and rows, then uses the same clamp and collision policy as move. Visualization-aware minimums are supplied by the presenter; the engine stays generic.
+
+## Visualization size constraints (DB-11)
+
+Not persisted. `DashboardVisualizationConstraints` maps Query visualization + query shape to a min rect. The grid engine receives `minWidth`/`minHeight` only.
+
+| Visualization | Min |
+|---------------|-----|
+| KPI / Auto scalar | 3×2 |
+| Bar / HorizontalBar / Pie / Table / Auto grouped | 4×3 |
+| Legacy Chart | 4×3 |
+| Other Legacy | 3×2 |
+
+Auto uses query shape (scalar vs grouped), not current row count. Resize below the min clamps. Saving a visualization that needs a larger card expands the rect, then resolves collisions (push-down).
+
+Details: `docs/DASHBOARD_VISUALIZATION_V1.md`.
 
 ## Collision Policy
 
@@ -122,6 +138,6 @@ Move and resize:
 
 - Keyboard arrow-key nudging is not implemented; drag/resize is the layout UI
 - No “Уплотнить” compaction command
-- Chart internals still use existing visualization code (DB-11)
+- Visualization-aware minimum sizes (DB-11); pixels are still not persisted
 - No dashboard-level filters (later stage)
 - Eight-direction resize handles are not provided (bottom-right only)

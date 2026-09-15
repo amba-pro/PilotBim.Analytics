@@ -132,6 +132,21 @@ namespace PilotBim.Analytics.Tests
 
             Assert.Equal(75, series[0].SharePercent); // B first (count desc)
             Assert.Equal(25, series[1].SharePercent);
+            Assert.Equal(1, series[0].ValueRatio);
+            Assert.Equal(1.0 / 3.0, series[1].ValueRatio, 5);
+        }
+
+        [Fact]
+        public void FromWidgetRows_SetsValueRatio_NotPixelGeometry()
+        {
+            var points = _sut.FromWidgetRows(new[]
+            {
+                new WidgetDataRow("a", "A", 10),
+                new WidgetDataRow("b", "B", 5)
+            });
+            Assert.Equal(1, points[0].ValueRatio);
+            Assert.Equal(0.5, points[1].ValueRatio);
+            Assert.Equal(DashboardVisualizationFormat.Count(10), points[0].ValueDisplay);
         }
 
         [Fact]
@@ -145,6 +160,7 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal(0, series[1].BarWidth);
             // With total forced to 1, each zero value contributes 0 share
             Assert.Equal(0, series[0].SharePercent);
+            Assert.Equal(0, series[0].ValueRatio);
         }
 
         [Fact]

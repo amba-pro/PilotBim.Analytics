@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using PilotBim.Analytics.Models;
+using PilotBim.Analytics.Properties;
 using PilotBim.Analytics.Services;
 using Xunit;
 
@@ -23,7 +24,14 @@ namespace PilotBim.Analytics.Tests
         public void Auto_GroupedSixOrMore_ResolvesHorizontalBar()
         {
             Assert.Equal("HorizontalBar", DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 6));
-            Assert.Equal("HorizontalBar", DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 20));
+            Assert.Equal("HorizontalBar", DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 15));
+        }
+
+        [Fact]
+        public void Auto_GroupedSixteenOrMore_ResolvesTable()
+        {
+            Assert.Equal("Table", DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 16));
+            Assert.Equal("Table", DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 20));
         }
 
         [Fact]
@@ -34,13 +42,52 @@ namespace PilotBim.Analytics.Tests
         }
 
         [Fact]
+        public void Auto_DoesNotSelectLine()
+        {
+            Assert.NotEqual("Line", DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", false, 1));
+            Assert.NotEqual("Line", DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 8));
+        }
+
+        [Fact]
+        public void Auto_IsDeterministic()
+        {
+            Assert.Equal(
+                DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 7),
+                DashboardWidgetDatasetAdapter.ResolveVisualization("Auto", true, 7));
+        }
+
+        [Fact]
         public void Scalar_Kpi_OneRow()
         {
             var model = DashboardWidgetDatasetAdapter.TryRender(Dataset(Row("total", "Total", 42)), "Kpi", false);
             Assert.Equal(DashboardQueryWidgetRuntimeStatus.Success, model.Status);
             Assert.True(model.ShowKpi);
             Assert.False(model.ShowChart);
-            Assert.Equal("42", model.KpiRows[0].Value);
+            Assert.Equal(DashboardVisualizationFormat.Count(42), model.KpiRows[0].Value);
+        }
+
+        [Fact]
+        public void Scalar_Kpi_ZeroIsSuccess()
+        {
+            var model = DashboardWidgetDatasetAdapter.TryRender(Dataset(Row("total", "Total", 0)), "Kpi", false);
+            Assert.Equal(DashboardQueryWidgetRuntimeStatus.Success, model.Status);
+            Assert.Equal(DashboardVisualizationFormat.Count(0), model.KpiRows[0].Value);
+        }
+
+        [Fact]
+        public void Scalar_Bar_Invalid()
+        {
+            var model = DashboardWidgetDatasetAdapter.TryRender(Dataset(Row("total", "Total", 4)), "Bar", false);
+            Assert.Equal(DashboardQueryWidgetRuntimeStatus.Invalid, model.Status);
+            Assert.False(model.ShowChart);
+        }
+
+        [Fact]
+        public void Grouped_Kpi_Invalid()
+        {
+            var model = DashboardWidgetDatasetAdapter.TryRender(Dataset(Row("a", "A", 1)), "Kpi", true);
+            Assert.Equal(DashboardQueryWidgetRuntimeStatus.Invalid, model.Status);
+            Assert.False(model.ShowKpi);
         }
 
         [Fact]
@@ -98,7 +145,53 @@ namespace PilotBim.Analytics.Tests
                 true);
             Assert.True(model.ShowTable);
             Assert.Equal("Alpha", model.TableRows[0].Category);
-            Assert.Equal("9", model.TableRows[0].Value);
+            Assert.Equal(DashboardVisualizationFormat.Count(9), model.TableRows[0].Value);
+        }
+
+        [Fact]
+        public void Table_Scalar_UsesIndicatorColumn()
+        {
+            var model = DashboardWidgetDatasetAdapter.TryRender(Dataset(Row("total", "Total", 4)), "Table", false);
+            Assert.True(model.ShowTable);
+            Assert.True(model.TableIsScalar);
+            Assert.Equal(Resources.QueryTable_Indicator, model.TableRows[0].Category);
+            Assert.Equal(DashboardVisualizationFormat.Count(4), model.TableRows[0].Value);
+        }
+
+        [Fact]
+        public void Table_MissingLabel_UsesDisplayPlaceholder_DatasetUnchanged()
+        {
+            var row = Row("k", "", 3);
+            var model = DashboardWidgetDatasetAdapter.TryRender(Dataset(row), "Table", true);
+            Assert.Equal(Resources.QueryViz_NotSet, model.TableRows[0].Category);
+            Assert.Equal(string.Empty, row.Label);
+        }
+
+        [Fact]
+        public void DuplicateDisplayLabels_RemainSeparate()
+        {
+            var model = DashboardWidgetDatasetAdapter.TryRender(
+                Dataset(Row("a", "Same", 1), Row("b", "Same", 2)),
+                "Bar",
+                true);
+            Assert.Equal(2, model.Points.Count);
+            Assert.Equal("Same", model.Points[0].Label);
+            Assert.Equal("Same", model.Points[1].Label);
+            Assert.Equal(1, model.Points[0].Value);
+            Assert.Equal(2, model.Points[1].Value);
+        }
+
+        [Fact]
+        public void Pie_ManySlices_WarnsButStillRenders()
+        {
+            var rows = new WidgetDataRow[9];
+            for (var i = 0; i < rows.Length; i++)
+                rows[i] = Row("k" + i, "L" + i, i + 1);
+            var model = DashboardWidgetDatasetAdapter.TryRender(new WidgetDataset(rows), "Pie", true);
+            Assert.True(model.ShowChart);
+            Assert.Equal(AnalyticsChartKind.Pie, model.ChartKind);
+            Assert.Equal(Resources.QueryViz_PieTooMany, model.Warning);
+            Assert.Equal(9, model.Points.Count);
         }
 
         [Fact]

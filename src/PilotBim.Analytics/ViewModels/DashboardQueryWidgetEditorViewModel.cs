@@ -39,6 +39,10 @@ namespace PilotBim.Analytics.ViewModels
         private bool _previewShowChart;
         private bool _previewShowKpi;
         private bool _previewShowTable;
+        private bool _previewTableIsScalar;
+        private string _previewKpiValue;
+        private string _previewAutoResolved;
+        private string _previewWarning;
         private AnalyticsChartKind _previewChartKind = AnalyticsChartKind.VerticalBar;
         private IList<ChartSeriesPoint> _previewPoints = new List<ChartSeriesPoint>();
 
@@ -278,7 +282,61 @@ namespace PilotBim.Analytics.ViewModels
             {
                 _previewShowTable = value;
                 Raise();
+                Raise("PreviewShowTableScalar");
+                Raise("PreviewShowTableGrouped");
             }
+        }
+
+        public bool PreviewShowTableScalar
+        {
+            get { return PreviewShowTable && _previewTableIsScalar; }
+        }
+
+        public bool PreviewShowTableGrouped
+        {
+            get { return PreviewShowTable && !_previewTableIsScalar; }
+        }
+
+        public string PreviewKpiValue
+        {
+            get { return _previewKpiValue; }
+            private set
+            {
+                _previewKpiValue = value;
+                Raise();
+            }
+        }
+
+        public string PreviewAutoResolved
+        {
+            get { return _previewAutoResolved; }
+            private set
+            {
+                _previewAutoResolved = value;
+                Raise();
+                Raise("ShowPreviewAutoResolved");
+            }
+        }
+
+        public bool ShowPreviewAutoResolved
+        {
+            get { return !string.IsNullOrEmpty(_previewAutoResolved); }
+        }
+
+        public string PreviewWarning
+        {
+            get { return _previewWarning; }
+            private set
+            {
+                _previewWarning = value;
+                Raise();
+                Raise("ShowPreviewWarning");
+            }
+        }
+
+        public bool ShowPreviewWarning
+        {
+            get { return !string.IsNullOrEmpty(_previewWarning); }
         }
 
         public AnalyticsChartKind PreviewChartKind
@@ -511,9 +569,20 @@ namespace PilotBim.Analytics.ViewModels
             PreviewShowChart = success && render.ShowChart;
             PreviewShowKpi = success && render.ShowKpi;
             PreviewShowTable = success && render.ShowTable;
+            _previewTableIsScalar = success && render.TableIsScalar;
+            Raise("PreviewShowTableScalar");
+            Raise("PreviewShowTableGrouped");
             PreviewPoints = success && render.ShowChart ? render.Points : new List<ChartSeriesPoint>();
             if (success && render.ShowChart)
                 PreviewChartKind = render.ChartKind;
+            PreviewKpiValue = success && render.ShowKpi && render.KpiRows != null && render.KpiRows.Count > 0
+                ? render.KpiRows[0].Value
+                : string.Empty;
+            PreviewWarning = success ? render.Warning : null;
+            if (success && ShowAutoHint && render.ResolvedVisualization != null)
+                PreviewAutoResolved = string.Format(Resources.QueryEditor_AutoResolved, DashboardVisualizationRecommendationService.DisplayName(render.ResolvedVisualization));
+            else
+                PreviewAutoResolved = null;
 
             PreviewKpiRows.Clear();
             if (success && render.ShowKpi && render.KpiRows != null)

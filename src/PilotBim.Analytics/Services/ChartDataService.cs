@@ -163,7 +163,7 @@ namespace PilotBim.Analytics.Services
                 items.Add(Tuple.Create(
                     row.Label ?? string.Empty,
                     (double)row.Value,
-                    row.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                    DashboardVisualizationFormat.Count(row.Value)));
             }
 
             return ToSeries(items);
@@ -201,7 +201,8 @@ namespace PilotBim.Analytics.Services
                     LineX = i,
                     ColorHex = Palette[i % Palette.Length],
                     PieStartDegrees = pieCursor,
-                    PieSweepDegrees = sweep
+                    PieSweepDegrees = sweep,
+                    ValueRatio = item.Item2 / max
                 };
                 pieCursor += sweep;
                 result.Add(point);

@@ -75,11 +75,22 @@ namespace PilotBim.Analytics.Services
             double pointerX,
             double pointerY)
         {
+            return SnapResize(originX, originY, pointerX, pointerY, DashboardGridLayoutEngine.MinWidth, DashboardGridLayoutEngine.MinHeight);
+        }
+
+        public DashboardGridRect SnapResize(
+            int originX,
+            int originY,
+            double pointerX,
+            double pointerY,
+            int minWidth,
+            int minHeight)
+        {
             var right = ColumnAt(pointerX) + 1;
             var bottom = RowAt(pointerY) + 1;
             var width = right - originX;
             var height = bottom - originY;
-            return DashboardGridLayoutEngine.Clamp(new DashboardGridRect(originX, originY, width, height));
+            return DashboardGridLayoutEngine.Clamp(new DashboardGridRect(originX, originY, width, height), minWidth, minHeight);
         }
 
         public double PixelX(int column)

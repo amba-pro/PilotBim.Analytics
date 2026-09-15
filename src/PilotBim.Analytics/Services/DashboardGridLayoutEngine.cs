@@ -84,15 +84,29 @@ namespace PilotBim.Analytics.Services
 
         public static DashboardGridRect Clamp(DashboardGridRect rect)
         {
+            return Clamp(rect, MinWidth, MinHeight);
+        }
+
+        public static DashboardGridRect Clamp(DashboardGridRect rect, int minWidth, int minHeight)
+        {
+            if (minWidth < 1)
+                minWidth = 1;
+            if (minWidth > MaxWidth)
+                minWidth = MaxWidth;
+            if (minHeight < 1)
+                minHeight = 1;
+            if (minHeight > MaxHeight)
+                minHeight = MaxHeight;
+
             var width = rect.Width;
-            if (width < MinWidth)
-                width = MinWidth;
+            if (width < minWidth)
+                width = minWidth;
             if (width > MaxWidth)
                 width = MaxWidth;
 
             var height = rect.Height;
-            if (height < MinHeight)
-                height = MinHeight;
+            if (height < minHeight)
+                height = minHeight;
             if (height > MaxHeight)
                 height = MaxHeight;
 
@@ -177,12 +191,22 @@ namespace PilotBim.Analytics.Services
 
         public static void Move(DashboardDefinition definition, string id, DashboardGridRect requested)
         {
-            ApplyActive(definition, id, requested, keepSize: true);
+            ApplyActive(definition, id, requested, keepSize: true, MinWidth, MinHeight);
         }
 
         public static void Resize(DashboardDefinition definition, string id, DashboardGridRect requested)
         {
-            ApplyActive(definition, id, requested, keepSize: false);
+            Resize(definition, id, requested, MinWidth, MinHeight);
+        }
+
+        public static void Resize(
+            DashboardDefinition definition,
+            string id,
+            DashboardGridRect requested,
+            int minWidth,
+            int minHeight)
+        {
+            ApplyActive(definition, id, requested, keepSize: false, minWidth, minHeight);
         }
 
         public static void Unhide(DashboardDefinition definition, string id)
@@ -204,7 +228,9 @@ namespace PilotBim.Analytics.Services
             DashboardDefinition definition,
             string id,
             DashboardGridRect requested,
-            bool keepSize)
+            bool keepSize,
+            int minWidth,
+            int minHeight)
         {
             if (definition == null)
                 return;
@@ -216,7 +242,7 @@ namespace PilotBim.Analytics.Services
             var next = requested;
             if (keepSize)
                 next = new DashboardGridRect(requested.X, requested.Y, current.Width, current.Height);
-            next = Clamp(next);
+            next = Clamp(next, minWidth, minHeight);
             ApplyRect(widget.Layout, next);
             ResolveCollisions(definition, id);
         }

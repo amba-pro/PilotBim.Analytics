@@ -96,6 +96,8 @@
                     DisplayMemberPath="Title" Height="28" Margin="0,0,0,6" />
           <TextBlock Text="{x:Static props:Resources.QueryEditor_AutoHint}" TextWrapping="Wrap" Foreground="#5A645E" FontSize="11"
                      Visibility="{Binding ShowAutoHint, Converter={StaticResource BoolToVis}}" />
+          <TextBlock Text="{Binding PreviewAutoResolved}" TextWrapping="Wrap" Foreground="#1F2A24" FontSize="11" Margin="0,4,0,0"
+                     Visibility="{Binding ShowPreviewAutoResolved, Converter={StaticResource BoolToVis}}" />
         </StackPanel>
       </ScrollViewer>
       <Border Grid.Column="2" Background="#EFEFEA" BorderBrush="#D8D8D0" BorderThickness="1" Padding="16">
@@ -107,39 +109,47 @@
           </Grid.RowDefinitions>
           <TextBlock Grid.Row="0" Text="{x:Static props:Resources.QueryEditor_PreviewHeader}" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8" />
           <TextBlock Grid.Row="1" Text="{Binding SummaryText}" TextWrapping="Wrap" Margin="0,0,0,12" />
-          <DockPanel Grid.Row="2">
+            <DockPanel Grid.Row="2">
             <Button DockPanel.Dock="Top" Content="{x:Static props:Resources.QueryEditor_Preview}" Height="28" Margin="0,0,0,10"
                     Click="Preview_Click" HorizontalAlignment="Left" Padding="12,0"
                     Background="#1F2A24" Foreground="White" BorderBrush="#1F2A24" />
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-              <StackPanel>
-                <TextBlock Text="{Binding PreviewMessage}" TextWrapping="Wrap" Foreground="#5A645E"
-                           Visibility="{Binding PreviewShowMessage, Converter={StaticResource BoolToVis}}" />
-                <DataGrid ItemsSource="{Binding PreviewKpiRows}"
-                          Visibility="{Binding PreviewShowKpi, Converter={StaticResource BoolToVis}}"
-                          AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220"
-                          Background="White" Foreground="#1F2A24" HeadersVisibility="Column">
-                  <DataGrid.Columns>
-                    <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" />
-                  </DataGrid.Columns>
-                </DataGrid>
-                <DataGrid ItemsSource="{Binding PreviewTableRows}"
-                          Visibility="{Binding PreviewShowTable, Converter={StaticResource BoolToVis}}"
-                          AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220"
-                          Background="White" Foreground="#1F2A24" HeadersVisibility="Column">
-                  <DataGrid.Columns>
-                    <DataGridTextColumn Header="{x:Static props:Resources.QueryTable_Category}" Binding="{Binding Category}" Width="2*" />
-                    <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" />
-                  </DataGrid.Columns>
-                </DataGrid>
+            <Grid>
+              <TextBlock Text="{Binding PreviewMessage}" TextWrapping="Wrap" Foreground="#5A645E"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Visibility="{Binding PreviewShowMessage, Converter={StaticResource BoolToVis}}" />
+              <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="8"
+                       Visibility="{Binding PreviewShowKpi, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding PreviewKpiValue}" FontSize="56" FontWeight="SemiBold" Foreground="#1F2A24" />
+              </Viewbox>
+              <DataGrid ItemsSource="{Binding PreviewTableRows}"
+                        Visibility="{Binding PreviewShowTableScalar, Converter={StaticResource BoolToVis}}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        Background="White" Foreground="#1F2A24" HeadersVisibility="Column">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="{x:Static props:Resources.QueryTable_Indicator}" Binding="{Binding Category}" Width="2*" />
+                  <DataGridTextColumn Header="{x:Static props:Resources.Column_Value}" Binding="{Binding Value}" Width="*" />
+                </DataGrid.Columns>
+              </DataGrid>
+              <DataGrid ItemsSource="{Binding PreviewTableRows}"
+                        Visibility="{Binding PreviewShowTableGrouped, Converter={StaticResource BoolToVis}}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        Background="White" Foreground="#1F2A24" HeadersVisibility="Column">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="{x:Static props:Resources.QueryTable_Category}" Binding="{Binding Category}" Width="2*" />
+                  <DataGridTextColumn Header="{x:Static props:Resources.QueryTable_Count}" Binding="{Binding Value}" Width="*" />
+                </DataGrid.Columns>
+              </DataGrid>
+              <DockPanel Visibility="{Binding PreviewShowChart, Converter={StaticResource BoolToVis}}">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding PreviewWarning}" TextWrapping="Wrap"
+                           Foreground="#8A6A1F" FontSize="11" Margin="0,0,0,6"
+                           Visibility="{Binding ShowPreviewWarning, Converter={StaticResource BoolToVis}}" />
                 <views:ChartCanvasControl
-                          Visibility="{Binding PreviewShowChart, Converter={StaticResource BoolToVis}}"
                           ChartKind="{Binding PreviewChartKind}"
                           Points="{Binding PreviewPoints}"
-                          Height="220"
-                          MinHeight="180" />
-              </StackPanel>
-            </ScrollViewer>
+                          MinHeight="180"
+                          VerticalAlignment="Stretch" />
+              </DockPanel>
+            </Grid>
           </DockPanel>
         </Grid>
       </Border>
