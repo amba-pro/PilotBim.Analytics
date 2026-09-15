@@ -101,5 +101,27 @@ namespace PilotBim.Analytics.Tests
             Assert.Equal("Показатель", Resources.QueryTable_Indicator);
             Assert.Equal("Категория", Resources.QueryTable_Category);
         }
+
+        [Fact]
+        public void DashboardFilters_Keys_MatchExpectedDefaults()
+        {
+            Assert.Equal("Фильтры", Resources.DashboardFilters_Header);
+            Assert.Equal("Добавить фильтр", Resources.DashboardFilters_Add);
+            Assert.Equal("Изменить фильтр", Resources.DashboardFilters_Edit);
+            Assert.Equal("Удалить фильтр", Resources.DashboardFilters_Remove);
+            Assert.Equal("Тип объектов", Resources.DashboardFilters_Type);
+            Assert.Equal("Поле", Resources.DashboardFilters_Field);
+            Assert.Equal("Оператор", Resources.DashboardFilters_Operator);
+            Assert.Equal("Значение", Resources.DashboardFilters_Value);
+            Assert.Equal("Применить к виджетам", Resources.DashboardFilters_ApplyTo);
+            Assert.Equal("Поле недоступно", Resources.DashboardFilters_FieldUnavailable);
+            Assert.Equal("Нет совместимых виджетов", Resources.DashboardFilters_NoCompatibleWidgets);
+            Assert.Equal("Фильтр не применяется", Resources.DashboardFilters_NotApplied);
+            Assert.Equal("Применять фильтр", Resources.DashboardFilters_Enabled);
+            Assert.Equal("Название", Resources.DashboardFilters_Title);
+            Assert.Equal("Фильтр дашборда", Resources.DashboardFilters_WindowTitle);
+            Assert.Equal("Выберите хотя бы один виджет", Resources.DashboardFilters_NeedTarget);
+            Assert.Equal("Фильтры дашборда применяются после сохранения", Resources.QueryEditor_DashboardFiltersHint);
+        }
     }
 }

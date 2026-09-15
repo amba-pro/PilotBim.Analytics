@@ -1127,9 +1127,39 @@ Dashboard chart 420×220 layout drift **FIXED_IN_DB_11**. Charts-tab 420px list 
 
 Query semantics, filters, coordinator, materializer, Legacy specialized charts.
 
-### Next: DB-12 (not implemented)
+### Next: DB-12 (implemented)
 
-Dashboard-level filters bound to selected compatible Query widgets. Do not implement in DB-11.
+Dashboard-level filters bound to selected compatible Query widgets.
+
+## DB-12 Result
+
+Date: 2026-09-15  
+Status: **DASHBOARD_FILTERS_V1**  
+Runtime validation: **REQUIRED**, not executed
+
+### Overlay
+
+`DashboardLevelFilterDefinition` + explicit `TargetWidgetIds`. Effective query = base widget filters + applicable dashboard filters. Persisted `WidgetQuery` is never rewritten.
+
+### Identity
+
+TypeId exact match + FieldId catalog identity. No DisplayName / title matching. No cross-Type mapping. Legacy widgets unbound.
+
+### Persistence
+
+SchemaVersion 4. V3 → V4 adds `DashboardFilters = []` in memory. No write on load. First mutation writes V4.
+
+### Runtime
+
+Targeted Query refresh (old ∪ new bindings). Same `DashboardQueryCoordinator` instance. Cached TypeId is not rematerialized. Unavailable field: chip warning, skip overlay, keep persisted config.
+
+### Preview
+
+Widget editor preview = base query only.
+
+### Next: DB-13 (not implemented)
+
+Final V1 product polish. No new architecture. Do not implement in DB-12.
 
 
 

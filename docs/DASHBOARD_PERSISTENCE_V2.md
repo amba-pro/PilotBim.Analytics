@@ -62,16 +62,17 @@ Tests inject a temp dashboards root. Production default is `DashboardDefinitionS
 
 ## Schema Version
 
-Writer version after DB-10: `SchemaVersion = 3` (`DashboardPersistenceV2.CurrentSchemaVersion`).
+Writer version after DB-12: `SchemaVersion = 4` (`DashboardPersistenceV2.CurrentSchemaVersion`).
 
-V2 remains a supported **load and migration input**. It is not redefined.
+V2 and V3 remain supported **load and migration inputs**. They are not redefined.
 
 | Document | Meaning |
 |----------|---------|
 | No `SchemaVersion` (legacy layout JSON) | `LEGACY_V1` |
-| `SchemaVersion = 2` | V2 Order/ColumnSpan document; migrated to V3 in memory on open |
-| `SchemaVersion = 3` | current grid layout document |
-| `SchemaVersion > 3` | `UNSUPPORTED_VERSION` — do not parse as V3, do not overwrite |
+| `SchemaVersion = 2` | V2 Order/ColumnSpan document; migrated toward V4 in memory on open |
+| `SchemaVersion = 3` | grid layout document; migrated to V4 in memory on open |
+| `SchemaVersion = 4` | current document (grid + `DashboardFilters`) |
+| `SchemaVersion > 4` | `UNSUPPORTED_VERSION` — do not parse as V4, do not overwrite |
 | Other / corrupt | invalid or corrupt — do not overwrite |
 
 Do not deserialize a future schema as the current schema for use.
@@ -88,7 +89,7 @@ V3 persists logical grid rectangles, not pixels:
 
 See `docs/DASHBOARD_GRID_LAYOUT.md`.
 
-Open never writes V3. Loading V2 migrates V2 → V3 in memory. Loading V1 migrates V1 → V2 → V3 in memory. The first explicit mutation writes `SchemaVersion = 3`. Visible overlap is invalid and rejected.
+Open never writes. Loading V3 migrates V3 → V4 in memory (`DashboardFilters = []`). Loading V2 migrates V2 → V3 → V4. Loading V1 migrates V1 → V2 → V3 → V4. The first explicit mutation writes `SchemaVersion = 4`. Visible overlap is invalid and rejected.
 
 ## Dashboard Definition
 
@@ -96,11 +97,12 @@ Open never writes V3. Loading V2 migrates V2 → V3 in memory. Loading V1 migrat
 
 | Field | Role |
 |-------|------|
-| SchemaVersion | 2 or 3 (writer is 3) |
+| SchemaVersion | 2, 3, or 4 (writer is 4) |
 | Id | machine id; V1 uses `"default"` (one dashboard per project). Title is not identity. |
 | Title | user-authored display |
 | ProjectKey | canonical database Guid |
 | Widgets[] | ordered widget definitions |
+| DashboardFilters[] | V4 dashboard-level filters; runtime overlay, not a rewrite of widget queries |
 
 Multiple dashboards later can add more files/ids. DB-7 does not implement a dashboard library.
 
@@ -197,7 +199,9 @@ Current serializer: `DataContractJsonSerializer`, PascalCase CLR names, no schem
 `DashboardDefinitionStore.Detect(stream)`:
 
 - `SchemaVersion == 2` → V2
-- `SchemaVersion > 2` → unsupported
+- `SchemaVersion == 3` → V3
+- `SchemaVersion == 4` → V4
+- `SchemaVersion > 4` → unsupported
 - `SchemaVersion` missing/0 → Legacy V1
 
 ## V1 → V2 Migration
@@ -292,6 +296,10 @@ No real project ids. No analytical result rows.
 
 ## Future Schema Evolution
 
-V1 → V2 is one explicit migrator. Later: V2 → V3 with a new `SchemaVersion`. Unknown newer files stay untouched.
+V1 → V2, V2 → V3, V3 → V4 are explicit in-memory migrators. Unknown newer files stay untouched.
+
+## Schema V4 — Dashboard filters
+
+V4 adds `DashboardFilters[]` (`DashboardLevelFilterDefinition`). Widget queries are unchanged. See `docs/DASHBOARD_FILTERS_V1.md`.
 
 DB-8: Widget Editor V2 against this model (definitions only; live preview may wait for DB-9).

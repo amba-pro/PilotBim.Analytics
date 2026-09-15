@@ -17,7 +17,7 @@ namespace PilotBim.Analytics.Services
                 Widgets = new List<DashboardWidgetDefinition>()
             };
 
-            clone.SchemaVersion = DashboardPersistenceV2.CurrentSchemaVersion;
+            clone.SchemaVersion = DashboardPersistenceV2.SchemaVersionV3;
             if (clone.Widgets == null)
                 clone.Widgets = new List<DashboardWidgetDefinition>();
 

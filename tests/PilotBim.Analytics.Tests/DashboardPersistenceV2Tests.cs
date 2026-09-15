@@ -30,6 +30,7 @@ namespace PilotBim.Analytics.Tests
                 Assert.Equal("Dashboard", def.Title);
                 Assert.Equal(ProjectA.ToString("D"), def.ProjectKey);
                 Assert.Empty(def.Widgets);
+                Assert.Empty(def.DashboardFilters);
             }
         }
 
@@ -115,6 +116,7 @@ namespace PilotBim.Analytics.Tests
             using (var session = new StoreSession())
             {
                 var def = session.Store.CreateDefault(ProjectA);
+                def.SchemaVersion = 3;
                 def.Widgets.Add(new DashboardWidgetDefinition
                 {
                     Id = "q1",

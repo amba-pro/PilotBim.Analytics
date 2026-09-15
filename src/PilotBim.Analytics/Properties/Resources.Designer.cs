@@ -758,5 +758,22 @@ namespace PilotBim.Analytics.Properties
         public static string QueryEditor_AutoResolved { get { return ResourceManager.GetString("QueryEditor_AutoResolved", resourceCulture); } }
         public static string QueryTable_Count { get { return ResourceManager.GetString("QueryTable_Count", resourceCulture); } }
         public static string QueryTable_Indicator { get { return ResourceManager.GetString("QueryTable_Indicator", resourceCulture); } }
+        public static string DashboardFilters_Header { get { return ResourceManager.GetString("DashboardFilters_Header", resourceCulture); } }
+        public static string DashboardFilters_Add { get { return ResourceManager.GetString("DashboardFilters_Add", resourceCulture); } }
+        public static string DashboardFilters_Edit { get { return ResourceManager.GetString("DashboardFilters_Edit", resourceCulture); } }
+        public static string DashboardFilters_Remove { get { return ResourceManager.GetString("DashboardFilters_Remove", resourceCulture); } }
+        public static string DashboardFilters_Type { get { return ResourceManager.GetString("DashboardFilters_Type", resourceCulture); } }
+        public static string DashboardFilters_Field { get { return ResourceManager.GetString("DashboardFilters_Field", resourceCulture); } }
+        public static string DashboardFilters_Operator { get { return ResourceManager.GetString("DashboardFilters_Operator", resourceCulture); } }
+        public static string DashboardFilters_Value { get { return ResourceManager.GetString("DashboardFilters_Value", resourceCulture); } }
+        public static string DashboardFilters_ApplyTo { get { return ResourceManager.GetString("DashboardFilters_ApplyTo", resourceCulture); } }
+        public static string DashboardFilters_FieldUnavailable { get { return ResourceManager.GetString("DashboardFilters_FieldUnavailable", resourceCulture); } }
+        public static string DashboardFilters_NoCompatibleWidgets { get { return ResourceManager.GetString("DashboardFilters_NoCompatibleWidgets", resourceCulture); } }
+        public static string DashboardFilters_NotApplied { get { return ResourceManager.GetString("DashboardFilters_NotApplied", resourceCulture); } }
+        public static string DashboardFilters_Enabled { get { return ResourceManager.GetString("DashboardFilters_Enabled", resourceCulture); } }
+        public static string DashboardFilters_Title { get { return ResourceManager.GetString("DashboardFilters_Title", resourceCulture); } }
+        public static string DashboardFilters_WindowTitle { get { return ResourceManager.GetString("DashboardFilters_WindowTitle", resourceCulture); } }
+        public static string DashboardFilters_NeedTarget { get { return ResourceManager.GetString("DashboardFilters_NeedTarget", resourceCulture); } }
+        public static string QueryEditor_DashboardFiltersHint { get { return ResourceManager.GetString("QueryEditor_DashboardFiltersHint", resourceCulture); } }
     }
 }

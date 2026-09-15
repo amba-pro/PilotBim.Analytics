@@ -133,7 +133,17 @@ Dispose coordinator; ignore late UI applies via apply generation.
 
 ## Grid lifecycle (DB-10)
 
-Layout edits (drag / resize / hide / show / add / delete) clone the definition, run `DashboardGridLayoutEngine`, save SchemaVersion 3 transactionally, then publish. MouseMove only updates a temporary preview.
+Layout edits (drag / resize / hide / show / add / delete) clone the definition, run `DashboardGridLayoutEngine`, save the current schema (`SchemaVersion = 4` after DB-12) transactionally, then publish. MouseMove only updates a temporary preview.
+
+## Dashboard filter overlay (DB-12)
+
+Dashboard-level filters are persisted on the definition (`DashboardFilters[]`) and applied at execute time:
+
+`DashboardEffectiveQueryBuilder.Build(baseQuery, dashboardFilters, widget, catalog)` → `DashboardQueryCoordinator.ExecuteAsync(effective)`.
+
+The persisted widget query is not rewritten. Filter add/edit/remove invalidates only old ∪ new target Query widgets, then sequential refresh. Coordinator instance and TypeId cache stay. Widget Editor Preview remains base-query only.
+
+Details: `docs/DASHBOARD_FILTERS_V1.md`.
 
 Moving or resizing a widget does **not** replace `DashboardQueryCoordinator`, rematerialize TypeIds, or re-run widget queries. Query runtime status is restored across the layout rebuild.
 
@@ -145,7 +155,7 @@ Details: `docs/DASHBOARD_GRID_LAYOUT.md`.
 
 - Enum / User / Reference filter values: stable-key text (no picklists)
 - Dashboard grid is DB-10 (logical 12-column layout)
-- No dashboard-level filters (DB-12)
+- Dashboard-level filters: explicit Query bindings, TypeId + FieldId identity (DB-12). No cross-filter / drillthrough.
 - Auto visualization is `DashboardVisualizationRecommendationService` (DB-11)
 - Preview is explicit, not live-on-keystroke
 

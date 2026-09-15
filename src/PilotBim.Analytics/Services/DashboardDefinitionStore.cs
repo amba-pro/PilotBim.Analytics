@@ -51,7 +51,8 @@ namespace PilotBim.Analytics.Services
                 Id = DashboardPersistenceV2.DefaultDashboardId,
                 Title = DashboardPersistenceV2.DefaultTitle,
                 ProjectKey = DashboardProjectKey.ToFolderName(projectKey),
-                Widgets = new System.Collections.Generic.List<DashboardWidgetDefinition>()
+                Widgets = new System.Collections.Generic.List<DashboardWidgetDefinition>(),
+                DashboardFilters = new System.Collections.Generic.List<DashboardLevelFilterDefinition>()
             };
         }
 
@@ -67,6 +68,8 @@ namespace PilotBim.Analytics.Services
                 if (probe == null)
                     return DashboardPersistenceKind.Invalid;
                 if (probe.SchemaVersion == DashboardPersistenceV2.CurrentSchemaVersion)
+                    return DashboardPersistenceKind.V4;
+                if (probe.SchemaVersion == DashboardPersistenceV2.SchemaVersionV3)
                     return DashboardPersistenceKind.V3;
                 if (probe.SchemaVersion == DashboardPersistenceV2.SchemaVersion)
                     return DashboardPersistenceKind.V2;
@@ -119,7 +122,9 @@ namespace PilotBim.Analytics.Services
                         return result;
                     }
 
-                    if (kind != DashboardPersistenceKind.V2 && kind != DashboardPersistenceKind.V3)
+                    if (kind != DashboardPersistenceKind.V2
+                        && kind != DashboardPersistenceKind.V3
+                        && kind != DashboardPersistenceKind.V4)
                     {
                         result.Status = DashboardDefinitionLoadStatus.Corrupt;
                         result.Reason = "dashboard JSON is corrupt or unreadable";
@@ -275,6 +280,8 @@ namespace PilotBim.Analytics.Services
                 var bo = b != null && b.Layout != null ? b.Layout.Order : 0;
                 return ao.CompareTo(bo);
             });
+            if (definition.DashboardFilters == null)
+                definition.DashboardFilters = new System.Collections.Generic.List<DashboardLevelFilterDefinition>();
         }
 
         private static DataContractJsonSerializer CreateSerializer()

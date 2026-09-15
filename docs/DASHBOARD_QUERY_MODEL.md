@@ -158,6 +158,18 @@ Never filter visualization buckets.
 
 Scalar + filters + zero matches: **Success, Value=0** (same as empty Complete scalar).
 
+## Dashboard-level overlay (DB-12)
+
+Persisted widget query remains the **base query**. Dashboard-level filters (`DashboardLevelFilterDefinition`) are a **runtime overlay**.
+
+Effective query:
+
+`BaseWidgetQuery.Filters` (order preserved) + applicable dashboard filters (dashboard-filter list order, AND).
+
+`DashboardEffectiveQueryBuilder` never mutates the persisted document. Disabled, unavailable, or TypeId-incompatible overlays are skipped. Compatibility is TypeId + FieldId only (never DisplayName). Widget Editor Preview uses the base query only.
+
+See `docs/DASHBOARD_FILTERS_V1.md`.
+
 `sum(group.Value) == filtered row count`.
 
 Snapshot: empty Filters → unchanged. Non-empty Filters → `UnsupportedQuery` (no fake aggregate filtering).

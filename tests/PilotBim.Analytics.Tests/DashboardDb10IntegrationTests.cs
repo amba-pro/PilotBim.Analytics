@@ -31,7 +31,7 @@ namespace PilotBim.Analytics.Tests
                     string error;
                     Assert.True(presenter.TryCommitWidgetRect("q1", new DashboardGridRect(6, 0, 6, 2), false, out error), error);
                     Assert.Equal(6, RectOf(presenter, "q1").X);
-                    Assert.Equal(3, env.Store.Load(ProjectA).Definition.SchemaVersion);
+                    Assert.Equal(DashboardPersistenceV2.CurrentSchemaVersion, env.Store.Load(ProjectA).Definition.SchemaVersion);
                 }
             }
 
@@ -188,14 +188,14 @@ namespace PilotBim.Analytics.Tests
                 var before = File.ReadAllBytes(path);
                 using (var presenter = env.CreatePresenter())
                 {
-                    Assert.Equal(3, presenter.CurrentDefinition.SchemaVersion);
+                    Assert.Equal(DashboardPersistenceV2.CurrentSchemaVersion, presenter.CurrentDefinition.SchemaVersion);
                     Assert.Equal(6, presenter.CurrentDefinition.Widgets[0].Layout.Width);
                     Assert.Equal(before, File.ReadAllBytes(path));
                     string error;
                     Assert.True(presenter.TryCommitWidgetRect("q1", new DashboardGridRect(6, 0, 6, 2), false, out error), error);
                 }
                 var loaded = env.Store.Load(ProjectA);
-                Assert.Equal(3, loaded.Definition.SchemaVersion);
+                Assert.Equal(DashboardPersistenceV2.CurrentSchemaVersion, loaded.Definition.SchemaVersion);
             }
         }
 
@@ -208,12 +208,12 @@ namespace PilotBim.Analytics.Tests
                 var v1Before = File.ReadAllBytes(env.V1Path);
                 using (var presenter = env.CreatePresenter())
                 {
-                    Assert.Equal(3, presenter.CurrentDefinition.SchemaVersion);
+                    Assert.Equal(DashboardPersistenceV2.CurrentSchemaVersion, presenter.CurrentDefinition.SchemaVersion);
                     Assert.False(File.Exists(env.Store.GetPath(ProjectA)));
                     presenter.SetBlockVisible(DashboardBlockIds.Kpi, false);
                     presenter.SetBlockVisible(DashboardBlockIds.Kpi, true);
                     Assert.Equal(v1Before, File.ReadAllBytes(env.V1Path));
-                    Assert.Equal(3, env.Store.Load(ProjectA).Definition.SchemaVersion);
+                    Assert.Equal(DashboardPersistenceV2.CurrentSchemaVersion, env.Store.Load(ProjectA).Definition.SchemaVersion);
                 }
             }
         }

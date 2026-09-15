@@ -91,6 +91,7 @@ namespace PilotBim.Analytics.ViewModels
             _content = contentProvider ?? (() => null);
             DashboardLayoutItems = new ObservableCollection<DashboardLayoutItemVm>();
             DashboardWidgets = new ObservableCollection<DashboardWidgetVm>();
+            DashboardFilterChips = new ObservableCollection<DashboardFilterChipVm>();
             _catalog = new PilotFieldCatalogBuilder().Build(Enumerable.Empty<TypeInventoryRecord>());
             _typeOptions = new List<DashboardObjectTypeOption>();
 
@@ -115,6 +116,7 @@ namespace PilotBim.Analytics.ViewModels
 
         public ObservableCollection<DashboardLayoutItemVm> DashboardLayoutItems { get; private set; }
         public ObservableCollection<DashboardWidgetVm> DashboardWidgets { get; private set; }
+        public ObservableCollection<DashboardFilterChipVm> DashboardFilterChips { get; private set; }
 
         internal bool IsV2Runtime { get { return _v2; } }
         internal bool MutationsEnabled { get { return _mutationsEnabled; } }
@@ -408,6 +410,7 @@ namespace PilotBim.Analytics.ViewModels
                         && kind != DashboardWidgetKinds.Chart)
                         return false;
                     copy.Widgets.Remove(target);
+                    DashboardLevelFilterBindings.UnbindWidget(copy, id);
                     Reindex(copy);
                     return true;
                 }, out _);
@@ -476,6 +479,7 @@ namespace PilotBim.Analytics.ViewModels
                     copy.Widgets[index] = widget;
                     widget.Layout = layout;
                     DashboardVisualizationConstraints.ExpandToMin(copy, widget);
+                    DashboardLevelFilterBindings.UnbindIncompatible(copy, widget);
                     _queryRuntime.Remove(widget.Id);
                 }
                 else
@@ -486,9 +490,89 @@ namespace PilotBim.Analytics.ViewModels
                     copy.Widgets.Add(widget);
                     DashboardGridLayoutEngine.PlaceNew(copy, widget);
                     DashboardVisualizationConstraints.ExpandToMin(copy, widget);
+                    DashboardLevelFilterBindings.UnbindIncompatible(copy, widget);
                 }
                 return true;
             }, out error);
+        }
+
+        public DashboardLevelFilterDefinition GetDashboardFilter(string id)
+        {
+            return FindFilter(_definition, id);
+        }
+
+        public bool TrySaveDashboardFilter(DashboardLevelFilterDefinition filter, out string error)
+        {
+            error = null;
+            if (filter == null || string.IsNullOrWhiteSpace(filter.Id))
+            {
+                error = Resources.Dashboard_SaveFailed;
+                return false;
+            }
+
+            var previous = FindFilter(_definition, filter.Id);
+            var affected = DashboardLevelFilterBindings.UnionTargets(previous, filter);
+            var isNew = previous == null;
+            var ok = TryMutate(copy =>
+            {
+                if (copy.DashboardFilters == null)
+                    copy.DashboardFilters = new List<DashboardLevelFilterDefinition>();
+                var existing = FindFilter(copy, filter.Id);
+                if (existing != null)
+                {
+                    var index = copy.DashboardFilters.IndexOf(existing);
+                    copy.DashboardFilters[index] = filter;
+                }
+                else
+                    copy.DashboardFilters.Add(filter);
+                return true;
+            }, out error, true, affected);
+
+            if (ok)
+            {
+                AnalyticsLogger.Info(
+                    "DashboardFilter",
+                    (isNew ? "Add" : "Edit")
+                    + " FilterId=" + filter.Id
+                    + " TypeId=" + filter.EntityTypeId
+                    + " FieldId=" + filter.FieldId
+                    + " TargetCount=" + (filter.TargetWidgetIds != null ? filter.TargetWidgetIds.Count : 0));
+            }
+            return ok;
+        }
+
+        public bool TryRemoveDashboardFilter(string id, out string error)
+        {
+            error = null;
+            var previous = FindFilter(_definition, id);
+            if (previous == null)
+            {
+                error = Resources.Dashboard_SaveFailed;
+                return false;
+            }
+
+            var affected = DashboardLevelFilterBindings.UnionTargets(previous, null);
+            var ok = TryMutate(copy =>
+            {
+                if (copy.DashboardFilters == null)
+                    return false;
+                var existing = FindFilter(copy, id);
+                if (existing == null)
+                    return false;
+                copy.DashboardFilters.Remove(existing);
+                return true;
+            }, out error, true, affected);
+
+            if (ok)
+            {
+                AnalyticsLogger.Info(
+                    "DashboardFilter",
+                    "Remove FilterId=" + id
+                    + " TypeId=" + previous.EntityTypeId
+                    + " FieldId=" + previous.FieldId
+                    + " TargetCount=" + (previous.TargetWidgetIds != null ? previous.TargetWidgetIds.Count : 0));
+            }
+            return ok;
         }
 
         public void SetEditMode(bool value)
@@ -498,6 +582,7 @@ namespace PilotBim.Analytics.ViewModels
             _isEditMode = value;
             foreach (var widget in DashboardWidgets)
                 widget.IsEditMode = IsEditMode;
+            RebuildFilterChips();
             Notify("IsEditMode");
             Notify("IsDashboardEditMode");
         }
@@ -577,6 +662,7 @@ namespace PilotBim.Analytics.ViewModels
             if (old != null)
                 old.Dispose();
             RebuildWidgetContent();
+            RebuildFilterChips();
             ScheduleQueryRefresh();
         }
 
@@ -613,25 +699,26 @@ namespace PilotBim.Analytics.ViewModels
             switch (loaded.Status)
             {
                 case DashboardDefinitionLoadStatus.Success:
-                    _definition = loaded.Definition;
-                    if (_definition != null && _definition.SchemaVersion == DashboardPersistenceV2.SchemaVersion)
-                    {
-                        _definition = DashboardDefinitionV3Migrator.FromV2(_definition);
-                        AnalyticsLogger.Info("Dashboard", "Migrated V2 → V3 in memory path=" + loaded.Path);
-                    }
+                    _definition = DashboardDefinitionV4Migrator.ToCurrent(loaded.Definition);
+                    if (loaded.Definition != null && loaded.Definition.SchemaVersion == DashboardPersistenceV2.SchemaVersion)
+                        AnalyticsLogger.Info("Dashboard", "Migrated V2 → V4 in memory path=" + loaded.Path);
+                    else if (loaded.Definition != null && loaded.Definition.SchemaVersion == DashboardPersistenceV2.SchemaVersionV3)
+                        AnalyticsLogger.Info("Dashboard", "Migrated V3 → V4 in memory path=" + loaded.Path);
                     else
-                        AnalyticsLogger.Info("Dashboard", "Loaded V3 path=" + loaded.Path);
+                        AnalyticsLogger.Info("Dashboard", "Loaded V4 path=" + loaded.Path);
                     break;
                 case DashboardDefinitionLoadStatus.Missing:
                     var v1 = _dashboardLayoutStore.TryLoad() ?? DashboardLayoutStore.Default();
-                    _definition = DashboardDefinitionV3Migrator.FromLegacy(v1, _projectKey);
-                    AnalyticsLogger.Info("Dashboard", "Migrated V1 → V3 in memory (not written)");
+                    _definition = DashboardDefinitionV4Migrator.ToCurrent(
+                        DashboardDefinitionV3Migrator.FromLegacy(v1, _projectKey));
+                    AnalyticsLogger.Info("Dashboard", "Migrated V1 → V4 in memory (not written)");
                     break;
                 default:
                     _mutationsEnabled = false;
                     _dashboardWarning = WarningFor(loaded.Status);
                     var fallback = _dashboardLayoutStore.TryLoad() ?? DashboardLayoutStore.Default();
-                    _definition = DashboardDefinitionV3Migrator.FromLegacy(fallback, _projectKey);
+                    _definition = DashboardDefinitionV4Migrator.ToCurrent(
+                        DashboardDefinitionV3Migrator.FromLegacy(fallback, _projectKey));
                     AnalyticsLogger.Warning("Dashboard", "Degraded status=" + loaded.Status + " path=" + loaded.Path);
                     break;
             }
@@ -665,6 +752,15 @@ namespace PilotBim.Analytics.ViewModels
 
         private bool TryMutate(Func<DashboardDefinition, bool> apply, out string error, bool refreshQueries = true)
         {
+            return TryMutate(apply, out error, refreshQueries, null);
+        }
+
+        private bool TryMutate(
+            Func<DashboardDefinition, bool> apply,
+            out string error,
+            bool refreshQueries,
+            ICollection<string> invalidateQueryIds)
+        {
             error = null;
             _lastSaveFailed = false;
             if (!_v2 || _definition == null)
@@ -683,6 +779,8 @@ namespace PilotBim.Analytics.ViewModels
                 return false;
 
             copy.SchemaVersion = DashboardPersistenceV2.CurrentSchemaVersion;
+            if (copy.DashboardFilters == null)
+                copy.DashboardFilters = new List<DashboardLevelFilterDefinition>();
             var save = _definitionStore.Save(copy);
             if (save.Status != DashboardDefinitionSaveStatus.Success)
             {
@@ -690,11 +788,19 @@ namespace PilotBim.Analytics.ViewModels
                 error = string.IsNullOrWhiteSpace(save.Reason)
                     ? Resources.Dashboard_SaveFailed
                     : Resources.Dashboard_SaveFailed + " " + save.Reason;
-                AnalyticsLogger.Warning("Dashboard", "V3 save failed: " + save.Reason);
+                AnalyticsLogger.Warning("Dashboard", "V4 save failed: " + save.Reason);
                 return false;
             }
 
             _definition = copy;
+            if (invalidateQueryIds != null)
+            {
+                foreach (var id in invalidateQueryIds)
+                {
+                    if (!string.IsNullOrWhiteSpace(id))
+                        _queryRuntime.Remove(id);
+                }
+            }
             RebuildUi();
             if (refreshQueries)
                 ScheduleQueryRefresh();
@@ -733,7 +839,7 @@ namespace PilotBim.Analytics.ViewModels
                 var sw = Stopwatch.StartNew();
                 try
                 {
-                    result = await ExecuteWidgetAsync(coordinator, widget).ConfigureAwait(false);
+                    result = await ExecuteWidgetAsync(coordinator, definition, widget, _catalog).ConfigureAwait(false);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -779,7 +885,9 @@ namespace PilotBim.Analytics.ViewModels
 
         private static async Task<WidgetQueryResult> ExecuteWidgetAsync(
             DashboardQueryCoordinator coordinator,
-            DashboardWidgetDefinition widget)
+            DashboardDefinition definition,
+            DashboardWidgetDefinition widget,
+            DashboardFieldCatalog catalog)
         {
             var viz = widget.Visualization != null ? widget.Visualization.Type : "Auto";
             if (string.Equals(viz, "Line", StringComparison.Ordinal))
@@ -790,7 +898,9 @@ namespace PilotBim.Analytics.ViewModels
             if (!DashboardQueryPersistence.TryToQuery(widget.Query, out query, out error))
                 return WidgetQueryResult.Invalid(error ?? "query is invalid");
 
-            return await coordinator.ExecuteAsync(query, CancellationToken.None).ConfigureAwait(false);
+            var filters = definition != null ? definition.DashboardFilters : null;
+            var effective = DashboardEffectiveQueryBuilder.Build(query, filters, widget, catalog);
+            return await coordinator.ExecuteAsync(effective, CancellationToken.None).ConfigureAwait(false);
         }
 
         private void ApplyLoading(string id, int generation)
@@ -978,6 +1088,25 @@ namespace PilotBim.Analytics.ViewModels
             }
 
             RebuildWidgetContent();
+            RebuildFilterChips();
+        }
+
+        private void RebuildFilterChips()
+        {
+            if (DashboardFilterChips == null)
+                return;
+            DashboardFilterChips.Clear();
+            if (!_v2 || _definition == null || _definition.DashboardFilters == null)
+                return;
+            for (var i = 0; i < _definition.DashboardFilters.Count; i++)
+            {
+                var filter = _definition.DashboardFilters[i];
+                if (filter == null)
+                    continue;
+                DashboardFilterChips.Add(new DashboardFilterChipVm(filter, _catalog, IsEditMode));
+                if (DashboardLevelFilterDisplay.IsFieldUnavailable(filter, _catalog))
+                    AnalyticsLogger.Warning("DashboardFilter", "Filter unavailable FieldId=" + filter.FieldId);
+            }
         }
 
         private void NotifyDashboardChrome()
@@ -1044,6 +1173,13 @@ namespace PilotBim.Analytics.ViewModels
             if (definition == null || definition.Widgets == null || string.IsNullOrWhiteSpace(id))
                 return null;
             return definition.Widgets.FirstOrDefault(w => w != null && w.Id == id);
+        }
+
+        private static DashboardLevelFilterDefinition FindFilter(DashboardDefinition definition, string id)
+        {
+            if (definition == null || definition.DashboardFilters == null || string.IsNullOrWhiteSpace(id))
+                return null;
+            return definition.DashboardFilters.FirstOrDefault(f => f != null && f.Id == id);
         }
 
         private static void Reindex(DashboardDefinition definition)

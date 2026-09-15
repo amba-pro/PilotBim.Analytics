@@ -31,9 +31,11 @@ namespace PilotBim.Analytics.Services
             }
 
             if (definition.SchemaVersion != DashboardPersistenceV2.SchemaVersion
+                && definition.SchemaVersion != DashboardPersistenceV2.SchemaVersionV3
                 && definition.SchemaVersion != DashboardPersistenceV2.CurrentSchemaVersion)
             {
                 error = "schema version is not " + DashboardPersistenceV2.SchemaVersion
+                    + ", " + DashboardPersistenceV2.SchemaVersionV3
                     + " or " + DashboardPersistenceV2.CurrentSchemaVersion;
                 return false;
             }
@@ -82,14 +84,23 @@ namespace PilotBim.Analytics.Services
                     return false;
             }
 
-            if (definition.SchemaVersion == DashboardPersistenceV2.CurrentSchemaVersion
+            if (UsesGridLayout(definition.SchemaVersion)
                 && DashboardGridLayoutEngine.AnyVisibleOverlap(widgets))
             {
                 error = "visible widgets overlap";
                 return false;
             }
 
+            if (definition.SchemaVersion == DashboardPersistenceV2.CurrentSchemaVersion
+                && !ValidateDashboardFilters(definition, out error))
+                return false;
+
             return true;
+        }
+
+        public static bool UsesGridLayout(int schemaVersion)
+        {
+            return schemaVersion >= DashboardPersistenceV2.SchemaVersionV3;
         }
 
         private static bool ValidateLayout(
@@ -104,7 +115,7 @@ namespace PilotBim.Analytics.Services
                 error = "widget layout is required: " + widgetId;
                 return false;
             }
-            if (schemaVersion == DashboardPersistenceV2.CurrentSchemaVersion)
+            if (UsesGridLayout(schemaVersion))
             {
                 string gridError;
                 if (!DashboardGridLayoutEngine.TryValidate(DashboardGridLayoutEngine.FromLayout(layout), out gridError))
@@ -187,6 +198,72 @@ namespace PilotBim.Analytics.Services
                 error = "query limit must be null or a positive integer: " + widgetId;
                 return false;
             }
+            return true;
+        }
+
+        private static bool ValidateDashboardFilters(
+            DashboardDefinition definition,
+            out string error)
+        {
+            error = null;
+            var filters = definition.DashboardFilters ?? new List<DashboardLevelFilterDefinition>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+
+            for (var i = 0; i < filters.Count; i++)
+            {
+                var filter = filters[i];
+                if (filter == null)
+                {
+                    error = "dashboard filter is required";
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(filter.Id))
+                {
+                    error = "dashboard filter id is required";
+                    return false;
+                }
+                if (!seen.Add(filter.Id))
+                {
+                    error = "duplicate dashboard filter id: " + filter.Id;
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(filter.FieldId))
+                {
+                    error = "dashboard filter field id is required: " + filter.Id;
+                    return false;
+                }
+                if (filter.EntityTypeId == 0)
+                {
+                    error = "dashboard filter type id is required: " + filter.Id;
+                    return false;
+                }
+
+                DashboardFilterDefinition unused;
+                string parseError;
+                if (!DashboardFilterCompatibility.TryToRuntimeFilter(filter, out unused, out parseError))
+                {
+                    error = (parseError ?? "dashboard filter is invalid") + ": " + filter.Id;
+                    return false;
+                }
+
+                var targets = filter.TargetWidgetIds ?? new List<string>();
+                var seenTargets = new HashSet<string>(StringComparer.Ordinal);
+                for (var t = 0; t < targets.Count; t++)
+                {
+                    var targetId = targets[t];
+                    if (string.IsNullOrWhiteSpace(targetId))
+                    {
+                        error = "dashboard filter target id is required: " + filter.Id;
+                        return false;
+                    }
+                    if (!seenTargets.Add(targetId))
+                    {
+                        error = "duplicate dashboard filter target: " + targetId;
+                        return false;
+                    }
+                }
+            }
+
             return true;
         }
     }

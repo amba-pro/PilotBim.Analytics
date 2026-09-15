@@ -6,7 +6,8 @@ namespace PilotBim.Analytics.Models
     internal static class DashboardPersistenceV2
     {
         public const int SchemaVersion = 2;
-        public const int CurrentSchemaVersion = 3;
+        public const int SchemaVersionV3 = 3;
+        public const int CurrentSchemaVersion = 4;
         public const string DefaultDashboardId = "default";
         public const string DefaultTitle = "Dashboard";
         public const string FileName = "dashboard.json";
@@ -39,7 +40,8 @@ namespace PilotBim.Analytics.Models
         V2 = 1,
         UnsupportedVersion = 2,
         Invalid = 3,
-        V3 = 4
+        V3 = 4,
+        V4 = 5
     }
 
     [DataContract]
@@ -60,6 +62,51 @@ namespace PilotBim.Analytics.Models
 
         [DataMember(Order = 5)]
         public List<DashboardWidgetDefinition> Widgets { get; set; }
+
+        /// <summary>Dashboard-level filters. V4. Runtime overlay; does not rewrite widget queries.</summary>
+        [DataMember(Order = 6)]
+        public List<DashboardLevelFilterDefinition> DashboardFilters { get; set; }
+    }
+
+    /// <summary>
+    /// Persisted dashboard-level filter with explicit Query widget bindings.
+    /// Distinct from per-query <see cref="DashboardFilterDefinition"/>.
+    /// </summary>
+    [DataContract]
+    internal sealed class DashboardLevelFilterDefinition
+    {
+        [DataMember(Order = 1)]
+        public string Id { get; set; }
+
+        [DataMember(Order = 2)]
+        public string Title { get; set; }
+
+        [DataMember(Order = 3)]
+        public int EntityTypeId { get; set; }
+
+        [DataMember(Order = 4)]
+        public string FieldId { get; set; }
+
+        [DataMember(Order = 5)]
+        public string Operator { get; set; }
+
+        [DataMember(Order = 6)]
+        public string ValueKind { get; set; }
+
+        [DataMember(Order = 7)]
+        public string Value { get; set; }
+
+        /// <summary>Default false. Missing JSON value means the filter is enabled.</summary>
+        [DataMember(Order = 8)]
+        public bool Disabled { get; set; }
+
+        [DataMember(Order = 9)]
+        public List<string> TargetWidgetIds { get; set; }
+
+        public bool IsEnabled
+        {
+            get { return !Disabled; }
+        }
     }
 
     [DataContract]

@@ -456,6 +456,57 @@ namespace PilotBim.Analytics.Views
             }
         }
 
+        private void DashboardAddFilter_Click(object sender, RoutedEventArgs e)
+        {
+            OpenDashboardFilterEditor(null);
+        }
+
+        private void DashboardEditFilter_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null || btn.Tag == null || !_vm.IsDashboardEditMode)
+                return;
+            OpenDashboardFilterEditor(_vm.GetDashboardFilter(btn.Tag.ToString()));
+        }
+
+        private void DashboardRemoveFilter_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null || btn.Tag == null || !_vm.IsDashboardEditMode || !_vm.DashboardMutationsEnabled)
+                return;
+            string error;
+            if (!_vm.TryRemoveDashboardFilter(btn.Tag.ToString(), out error))
+            {
+                MessageBox.Show(
+                    string.IsNullOrWhiteSpace(error) ? UiResources.Dashboard_SaveFailed : error,
+                    "PilotBim.Analytics",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private void OpenDashboardFilterEditor(DashboardLevelFilterDefinition existing)
+        {
+            if (!_vm.DashboardMutationsEnabled || !_vm.IsDashboardEditMode)
+                return;
+            var editorVm = _vm.CreateDashboardFilterEditor(existing);
+            var dlg = new DashboardFilterEditorWindow(editorVm)
+            {
+                Owner = this
+            };
+            if (dlg.ShowDialog() != true || dlg.Result == null)
+                return;
+            string error;
+            if (!_vm.TrySaveDashboardFilter(dlg.Result, out error))
+            {
+                MessageBox.Show(
+                    string.IsNullOrWhiteSpace(error) ? UiResources.Dashboard_SaveFailed : error,
+                    "PilotBim.Analytics",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
         private void DashboardRemove_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;

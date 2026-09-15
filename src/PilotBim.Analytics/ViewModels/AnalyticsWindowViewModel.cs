@@ -168,6 +168,11 @@ namespace PilotBim.Analytics.ViewModels
             get { return _dashboard.DashboardWidgets; }
         }
 
+        public ObservableCollection<DashboardFilterChipVm> DashboardFilterChips
+        {
+            get { return _dashboard.DashboardFilterChips; }
+        }
+
         public string DashboardWarning
         {
             get { return _dashboard.DashboardWarning; }
@@ -581,6 +586,33 @@ namespace PilotBim.Analytics.ViewModels
         public bool TrySaveQueryWidget(DashboardWidgetDefinition widget, out string error)
         {
             return _dashboard.TrySaveQueryWidget(widget, out error);
+        }
+
+        public DashboardFilterEditorViewModel CreateDashboardFilterEditor(DashboardLevelFilterDefinition existing)
+        {
+            var widgets = _dashboard.CurrentDefinition != null
+                ? _dashboard.CurrentDefinition.Widgets
+                : new System.Collections.Generic.List<DashboardWidgetDefinition>();
+            return new DashboardFilterEditorViewModel(
+                _dashboard.Catalog,
+                _dashboard.TypeOptions,
+                widgets,
+                existing);
+        }
+
+        public bool TrySaveDashboardFilter(DashboardLevelFilterDefinition filter, out string error)
+        {
+            return _dashboard.TrySaveDashboardFilter(filter, out error);
+        }
+
+        public bool TryRemoveDashboardFilter(string id, out string error)
+        {
+            return _dashboard.TryRemoveDashboardFilter(id, out error);
+        }
+
+        public DashboardLevelFilterDefinition GetDashboardFilter(string id)
+        {
+            return _dashboard.GetDashboardFilter(id);
         }
 
         public DashboardWidgetDefinition GetWidgetDefinition(string id)

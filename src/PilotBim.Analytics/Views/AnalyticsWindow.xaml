@@ -223,6 +223,44 @@
                     Visibility="{Binding HasDashboardWarning, Converter={StaticResource BoolToVis}}">
               <TextBlock Text="{Binding DashboardWarning}" TextWrapping="Wrap" Foreground="#1F2A24" />
             </Border>
+            <DockPanel Margin="0,0,0,8">
+              <TextBlock DockPanel.Dock="Left" Text="{x:Static props:Resources.DashboardFilters_Header}"
+                         FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="#1F2A24" />
+              <Button DockPanel.Dock="Right" Content="{x:Static props:Resources.DashboardFilters_Add}"
+                      Height="28" Padding="10,0" Click="DashboardAddFilter_Click"
+                      Visibility="{Binding IsDashboardEditMode, Converter={StaticResource BoolToVis}}"
+                      IsEnabled="{Binding DashboardMutationsEnabled}"
+                      Background="#1F2A24" Foreground="White" BorderBrush="#1F2A24" />
+              <ItemsControl ItemsSource="{Binding DashboardFilterChips}" Margin="0,0,8,0">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="#EFEFEA" BorderBrush="#C8C8C0" BorderThickness="1" CornerRadius="2"
+                            Padding="8,4" Margin="0,0,6,6">
+                      <StackPanel Orientation="Horizontal">
+                        <StackPanel>
+                          <TextBlock Text="{Binding Summary}" Foreground="#1F2A24" />
+                          <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="#8A6A1F"
+                                     Visibility="{Binding ShowStatus, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <Button Content="⚙" Width="24" Height="22" Margin="8,0,2,0" Tag="{Binding Id}"
+                                Click="DashboardEditFilter_Click" ToolTip="{x:Static props:Resources.DashboardFilters_Edit}"
+                                Visibility="{Binding CanManage, Converter={StaticResource BoolToVis}}"
+                                Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0" />
+                        <Button Content="✕" Width="24" Height="22" Tag="{Binding Id}"
+                                Click="DashboardRemoveFilter_Click" ToolTip="{x:Static props:Resources.DashboardFilters_Remove}"
+                                Visibility="{Binding CanManage, Converter={StaticResource BoolToVis}}"
+                                Background="#E8E8E4" Foreground="#1F2A24" BorderBrush="#C8C8C0" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
             <ItemsControl ItemsSource="{Binding DashboardLayoutItems}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
